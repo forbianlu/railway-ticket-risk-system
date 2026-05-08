@@ -38,6 +38,22 @@ public class TrainSearchResponse {
         return response;
     }
 
+    public TrainSearchResponse copy() {
+        TrainSearchResponse response = new TrainSearchResponse();
+        response.setTrainId(trainId);
+        response.setTrainNo(trainNo);
+        response.setDepartureStation(departureStation);
+        response.setArrivalStation(arrivalStation);
+        response.setDepartureTime(departureTime);
+        response.setArrivalTime(arrivalTime);
+        response.setInventoryId(inventoryId);
+        response.setTravelDate(travelDate);
+        response.setSeatType(seatType);
+        response.setRemainingSeats(remainingSeats);
+        response.setPrice(price);
+        return response;
+    }
+
     public Long getTrainId() {
         return trainId;
     }

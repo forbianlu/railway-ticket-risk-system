@@ -21,6 +21,7 @@ import com.example.railway.dto.DashboardSummary;
 import com.example.railway.dto.LoginRequest;
 import com.example.railway.dto.OrderResponse;
 import com.example.railway.dto.RiskEventResponse;
+import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -128,6 +129,27 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldCacheTrainSearchAndEvictAfterInventoryChange() {
+        AuthResponse admin = login("admin", "admin123");
+        clearTrainSearchCache(admin);
+
+        List<TrainSearchResponse> firstSearch = searchToday();
+        List<TrainSearchResponse> secondSearch = searchToday();
+        TrainSearchCacheStats afterSecondSearch = trainSearchCacheStats(admin);
+
+        assertThat(firstSearch).isNotEmpty();
+        assertThat(secondSearch).isNotEmpty();
+        assertThat(afterSecondSearch.getEntryCount()).isGreaterThan(0);
+        assertThat(afterSecondSearch.getHitCount()).isGreaterThan(0);
+
+        createOrder(3106L, secondSearch.get(0), "CacheEvictUser");
+        TrainSearchCacheStats afterOrder = trainSearchCacheStats(admin);
+
+        assertThat(afterOrder.getEntryCount()).isEqualTo(0);
+        assertThat(afterOrder.getEvictCount()).isGreaterThan(0);
+    }
+
+    @Test
     void dashboardShouldExposeOrderAndRiskMetrics() {
         TrainSearchResponse train = firstTrainInventory();
         createOrder(3104L, train, "DashboardUser");
@@ -165,6 +187,25 @@ class RailwayApiIntegrationTests {
                 riskId
         );
         return response.getBody();
+    }
+
+    private TrainSearchCacheStats trainSearchCacheStats(AuthResponse auth) {
+        ResponseEntity<TrainSearchCacheStats> response = restTemplate.exchange(
+                "/api/cache/train-search",
+                HttpMethod.GET,
+                authorizedEntity(auth),
+                TrainSearchCacheStats.class
+        );
+        return response.getBody();
+    }
+
+    private void clearTrainSearchCache(AuthResponse auth) {
+        restTemplate.exchange(
+                "/api/cache/train-search",
+                HttpMethod.DELETE,
+                authorizedEntity(auth),
+                TrainSearchCacheStats.class
+        );
     }
 
     private HttpEntity<Void> authorizedEntity(AuthResponse auth) {

@@ -30,3 +30,10 @@ logging:
 auth:
   token:
     secret: railway-ticket-risk-demo-secret
+
+railway:
+  cache:
+    train-search:
+      enabled: true
+      ttl-seconds: 30
+      max-entries: 256

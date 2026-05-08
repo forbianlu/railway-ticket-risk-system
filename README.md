@@ -6,6 +6,7 @@
 
 - 完整票务闭环：查询车次、创建订单、扣减库存、退票释放库存。
 - 库存防超卖：座位库存使用 JPA 乐观锁版本号，冲突时返回明确提示。
+- 热门查询缓存：车次余票查询支持本地 TTL 缓存，购票和退票后按线路日期失效缓存。
 - 风控规则引擎：将风险规则拆成独立 `RiskRule`，按 `RiskScene` 调度。
 - 风险处置闭环：风险事件支持待处理、已处理状态流转，并写入审计日志。
 - 角色权限控制：支持管理员、风控专员、运营人员演示账号，使用签名令牌和注解式角色校验保护敏感接口。
@@ -23,6 +24,10 @@
 ## 权限流程
 
 ![登录鉴权与角色权限](docs/assets/auth-access-control.svg)
+
+## 缓存流程
+
+![车次余票查询缓存](docs/assets/cache-flow.svg)
 
 ## 界面截图
 
@@ -52,6 +57,7 @@
 
 - 后端：Java 8, Spring Boot 2.7, Spring Web, Spring Data JPA, Validation
 - 权限：自定义签名令牌、HandlerInterceptor、`@RequiredRole` 注解式角色校验
+- 缓存：本地 TTL 缓存、缓存命中统计、事务提交后缓存失效，可平滑替换为 Redis
 - 数据库：H2 本地演示，MySQL 生产化配置
 - 前端：HTML, CSS, JavaScript 管理台原型
 - 工程化：Maven, Docker Compose, GitHub Actions
@@ -69,6 +75,8 @@ POST /api/orders/{id}/refund
 GET  /api/orders
 GET  /api/risks
 POST /api/risks/{id}/handle
+GET  /api/cache/train-search
+DELETE /api/cache/train-search
 GET  /api/dashboard/summary
 GET  /api/logs
 ```
@@ -143,17 +151,19 @@ mvn test
 - 连续退票后库存释放，并触发频繁退票风险。
 - 风险事件可标记已处理，处置动作进入操作日志。
 - 未登录访问受保护接口返回 401，运营人员处理风险事件返回 403。
-- 集成测试覆盖车次查询、下单、退票、风控生成、风险处置、权限保护和看板指标。
+- 车次查询重复请求可命中缓存，下单后按线路日期失效缓存。
+- 集成测试覆盖车次查询、下单、退票、风控生成、风险处置、权限保护、缓存失效和看板指标。
 
 ## 简历写法示例
 
 铁路客运票务与风控运营管理系统  
-基于 Spring Boot 开发铁路客运票务与风控运营管理系统，实现车次查询、余票扣减、购票退票、异常订单识别、风险事件处置、角色权限、运营数据看板和操作日志审计。项目使用 JPA 建模核心业务表，通过事务和乐观锁保证订单状态流转与库存一致性；将风控逻辑抽象为 `RiskRule` 规则引擎，支持短时间多次购票、高金额订单、频繁退票等规则扩展；使用签名令牌和 `@RequiredRole` 注解保护风控处置与审计接口，并通过集成测试覆盖核心接口链路。
+基于 Spring Boot 开发铁路客运票务与风控运营管理系统，实现车次查询、余票扣减、购票退票、异常订单识别、风险事件处置、角色权限、运营数据看板和操作日志审计。项目使用 JPA 建模核心业务表，通过事务和乐观锁保证订单状态流转与库存一致性；为车次余票查询设计本地 TTL 缓存，并在购票、退票事务提交后失效线路日期缓存；将风控逻辑抽象为 `RiskRule` 规则引擎，支持短时间多次购票、高金额订单、频繁退票等规则扩展；使用签名令牌和 `@RequiredRole` 注解保护风控处置与审计接口，并通过集成测试覆盖核心接口链路。
 
 ## 文档
 
 - 项目大纲：`docs/project-outline.md`
 - API 设计：`docs/api-design.md`
+- 缓存设计：`docs/cache-design.md`
 - 数据库设计：`docs/database-design.md`
 - ER 图：`docs/er-diagram.mmd`
 - 简历与面试材料：`docs/resume-and-interview.md`
@@ -161,7 +171,7 @@ mvn test
 
 ## 后续计划
 
-- 引入 Redis 缓存热门车次余票。
+- 将本地 TTL 缓存替换为 Redis，支持多实例共享缓存。
 - 将演示版签名令牌升级为 Spring Security + JWT + BCrypt。
 - 增加并发扣库存压测和接口限流说明。
 - 使用 Vue3 重构前端管理台。

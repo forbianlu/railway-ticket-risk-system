@@ -60,6 +60,8 @@ Authorization: Bearer {token}
 GET /api/trains/search?from=BJP&to=SHH&date=2026-06-01
 ```
 
+查询结果会按 `from + to + date` 写入本地 TTL 缓存，下单或退票成功后失效对应线路日期缓存。
+
 ## 创建订单
 
 ```http
@@ -116,6 +118,38 @@ Authorization: Bearer {token}
 ```
 
 该接口仅允许 `RISK_OFFICER` 和 `ADMIN` 角色访问。
+
+## 查询车次缓存统计
+
+```http
+GET /api/cache/train-search
+Authorization: Bearer {token}
+```
+
+该接口仅允许 `RISK_OFFICER` 和 `ADMIN` 角色访问。
+
+响应：
+
+```json
+{
+  "enabled": true,
+  "ttlSeconds": 30,
+  "maxEntries": 256,
+  "entryCount": 1,
+  "hitCount": 3,
+  "missCount": 2,
+  "evictCount": 1
+}
+```
+
+## 清空车次缓存
+
+```http
+DELETE /api/cache/train-search
+Authorization: Bearer {token}
+```
+
+该接口仅允许 `ADMIN` 角色访问。
 
 ## 演示账号
 

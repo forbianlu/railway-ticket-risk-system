@@ -18,21 +18,32 @@ public class TrainQueryService {
 
     private final TrainRepository trainRepository;
     private final SeatInventoryRepository seatInventoryRepository;
+    private final TrainSearchCacheService trainSearchCacheService;
 
-    public TrainQueryService(TrainRepository trainRepository, SeatInventoryRepository seatInventoryRepository) {
+    public TrainQueryService(TrainRepository trainRepository,
+                             SeatInventoryRepository seatInventoryRepository,
+                             TrainSearchCacheService trainSearchCacheService) {
         this.trainRepository = trainRepository;
         this.seatInventoryRepository = seatInventoryRepository;
+        this.trainSearchCacheService = trainSearchCacheService;
     }
 
     @Transactional(readOnly = true)
     public List<TrainSearchResponse> search(String departureCode, String arrivalCode, LocalDate travelDate) {
+        List<TrainSearchResponse> cached = trainSearchCacheService.get(departureCode, arrivalCode, travelDate);
+        if (cached != null) {
+            return cached;
+        }
+
         List<Train> trains = trainRepository.findByDepartureStation_CodeAndArrivalStation_CodeAndEnabledTrue(departureCode, arrivalCode);
         List<Long> trainIds = new ArrayList<Long>();
         for (Train train : trains) {
             trainIds.add(train.getId());
         }
         if (trainIds.isEmpty()) {
-            return new ArrayList<TrainSearchResponse>();
+            List<TrainSearchResponse> responses = new ArrayList<TrainSearchResponse>();
+            trainSearchCacheService.put(departureCode, arrivalCode, travelDate, responses);
+            return responses;
         }
 
         List<SeatInventory> inventories = seatInventoryRepository.findByTrain_IdInAndTravelDate(trainIds, travelDate);
@@ -40,6 +51,7 @@ public class TrainQueryService {
         for (SeatInventory inventory : inventories) {
             responses.add(TrainSearchResponse.from(inventory));
         }
+        trainSearchCacheService.put(departureCode, arrivalCode, travelDate, responses);
         return responses;
     }
 }

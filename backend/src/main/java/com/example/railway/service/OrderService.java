@@ -1,5 +1,6 @@
 package com.example.railway.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -8,6 +9,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.example.railway.common.BusinessException;
 import com.example.railway.domain.OrderStatus;
@@ -25,15 +28,18 @@ public class OrderService {
     private final SeatInventoryRepository seatInventoryRepository;
     private final RiskService riskService;
     private final OperationLogService operationLogService;
+    private final TrainSearchCacheService trainSearchCacheService;
 
     public OrderService(TicketOrderRepository ticketOrderRepository,
                         SeatInventoryRepository seatInventoryRepository,
                         RiskService riskService,
-                        OperationLogService operationLogService) {
+                        OperationLogService operationLogService,
+                        TrainSearchCacheService trainSearchCacheService) {
         this.ticketOrderRepository = ticketOrderRepository;
         this.seatInventoryRepository = seatInventoryRepository;
         this.riskService = riskService;
         this.operationLogService = operationLogService;
+        this.trainSearchCacheService = trainSearchCacheService;
     }
 
     @Transactional
@@ -62,6 +68,7 @@ public class OrderService {
         order.setCreatedAt(LocalDateTime.now());
 
         TicketOrder saved = ticketOrderRepository.save(order);
+        evictTrainSearchCacheAfterCommit(inventory);
         operationLogService.record(
                 "USER-" + request.getUserId(),
                 "CREATE_ORDER",
@@ -89,6 +96,7 @@ public class OrderService {
         order.getInventory().releaseOne();
         TicketOrder saved = ticketOrderRepository.save(order);
         seatInventoryRepository.save(order.getInventory());
+        evictTrainSearchCacheAfterCommit(order.getInventory());
 
         operationLogService.record(
                 "USER-" + order.getUserId(),
@@ -121,5 +129,23 @@ public class OrderService {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
         int random = ThreadLocalRandom.current().nextInt(1000, 10000);
         return "RT" + timestamp + random;
+    }
+
+    private void evictTrainSearchCacheAfterCommit(SeatInventory inventory) {
+        final String departureCode = inventory.getTrain().getDepartureStation().getCode();
+        final String arrivalCode = inventory.getTrain().getArrivalStation().getCode();
+        final LocalDate travelDate = inventory.getTravelDate();
+
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            trainSearchCacheService.evictRoute(departureCode, arrivalCode, travelDate);
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                trainSearchCacheService.evictRoute(departureCode, arrivalCode, travelDate);
+            }
+        });
     }
 }

@@ -16,7 +16,7 @@
 
 ## 第 3 周：简历增强
 
-- 增加 Redis 热门车次缓存
+- 将本地 TTL 查询缓存替换为 Redis 热门车次缓存
 - 将演示版用户登录和角色权限升级为 Spring Security + JWT + BCrypt
 - 增加接口文档和数据库 ER 图
 - 配置 GitHub Actions 自动测试
