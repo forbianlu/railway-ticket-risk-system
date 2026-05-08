@@ -1,0 +1,58 @@
+<svg width="1080" height="520" viewBox="0 0 1080 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .bg { fill: #F6F8FB; }
+      .panel { fill: #FFFFFF; stroke: #D8E2EC; stroke-width: 1.2; }
+      .soft { fill: #EEF6F2; stroke: #B7D8C9; stroke-width: 1.2; }
+      .blue { fill: #EEF5FF; stroke: #BED4F2; stroke-width: 1.2; }
+      .amber { fill: #FFF7E6; stroke: #EBC76F; stroke-width: 1.2; }
+      .ink { fill: #172033; font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif; }
+      .muted { fill: #667085; font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif; }
+      .title { font-size: 24px; font-weight: 700; }
+      .label { font-size: 16px; font-weight: 700; }
+      .small { font-size: 13px; }
+      .line { stroke: #8EA3B7; stroke-width: 1.7; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8EA3B7"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1080" height="520" rx="28"/>
+  <text x="48" y="58" class="ink title">系统架构</text>
+  <text x="48" y="84" class="muted small">前端运营台通过 REST API 调用 Spring Boot 服务，后端以领域服务组织票务、风控、日志与看板能力。</text>
+
+  <rect x="52" y="135" width="210" height="250" rx="16" class="panel"/>
+  <text x="84" y="176" class="ink label">运营管理台</text>
+  <text x="84" y="208" class="muted small">车次查询</text>
+  <text x="84" y="234" class="muted small">订单处理</text>
+  <text x="84" y="260" class="muted small">风险处置</text>
+  <text x="84" y="286" class="muted small">数据看板</text>
+
+  <rect x="354" y="110" width="380" height="300" rx="18" class="blue"/>
+  <text x="392" y="150" class="ink label">Spring Boot 后端</text>
+  <rect x="392" y="180" width="135" height="54" rx="10" class="panel"/>
+  <text x="418" y="213" class="ink small">Controller</text>
+  <rect x="562" y="180" width="135" height="54" rx="10" class="panel"/>
+  <text x="601" y="213" class="ink small">Service</text>
+  <rect x="392" y="258" width="135" height="54" rx="10" class="panel"/>
+  <text x="415" y="291" class="ink small">Repository</text>
+  <rect x="562" y="258" width="135" height="54" rx="10" class="panel"/>
+  <text x="597" y="291" class="ink small">Domain</text>
+  <rect x="392" y="336" width="305" height="44" rx="10" class="soft"/>
+  <text x="466" y="364" class="ink small">Risk Rule Engine</text>
+
+  <rect x="822" y="124" width="205" height="86" rx="16" class="soft"/>
+  <text x="884" y="158" class="ink label">H2 / MySQL</text>
+  <text x="864" y="184" class="muted small">业务数据持久化</text>
+
+  <rect x="822" y="250" width="205" height="86" rx="16" class="amber"/>
+  <text x="883" y="284" class="ink label">审计日志</text>
+  <text x="854" y="310" class="muted small">下单 / 退票 / 风控</text>
+
+  <path d="M262 260 H345" class="line" marker-end="url(#arrow)"/>
+  <path d="M734 182 H813" class="line" marker-end="url(#arrow)"/>
+  <path d="M734 300 H813" class="line" marker-end="url(#arrow)"/>
+  <path d="M528 207 H554" class="line" marker-end="url(#arrow)"/>
+  <path d="M630 234 V252" class="line" marker-end="url(#arrow)"/>
+  <path d="M562 285 H535" class="line" marker-end="url(#arrow)"/>
+</svg>

@@ -1,0 +1,45 @@
+<svg width="1080" height="440" viewBox="0 0 1080 440" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .bg { fill: #F6F8FB; }
+      .panel { fill: #FFFFFF; stroke: #D8E2EC; stroke-width: 1.2; }
+      .green { fill: #EAF6F1; stroke: #B5D9C8; stroke-width: 1.2; }
+      .amber { fill: #FFF5E0; stroke: #E8C36B; stroke-width: 1.2; }
+      .ink { fill: #172033; font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif; }
+      .muted { fill: #667085; font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif; }
+      .title { font-size: 24px; font-weight: 700; }
+      .label { font-size: 16px; font-weight: 700; }
+      .small { font-size: 13px; }
+      .line { stroke: #8EA3B7; stroke-width: 1.8; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8EA3B7"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1080" height="440" rx="26"/>
+  <text x="48" y="58" class="ink title">风控规则引擎</text>
+  <text x="48" y="84" class="muted small">将风险规则从业务服务中拆出，按触发场景调度，便于扩展和面试讲解。</text>
+
+  <rect x="70" y="158" width="190" height="94" rx="16" class="panel"/>
+  <text x="116" y="196" class="ink label">RiskContext</text>
+  <text x="100" y="224" class="muted small">订单 + 触发时间 + 场景</text>
+
+  <rect x="342" y="122" width="330" height="198" rx="18" class="green"/>
+  <text x="438" y="162" class="ink label">RiskService 调度器</text>
+  <rect x="386" y="190" width="240" height="42" rx="10" class="panel"/>
+  <text x="438" y="217" class="muted small">按 RiskScene 过滤规则</text>
+  <rect x="386" y="250" width="240" height="42" rx="10" class="panel"/>
+  <text x="438" y="277" class="muted small">命中后写入 RiskEvent</text>
+
+  <rect x="750" y="84" width="250" height="64" rx="14" class="amber"/>
+  <text x="804" y="122" class="ink label">RapidPurchaseRule</text>
+  <rect x="750" y="188" width="250" height="64" rx="14" class="amber"/>
+  <text x="818" y="226" class="ink label">HighAmountRule</text>
+  <rect x="750" y="292" width="250" height="64" rx="14" class="amber"/>
+  <text x="806" y="330" class="ink label">FrequentRefundRule</text>
+
+  <path d="M260 205 H334" class="line" marker-end="url(#arrow)"/>
+  <path d="M672 190 C700 170 716 132 742 118" class="line" marker-end="url(#arrow)"/>
+  <path d="M672 221 H742" class="line" marker-end="url(#arrow)"/>
+  <path d="M672 252 C700 272 716 310 742 324" class="line" marker-end="url(#arrow)"/>
+</svg>

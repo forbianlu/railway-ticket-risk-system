@@ -1,0 +1,62 @@
+erDiagram
+    STATIONS ||--o{ TRAINS : departure
+    STATIONS ||--o{ TRAINS : arrival
+    TRAINS ||--o{ SEAT_INVENTORIES : has
+    TRAINS ||--o{ TICKET_ORDERS : creates
+    SEAT_INVENTORIES ||--o{ TICKET_ORDERS : locks
+    TICKET_ORDERS ||--o{ RISK_EVENTS : triggers
+
+    STATIONS {
+        bigint id PK
+        varchar code
+        varchar name
+        varchar city
+        boolean enabled
+    }
+
+    TRAINS {
+        bigint id PK
+        varchar train_no
+        bigint departure_station_id FK
+        bigint arrival_station_id FK
+        time departure_time
+        time arrival_time
+        boolean enabled
+    }
+
+    SEAT_INVENTORIES {
+        bigint id PK
+        bigint train_id FK
+        date travel_date
+        varchar seat_type
+        int total_seats
+        int remaining_seats
+        decimal price
+    }
+
+    TICKET_ORDERS {
+        bigint id PK
+        varchar order_no
+        bigint user_id
+        varchar passenger_name
+        varchar passenger_id_card
+        bigint train_id FK
+        bigint inventory_id FK
+        date travel_date
+        varchar seat_type
+        decimal amount
+        varchar status
+        timestamp created_at
+        timestamp refunded_at
+    }
+
+    RISK_EVENTS {
+        bigint id PK
+        bigint order_id FK
+        bigint user_id
+        varchar risk_type
+        varchar risk_level
+        varchar reason
+        boolean handled
+        timestamp created_at
+    }

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>铁路客运票务与风控运营管理系统</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">RT</div>
+        <div>
+          <strong>票务风控</strong>
+          <span>运营管理台</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#dashboard">运营看板</a>
+        <a href="#search">车次查询</a>
+        <a href="#orders">订单管理</a>
+        <a href="#risks">风险事件</a>
+        <a href="#logs">审计日志</a>
+      </nav>
+      <div class="connection">
+        <span id="api-status" class="status-dot"></span>
+        <span id="api-status-text">连接检测中</span>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section id="dashboard" class="section">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Railway Ticket Risk System</p>
+            <h1>铁路客运票务与风控运营管理系统</h1>
+          </div>
+          <button id="refresh-dashboard" class="primary-button" type="button">刷新数据</button>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric">
+            <span>总订单</span>
+            <strong id="metric-total-orders">0</strong>
+          </div>
+          <div class="metric">
+            <span>有效订单</span>
+            <strong id="metric-paid-orders">0</strong>
+          </div>
+          <div class="metric">
+            <span>退票订单</span>
+            <strong id="metric-refunded-orders">0</strong>
+          </div>
+          <div class="metric alert">
+            <span>未处理风险</span>
+            <strong id="metric-open-risks">0</strong>
+          </div>
+        </div>
+      </section>
+
+      <section id="search" class="section">
+        <div class="section-title">
+          <h2>车次查询</h2>
+          <p>按出发站、到达站和乘车日期查询可售库存</p>
+        </div>
+        <form id="search-form" class="toolbar">
+          <label>
+            出发站
+            <select id="from-station"></select>
+          </label>
+          <label>
+            到达站
+            <select id="to-station"></select>
+          </label>
+          <label>
+            乘车日期
+            <input id="travel-date" type="date">
+          </label>
+          <button class="primary-button" type="submit">查询车次</button>
+        </form>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>车次</th>
+                <th>区间</th>
+                <th>时间</th>
+                <th>席别</th>
+                <th>余票</th>
+                <th>票价</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="train-results"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="orders" class="section">
+        <div class="section-title">
+          <h2>订单管理</h2>
+          <p>展示最近订单，支持退票以验证库存释放和风控规则</p>
+        </div>
+        <div class="toolbar compact">
+          <label>
+            用户 ID
+            <input id="order-user-id" type="number" value="1001" min="1">
+          </label>
+          <button id="load-orders" class="secondary-button" type="button">查看订单</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>订单号</th>
+                <th>用户</th>
+                <th>车次</th>
+                <th>乘客</th>
+                <th>日期</th>
+                <th>金额</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="order-results"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="risks" class="section split">
+        <div>
+          <div class="section-title">
+            <h2>风险事件</h2>
+            <p>短时间多次购票、高金额订单、频繁退票会生成事件</p>
+          </div>
+          <div id="risk-list" class="event-list"></div>
+        </div>
+        <div>
+          <div class="section-title">
+            <h2>热门车次</h2>
+            <p>根据订单数据聚合的运营指标</p>
+          </div>
+          <div id="popular-trains" class="event-list"></div>
+        </div>
+      </section>
+
+      <section id="logs" class="section">
+        <div class="section-title">
+          <h2>审计日志</h2>
+          <p>记录下单、退票和风控触发过程</p>
+        </div>
+        <div id="log-list" class="event-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<svg width="1080" height="420" viewBox="0 0 1080 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .bg { fill: #FFFFFF; }
+      .step { fill: #F6F8FB; stroke: #D9E2EC; stroke-width: 1.2; }
+      .primary { fill: #E9F6F0; stroke: #B5D9C8; stroke-width: 1.2; }
+      .risk { fill: #FFF7E8; stroke: #EBCB82; stroke-width: 1.2; }
+      .ink { fill: #172033; font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif; }
+      .muted { fill: #667085; font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif; }
+      .title { font-size: 24px; font-weight: 700; }
+      .label { font-size: 16px; font-weight: 700; }
+      .small { font-size: 13px; }
+      .line { stroke: #8EA3B7; stroke-width: 1.8; }
+      .dash { stroke: #8EA3B7; stroke-width: 1.5; stroke-dasharray: 6 6; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8EA3B7"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1080" height="420" rx="26"/>
+  <text x="48" y="58" class="ink title">票务交易流程</text>
+  <text x="48" y="84" class="muted small">围绕库存一致性、订单状态流转和风控事件生成，形成可演示的业务闭环。</text>
+
+  <rect x="58" y="150" width="140" height="86" rx="14" class="step"/>
+  <text x="94" y="184" class="ink label">查询车次</text>
+  <text x="84" y="211" class="muted small">出发站 / 到达站</text>
+
+  <rect x="254" y="150" width="140" height="86" rx="14" class="primary"/>
+  <text x="290" y="184" class="ink label">创建订单</text>
+  <text x="286" y="211" class="muted small">校验库存</text>
+
+  <rect x="450" y="150" width="140" height="86" rx="14" class="primary"/>
+  <text x="486" y="184" class="ink label">扣减余票</text>
+  <text x="486" y="211" class="muted small">事务提交</text>
+
+  <rect x="646" y="150" width="140" height="86" rx="14" class="risk"/>
+  <text x="682" y="184" class="ink label">风控校验</text>
+  <text x="672" y="211" class="muted small">命中规则生成事件</text>
+
+  <rect x="842" y="150" width="140" height="86" rx="14" class="step"/>
+  <text x="878" y="184" class="ink label">运营看板</text>
+  <text x="870" y="211" class="muted small">统计订单和风险</text>
+
+  <path d="M198 193 H246" class="line" marker-end="url(#arrow)"/>
+  <path d="M394 193 H442" class="line" marker-end="url(#arrow)"/>
+  <path d="M590 193 H638" class="line" marker-end="url(#arrow)"/>
+  <path d="M786 193 H834" class="line" marker-end="url(#arrow)"/>
+
+  <rect x="254" y="288" width="140" height="66" rx="14" class="step"/>
+  <text x="292" y="326" class="ink label">退票</text>
+  <rect x="450" y="288" width="140" height="66" rx="14" class="step"/>
+  <text x="486" y="326" class="ink label">释放库存</text>
+  <rect x="646" y="288" width="140" height="66" rx="14" class="risk"/>
+  <text x="680" y="326" class="ink label">退票风控</text>
+
+  <path d="M324 236 V280" class="dash" marker-end="url(#arrow)"/>
+  <path d="M394 321 H442" class="line" marker-end="url(#arrow)"/>
+  <path d="M590 321 H638" class="line" marker-end="url(#arrow)"/>
+</svg>
