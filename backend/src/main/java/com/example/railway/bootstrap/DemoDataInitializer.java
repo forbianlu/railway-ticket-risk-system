@@ -10,9 +10,13 @@ import org.springframework.stereotype.Component;
 import com.example.railway.domain.SeatInventory;
 import com.example.railway.domain.Station;
 import com.example.railway.domain.Train;
+import com.example.railway.domain.AppUser;
+import com.example.railway.domain.UserRole;
+import com.example.railway.repository.AppUserRepository;
 import com.example.railway.repository.SeatInventoryRepository;
 import com.example.railway.repository.StationRepository;
 import com.example.railway.repository.TrainRepository;
+import com.example.railway.service.PasswordService;
 
 @Component
 public class DemoDataInitializer implements CommandLineRunner {
@@ -20,17 +24,24 @@ public class DemoDataInitializer implements CommandLineRunner {
     private final StationRepository stationRepository;
     private final TrainRepository trainRepository;
     private final SeatInventoryRepository seatInventoryRepository;
+    private final AppUserRepository appUserRepository;
+    private final PasswordService passwordService;
 
     public DemoDataInitializer(StationRepository stationRepository,
                                TrainRepository trainRepository,
-                               SeatInventoryRepository seatInventoryRepository) {
+                               SeatInventoryRepository seatInventoryRepository,
+                               AppUserRepository appUserRepository,
+                               PasswordService passwordService) {
         this.stationRepository = stationRepository;
         this.trainRepository = trainRepository;
         this.seatInventoryRepository = seatInventoryRepository;
+        this.appUserRepository = appUserRepository;
+        this.passwordService = passwordService;
     }
 
     @Override
     public void run(String... args) {
+        seedUsers();
         if (stationRepository.count() > 0) {
             return;
         }
@@ -53,5 +64,14 @@ public class DemoDataInitializer implements CommandLineRunner {
             seatInventoryRepository.save(new SeatInventory(g305, travelDate, "BUSINESS_CLASS", 20, new BigDecimal("2724.00")));
             seatInventoryRepository.save(new SeatInventory(d701, travelDate, "SECOND_CLASS", 160, new BigDecimal("315.00")));
         }
+    }
+
+    private void seedUsers() {
+        if (appUserRepository.count() > 0) {
+            return;
+        }
+        appUserRepository.save(new AppUser("admin", passwordService.hash("admin123"), "系统管理员", UserRole.ADMIN));
+        appUserRepository.save(new AppUser("risk", passwordService.hash("risk123"), "风控专员", UserRole.RISK_OFFICER));
+        appUserRepository.save(new AppUser("ops", passwordService.hash("ops123"), "运营人员", UserRole.OPERATOR));
     }
 }

@@ -10,9 +10,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 
+import com.example.railway.dto.AuthResponse;
 import com.example.railway.dto.CreateOrderRequest;
 import com.example.railway.dto.DashboardSummary;
+import com.example.railway.dto.LoginRequest;
 import com.example.railway.dto.OrderResponse;
 import com.example.railway.dto.RiskEventResponse;
 import com.example.railway.dto.TrainSearchResponse;
@@ -88,17 +94,37 @@ class RailwayApiIntegrationTests {
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("expected unhandled risk event"));
 
-        RiskEventResponse handled = restTemplate.postForObject(
-                "/api/risks/{id}/handle?operator=api-test",
-                null,
-                RiskEventResponse.class,
-                unhandledRisk.getId()
-        );
+        RiskEventResponse handled = handleRisk(unhandledRisk.getId(), login("risk", "risk123"));
 
         assertThat(risks)
                 .extracting(RiskEventResponse::getRiskType)
                 .containsAnyOf("RAPID_PURCHASE", "HIGH_AMOUNT");
         assertThat(handled.getHandled()).isTrue();
+    }
+
+    @Test
+    void shouldProtectRiskHandlingWithRole() {
+        TrainSearchResponse train = firstTrainInventory();
+        long userId = 3105L;
+        createOrder(userId, train, "ProtectedRiskA");
+        createOrder(userId, train, "ProtectedRiskB");
+
+        RiskEventResponse risk = Arrays.stream(restTemplate.getForObject("/api/risks", RiskEventResponse[].class))
+                .filter(item -> Long.valueOf(userId).equals(item.getUserId()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected risk event"));
+
+        ResponseEntity<String> unauthenticated = restTemplate.getForEntity("/api/auth/me", String.class);
+        ResponseEntity<String> forbidden = restTemplate.exchange(
+                "/api/risks/{id}/handle",
+                HttpMethod.POST,
+                authorizedEntity(login("ops", "ops123")),
+                String.class,
+                risk.getId()
+        );
+
+        assertThat(unauthenticated.getStatusCodeValue()).isEqualTo(401);
+        assertThat(forbidden.getStatusCodeValue()).isEqualTo(403);
     }
 
     @Test
@@ -121,6 +147,30 @@ class RailwayApiIntegrationTests {
         request.setPassengerName(passengerName);
         request.setPassengerIdCard("11010120000101" + userId);
         return restTemplate.postForObject("/api/orders", request, OrderResponse.class);
+    }
+
+    private AuthResponse login(String username, String password) {
+        LoginRequest request = new LoginRequest();
+        request.setUsername(username);
+        request.setPassword(password);
+        return restTemplate.postForObject("/api/auth/login", request, AuthResponse.class);
+    }
+
+    private RiskEventResponse handleRisk(Long riskId, AuthResponse auth) {
+        ResponseEntity<RiskEventResponse> response = restTemplate.exchange(
+                "/api/risks/{id}/handle",
+                HttpMethod.POST,
+                authorizedEntity(auth),
+                RiskEventResponse.class,
+                riskId
+        );
+        return response.getBody();
+    }
+
+    private HttpEntity<Void> authorizedEntity(AuthResponse auth) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + auth.getToken());
+        return new HttpEntity<Void>(headers);
     }
 
     private TrainSearchResponse firstTrainInventory() {

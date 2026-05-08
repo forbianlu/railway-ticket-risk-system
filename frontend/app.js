@@ -2,6 +2,7 @@ const API_BASE = "http://localhost:8080/api";
 
 const state = {
   stations: [],
+  auth: loadStoredAuth(),
 };
 
 const elements = {
@@ -20,6 +21,12 @@ const elements = {
   orderUserId: document.querySelector("#order-user-id"),
   riskList: document.querySelector("#risk-list"),
   logList: document.querySelector("#log-list"),
+  authRole: document.querySelector("#auth-role"),
+  authUser: document.querySelector("#auth-user"),
+  loginForm: document.querySelector("#login-form"),
+  loginUsername: document.querySelector("#login-username"),
+  loginPassword: document.querySelector("#login-password"),
+  logoutButton: document.querySelector("#logout-button"),
   toast: document.querySelector("#toast"),
 };
 
@@ -29,16 +36,62 @@ document.querySelector("#search-form").addEventListener("submit", event => {
   searchTrains();
 });
 document.querySelector("#load-orders").addEventListener("click", loadOrders);
+elements.loginForm.addEventListener("submit", event => {
+  event.preventDefault();
+  login();
+});
+elements.logoutButton.addEventListener("click", logout);
 
 init();
 
 async function init() {
   applyCaptureMode();
+  renderAuthState();
   elements.travelDate.value = new Date().toISOString().slice(0, 10);
   await checkHealth();
   await loadStations();
   await refreshAll();
   scrollToInitialHash();
+}
+
+async function login() {
+  try {
+    const auth = await request("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: elements.loginUsername.value,
+        password: elements.loginPassword.value,
+      }),
+    }, false);
+    state.auth = auth;
+    localStorage.setItem("railway-auth", JSON.stringify(auth));
+    renderAuthState();
+    showToast("登录成功，当前角色：" + roleText(auth.role));
+    await refreshAll();
+  } catch (error) {
+    showToast(error.message || "登录失败");
+  }
+}
+
+function logout() {
+  state.auth = null;
+  localStorage.removeItem("railway-auth");
+  renderAuthState();
+  showToast("已退出登录");
+  refreshAll();
+}
+
+function renderAuthState() {
+  if (state.auth && state.auth.token) {
+    document.body.dataset.authenticated = "true";
+    elements.authRole.textContent = roleText(state.auth.role);
+    elements.authUser.textContent = state.auth.displayName || state.auth.username;
+    return;
+  }
+  document.body.dataset.authenticated = "false";
+  elements.authRole.textContent = "未登录";
+  elements.authUser.textContent = "访客模式";
 }
 
 async function checkHealth() {
@@ -250,7 +303,7 @@ async function loadRisks() {
           <span>用户：${risk.userId} / 订单：${risk.orderNo || "-"}</span>
           <span>${risk.reason}</span>
           <div class="risk-actions">
-            ${risk.handled ? "" : `<button class="secondary-button compact-button" type="button" data-handle-risk="${risk.id}">标记已处理</button>`}
+            ${risk.handled || !canHandleRisk() ? "" : `<button class="secondary-button compact-button" type="button" data-handle-risk="${risk.id}">标记已处理</button>`}
           </div>
         </div>
       `)
@@ -266,7 +319,7 @@ async function loadRisks() {
 
 async function handleRisk(riskId) {
   try {
-    await request(`/risks/${riskId}/handle?operator=risk-admin`, { method: "POST" });
+    await request(`/risks/${riskId}/handle`, { method: "POST" });
     showToast("风险事件已处理");
     await refreshAll();
   } catch (error) {
@@ -291,17 +344,34 @@ async function loadLogs() {
       `)
       .join("");
   } catch (error) {
-    elements.logList.innerHTML = emptyItem("无法获取审计日志");
+    elements.logList.innerHTML = emptyItem(error.message || "无法获取审计日志");
   }
 }
 
-async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, options);
+async function request(path, options = {}, withAuth = true) {
+  const requestOptions = { ...options };
+  requestOptions.headers = { ...(options.headers || {}) };
+  if (withAuth && state.auth && state.auth.token) {
+    requestOptions.headers.Authorization = `Bearer ${state.auth.token}`;
+  }
+  const response = await fetch(`${API_BASE}${path}`, requestOptions);
   const data = await response.json();
   if (!response.ok) {
     throw new Error(data.message || "请求失败");
   }
   return data;
+}
+
+function loadStoredAuth() {
+  try {
+    return JSON.parse(localStorage.getItem("railway-auth"));
+  } catch (error) {
+    return null;
+  }
+}
+
+function canHandleRisk() {
+  return state.auth && ["ADMIN", "RISK_OFFICER"].includes(state.auth.role);
 }
 
 function tableEmpty(colspan, message) {
@@ -348,6 +418,15 @@ function riskLevelText(value) {
     LOW: "低风险",
     MEDIUM: "中风险",
     HIGH: "高风险",
+  };
+  return map[value] || value;
+}
+
+function roleText(value) {
+  const map = {
+    ADMIN: "系统管理员",
+    OPERATOR: "运营人员",
+    RISK_OFFICER: "风控专员",
   };
   return map[value] || value;
 }

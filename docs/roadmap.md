@@ -17,7 +17,7 @@
 ## 第 3 周：简历增强
 
 - 增加 Redis 热门车次缓存
-- 增加用户登录和角色权限
+- 将演示版用户登录和角色权限升级为 Spring Security + JWT + BCrypt
 - 增加接口文档和数据库 ER 图
 - 配置 GitHub Actions 自动测试
 

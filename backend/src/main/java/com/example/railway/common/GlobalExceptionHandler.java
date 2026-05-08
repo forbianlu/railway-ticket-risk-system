@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.example.railway.security.AuthenticationException;
+import com.example.railway.security.AuthorizationException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -18,6 +21,18 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, Object> handleBusinessException(BusinessException exception) {
         return error("BUSINESS_ERROR", exception.getMessage());
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public Map<String, Object> handleAuthenticationException(AuthenticationException exception) {
+        return error("AUTHENTICATION_ERROR", exception.getMessage());
+    }
+
+    @ExceptionHandler(AuthorizationException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Map<String, Object> handleAuthorizationException(AuthorizationException exception) {
+        return error("AUTHORIZATION_ERROR", exception.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

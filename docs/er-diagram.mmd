@@ -6,6 +6,15 @@ erDiagram
     SEAT_INVENTORIES ||--o{ TICKET_ORDERS : locks
     TICKET_ORDERS ||--o{ RISK_EVENTS : triggers
 
+    APP_USERS {
+        bigint id PK
+        varchar username
+        varchar password_hash
+        varchar display_name
+        varchar role
+        boolean enabled
+    }
+
     STATIONS {
         bigint id PK
         varchar code
@@ -32,6 +41,7 @@ erDiagram
         int total_seats
         int remaining_seats
         decimal price
+        bigint version
     }
 
     TICKET_ORDERS {
@@ -58,5 +68,15 @@ erDiagram
         varchar risk_level
         varchar reason
         boolean handled
+        timestamp created_at
+    }
+
+    OPERATION_LOGS {
+        bigint id PK
+        varchar operator
+        varchar action
+        varchar target_type
+        varchar target_id
+        varchar detail
         timestamp created_at
     }

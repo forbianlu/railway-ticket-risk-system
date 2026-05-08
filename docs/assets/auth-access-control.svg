@@ -1,0 +1,64 @@
+<svg width="1120" height="360" viewBox="0 0 1120 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1120" height="360" rx="28" fill="#F6F8FB"/>
+  <rect x="36" y="32" width="1048" height="296" rx="22" fill="#FFFFFF" stroke="#D9E2EC"/>
+  <text x="70" y="76" fill="#172033" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="26" font-weight="700">登录鉴权与角色权限流程</text>
+  <text x="70" y="108" fill="#667085" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="15">前端登录后携带 Bearer Token，后端拦截器解析身份并按角色保护敏感接口</text>
+
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2L10 6L2 10" fill="none" stroke="#116149" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-20%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#172033" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="145" width="165" height="116" rx="14" fill="#F0F7F4" stroke="#B8DCCF"/>
+    <circle cx="103" cy="181" r="15" fill="#116149"/>
+    <path d="M96 181h14M103 174v14" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <text x="93" y="213" fill="#172033" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700">前端管理台</text>
+    <text x="93" y="238" fill="#667085" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">登录表单 / 本地令牌</text>
+  </g>
+
+  <path d="M245 203H318" stroke="#116149" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <text x="257" y="188" fill="#116149" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">POST /auth/login</text>
+
+  <g filter="url(#shadow)">
+    <rect x="330" y="145" width="165" height="116" rx="14" fill="#FFF8E6" stroke="#F1D38A"/>
+    <rect x="363" y="168" width="50" height="34" rx="7" fill="#F2C94C"/>
+    <circle cx="388" cy="213" r="9" fill="#183B56"/>
+    <text x="358" y="213" fill="#172033" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700">认证服务</text>
+    <text x="358" y="238" fill="#667085" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">校验密码 / 签发令牌</text>
+  </g>
+
+  <path d="M505 203H578" stroke="#116149" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <text x="512" y="188" fill="#116149" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">Bearer Token</text>
+
+  <g filter="url(#shadow)">
+    <rect x="590" y="145" width="185" height="116" rx="14" fill="#EEF4FF" stroke="#C7D7FE"/>
+    <path d="M631 170l26 15v28l-26 15l-26-15v-28l26-15Z" fill="#3B82F6"/>
+    <path d="M620 198l8 8l18-19" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="622" y="213" fill="#172033" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700">鉴权拦截器</text>
+    <text x="622" y="238" fill="#667085" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">解析身份 / 写入上下文</text>
+  </g>
+
+  <path d="M786 203H858" stroke="#116149" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <text x="796" y="188" fill="#116149" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">@RequiredRole</text>
+
+  <g filter="url(#shadow)">
+    <rect x="870" y="145" width="175" height="116" rx="14" fill="#FDF2F2" stroke="#F8C7C7"/>
+    <rect x="906" y="169" width="44" height="50" rx="7" fill="#B42318"/>
+    <path d="M915 193h26M915 205h18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <text x="906" y="213" fill="#172033" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700">受保护接口</text>
+    <text x="906" y="238" fill="#667085" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">风险处置 / 审计日志</text>
+  </g>
+
+  <rect x="70" y="286" width="975" height="22" rx="11" fill="#F0F3F7"/>
+  <circle cx="148" cy="297" r="5" fill="#116149"/>
+  <text x="162" y="302" fill="#485467" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">ADMIN：全部演示能力</text>
+  <circle cx="364" cy="297" r="5" fill="#3B82F6"/>
+  <text x="378" y="302" fill="#485467" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">RISK_OFFICER：处理风险事件</text>
+  <circle cx="628" cy="297" r="5" fill="#F2C94C"/>
+  <text x="642" y="302" fill="#485467" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">OPERATOR：查看运营数据，敏感操作返回 403</text>
+</svg>

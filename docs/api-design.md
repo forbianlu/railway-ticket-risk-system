@@ -21,6 +21,39 @@ GET /api/health
 GET /api/stations
 ```
 
+## 登录
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "username": "risk",
+  "password": "risk123"
+}
+```
+
+响应：
+
+```json
+{
+  "token": "base64Payload.signature",
+  "username": "risk",
+  "displayName": "风控专员",
+  "role": "RISK_OFFICER",
+  "expiresAt": 1770000000
+}
+```
+
+## 当前登录用户
+
+```http
+GET /api/auth/me
+Authorization: Bearer {token}
+```
+
+受保护接口统一使用 `Authorization: Bearer {token}` 传递登录令牌。缺少令牌返回 401，角色不足返回 403。
+
 ## 查询车次
 
 ```http
@@ -63,11 +96,31 @@ GET /api/risks
 ## 处理风险事件
 
 ```http
-POST /api/risks/1/handle?operator=risk-admin
+POST /api/risks/1/handle
+Authorization: Bearer {token}
 ```
+
+该接口仅允许 `RISK_OFFICER` 和 `ADMIN` 角色访问，操作人默认取当前登录用户。
 
 ## 运营看板
 
 ```http
 GET /api/dashboard/summary
 ```
+
+## 审计日志
+
+```http
+GET /api/logs
+Authorization: Bearer {token}
+```
+
+该接口仅允许 `RISK_OFFICER` 和 `ADMIN` 角色访问。
+
+## 演示账号
+
+| 账号 | 密码 | 角色 |
+| --- | --- | --- |
+| `admin` | `admin123` | `ADMIN` |
+| `risk` | `risk123` | `RISK_OFFICER` |
+| `ops` | `ops123` | `OPERATOR` |

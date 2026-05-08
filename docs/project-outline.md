@@ -14,6 +14,7 @@
 - 乘客可以退票并释放余票
 - 系统能识别简单异常交易行为
 - 后台可以查看运营统计和风险事件
+- 风控人员登录后可以处理风险事件，运营人员无权执行敏感操作
 - 操作过程可记录审计日志
 
 ## 3. 用户角色
@@ -78,6 +79,14 @@
 - 风控触发日志
 - 管理员操作日志
 
+### 4.6 登录与角色权限
+
+- 演示账号：管理员、风控专员、运营人员
+- 登录接口：校验账号密码后签发带过期时间的签名令牌
+- 鉴权拦截：前端携带 `Authorization: Bearer {token}`，后端拦截器解析用户身份
+- 角色控制：使用 `@RequiredRole` 标注敏感接口，风控处置和审计日志只允许管理员或风控专员访问
+- 前端联动：根据当前角色控制风险处理按钮和日志错误提示
+
 ## 5. 数据库设计
 
 核心表：
@@ -88,6 +97,7 @@
 - `ticket_orders`
 - `risk_events`
 - `operation_logs`
+- `app_users`
 
 详见 `docs/database-design.md`。
 
@@ -97,6 +107,8 @@
 
 - `GET /api/health`
 - `GET /api/stations`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
 - `GET /api/trains/search`
 - `POST /api/orders`
 - `POST /api/orders/{id}/refund`
@@ -115,6 +127,7 @@
 - 车次查询
 - 下单与退票
 - 基础风控规则
+- 登录与角色权限
 - 操作日志
 - 简单前端管理台
 
@@ -122,7 +135,7 @@
 
 - MySQL 持久化
 - Redis 热门余票缓存
-- Spring Security + JWT
+- Spring Security + JWT + BCrypt 替换演示版签名令牌
 - MyBatis-Plus
 - Docker Compose
 - GitHub Actions 自动测试

@@ -26,3 +26,7 @@ spring:
 logging:
   level:
     org.hibernate.SQL: warn
+
+auth:
+  token:
+    secret: railway-ticket-risk-demo-secret

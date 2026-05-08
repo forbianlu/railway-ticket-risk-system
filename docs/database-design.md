@@ -1,5 +1,16 @@
 # 数据库设计
 
+## app_users
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint | 主键 |
+| username | varchar | 登录账号，唯一 |
+| password_hash | varchar | 演示环境密码哈希 |
+| display_name | varchar | 展示名称 |
+| role | varchar | 角色：ADMIN、RISK_OFFICER、OPERATOR |
+| enabled | boolean | 是否启用 |
+
 ## stations
 
 | 字段 | 类型 | 说明 |
@@ -33,6 +44,7 @@
 | total_seats | int | 总座位 |
 | remaining_seats | int | 剩余座位 |
 | price | decimal | 票价 |
+| version | bigint | 乐观锁版本号 |
 
 ## ticket_orders
 

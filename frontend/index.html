@@ -23,6 +23,18 @@
         <a href="#risks">风险事件</a>
         <a href="#logs">审计日志</a>
       </nav>
+      <div class="auth-panel">
+        <div class="auth-summary">
+          <span id="auth-role">未登录</span>
+          <strong id="auth-user">访客模式</strong>
+        </div>
+        <form id="login-form" class="login-form">
+          <input id="login-username" type="text" value="risk" aria-label="用户名">
+          <input id="login-password" type="password" value="risk123" aria-label="密码">
+          <button type="submit">登录</button>
+        </form>
+        <button id="logout-button" class="logout-button" type="button">退出登录</button>
+      </div>
       <div class="connection">
         <span id="api-status" class="status-dot"></span>
         <span id="api-status-text">连接检测中</span>

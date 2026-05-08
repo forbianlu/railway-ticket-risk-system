@@ -9,7 +9,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.railway.domain.UserRole;
 import com.example.railway.dto.RiskEventResponse;
+import com.example.railway.security.AuthContext;
+import com.example.railway.security.RequiredRole;
 import com.example.railway.service.RiskService;
 
 @RestController
@@ -27,9 +30,11 @@ public class RiskController {
         return riskService.latestRisks();
     }
 
+    @RequiredRole({UserRole.RISK_OFFICER, UserRole.ADMIN})
     @PostMapping("/{id}/handle")
     public RiskEventResponse handleRisk(@PathVariable("id") Long riskId,
                                         @RequestParam(value = "operator", required = false) String operator) {
-        return riskService.handleRisk(riskId, operator);
+        String currentOperator = operator == null || operator.trim().isEmpty() ? AuthContext.current().getUsername() : operator;
+        return riskService.handleRisk(riskId, currentOperator);
     }
 }
