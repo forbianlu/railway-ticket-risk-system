@@ -405,6 +405,22 @@ tr:last-child td {
   transform: translateY(0);
 }
 
+body[data-capture] .main {
+  min-height: 100vh;
+}
+
+body[data-capture="dashboard"] .section:not(#dashboard):not(#search) {
+  display: none;
+}
+
+body[data-capture="orders"] .section:not(#orders) {
+  display: none;
+}
+
+body[data-capture="risks"] .section:not(#risks) {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;

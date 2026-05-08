@@ -19,6 +19,20 @@
 
 ![票务交易流程](docs/assets/ticket-flow.svg)
 
+## 界面截图
+
+### 运营看板与车次查询
+
+![运营看板与车次查询](docs/assets/screenshots/dashboard.png)
+
+### 订单管理
+
+![订单管理](docs/assets/screenshots/orders.png)
+
+### 风险事件处理
+
+![风险事件处理](docs/assets/screenshots/risk-events.png)
+
 ## 风控设计
 
 ![风控规则引擎](docs/assets/risk-engine.svg)

@@ -33,10 +33,12 @@ document.querySelector("#load-orders").addEventListener("click", loadOrders);
 init();
 
 async function init() {
+  applyCaptureMode();
   elements.travelDate.value = new Date().toISOString().slice(0, 10);
   await checkHealth();
   await loadStations();
   await refreshAll();
+  scrollToInitialHash();
 }
 
 async function checkHealth() {
@@ -356,4 +358,21 @@ function showToast(message) {
   window.setTimeout(() => {
     elements.toast.classList.remove("show");
   }, 2600);
+}
+
+function scrollToInitialHash() {
+  if (!window.location.hash) {
+    return;
+  }
+  const target = document.querySelector(window.location.hash);
+  if (target) {
+    target.scrollIntoView({ block: "start" });
+  }
+}
+
+function applyCaptureMode() {
+  const capture = new URLSearchParams(window.location.search).get("capture");
+  if (["dashboard", "orders", "risks"].includes(capture)) {
+    document.body.dataset.capture = capture;
+  }
 }
