@@ -13,6 +13,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
+import javax.persistence.Version;
 
 import com.example.railway.common.BusinessException;
 
@@ -44,6 +45,10 @@ public class SeatInventory {
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
 
     public SeatInventory() {
     }
@@ -123,5 +128,9 @@ public class SeatInventory {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 }
