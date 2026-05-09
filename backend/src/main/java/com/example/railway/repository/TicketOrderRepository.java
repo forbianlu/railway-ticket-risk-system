@@ -24,6 +24,8 @@ public interface TicketOrderRepository extends JpaRepository<TicketOrder, Long> 
 
     long countByUserIdAndStatusAndRefundedAtAfter(Long userId, OrderStatus status, LocalDateTime refundedAt);
 
+    long countByInventory_Id(Long inventoryId);
+
     @Query("select coalesce(sum(o.amount), 0) from TicketOrder o where o.userId = :userId and o.createdAt >= :createdAt and o.status = com.example.railway.domain.OrderStatus.PAID")
     BigDecimal sumPaidAmountByUserAfter(@Param("userId") Long userId, @Param("createdAt") LocalDateTime createdAt);
 

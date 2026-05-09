@@ -1,0 +1,76 @@
+<svg width="1120" height="390" viewBox="0 0 1120 390" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1120" height="390" rx="28" fill="#F6F8FB"/>
+  <rect x="36" y="32" width="1048" height="326" rx="22" fill="#FFFFFF" stroke="#D9E2EC"/>
+  <text x="70" y="76" fill="#172033" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="26" font-weight="700">并发购票防超卖流程</text>
+  <text x="70" y="108" fill="#667085" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="15">多个请求同时抢同一库存，事务提交时由 version 字段保证只有一个扣减成功</text>
+
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2L10 6L2 10" fill="none" stroke="#116149" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="red-arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2L10 6L2 10" fill="none" stroke="#B42318" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-20%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#172033" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="150" width="178" height="112" rx="14" fill="#EEF4FF" stroke="#C7D7FE"/>
+    <circle cx="105" cy="181" r="15" fill="#3B82F6"/>
+    <path d="M98 181h14M105 174v14" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <text x="98" y="217" fill="#172033" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700">并发下单请求</text>
+    <text x="98" y="240" fill="#667085" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">16 个请求抢 1 张票</text>
+  </g>
+
+  <path d="M258 206H325" stroke="#116149" stroke-width="2.4" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="337" y="150" width="184" height="112" rx="14" fill="#F0F7F4" stroke="#B8DCCF"/>
+    <rect x="371" y="174" width="52" height="42" rx="8" fill="#116149"/>
+    <path d="M382 195h30M382 205h20" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+    <text x="371" y="217" fill="#172033" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700">事务内扣库存</text>
+    <text x="371" y="240" fill="#667085" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">remainingSeats - 1</text>
+  </g>
+
+  <path d="M532 206H599" stroke="#116149" stroke-width="2.4" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="611" y="150" width="184" height="112" rx="14" fill="#FFF8E6" stroke="#F1D38A"/>
+    <ellipse cx="650" cy="178" rx="28" ry="10" fill="#F2C94C"/>
+    <path d="M622 178v31c0 6 13 11 28 11s28-5 28-11v-31" fill="#F2C94C"/>
+    <path d="M622 194c0 6 13 11 28 11s28-5 28-11" stroke="#183B56" stroke-width="2"/>
+    <text x="642" y="217" fill="#172033" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="18" font-weight="700">版本号校验</text>
+    <text x="642" y="240" fill="#667085" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">where version = old</text>
+  </g>
+
+  <path d="M806 184H872" stroke="#116149" stroke-width="2.4" marker-end="url(#arrow)"/>
+  <text x="823" y="168" fill="#116149" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">first commit</text>
+  <path d="M806 228H872" stroke="#B42318" stroke-width="2.4" stroke-dasharray="7 7" marker-end="url(#red-arrow)"/>
+  <text x="818" y="250" fill="#B42318" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">stale version</text>
+
+  <g filter="url(#shadow)">
+    <rect x="884" y="130" width="172" height="78" rx="14" fill="#ECFDF3" stroke="#A6F4C5"/>
+    <circle cx="920" cy="162" r="13" fill="#12B76A"/>
+    <path d="M913 162l5 5l10-12" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="944" y="164" fill="#172033" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700">1 单成功</text>
+    <text x="944" y="186" fill="#667085" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">库存变为 0</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="884" y="226" width="172" height="78" rx="14" fill="#FDF2F2" stroke="#F8C7C7"/>
+    <circle cx="920" cy="258" r="13" fill="#B42318"/>
+    <path d="M914 252l12 12M926 252l-12 12" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="944" y="260" fill="#172033" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="17" font-weight="700">其余失败</text>
+    <text x="944" y="282" fill="#667085" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">400 或 409</text>
+  </g>
+
+  <rect x="70" y="320" width="986" height="22" rx="11" fill="#F0F3F7"/>
+  <circle cx="154" cy="331" r="5" fill="#116149"/>
+  <text x="168" y="336" fill="#485467" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">事务保证订单与库存一起提交或回滚</text>
+  <circle cx="472" cy="331" r="5" fill="#F2C94C"/>
+  <text x="486" y="336" fill="#485467" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">乐观锁发现并发冲突</text>
+  <circle cx="724" cy="331" r="5" fill="#B42318"/>
+  <text x="738" y="336" fill="#485467" font-family="Segoe UI, Microsoft YaHei, Arial, sans-serif" font-size="13">测试验证库存不为负、订单不超卖</text>
+</svg>

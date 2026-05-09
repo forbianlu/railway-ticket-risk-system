@@ -2,9 +2,18 @@ package com.example.railway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +24,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
+import com.example.railway.domain.SeatInventory;
+import com.example.railway.domain.Station;
+import com.example.railway.domain.Train;
 import com.example.railway.dto.AuthResponse;
 import com.example.railway.dto.CreateOrderRequest;
 import com.example.railway.dto.DashboardSummary;
@@ -23,12 +35,28 @@ import com.example.railway.dto.OrderResponse;
 import com.example.railway.dto.RiskEventResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
+import com.example.railway.repository.SeatInventoryRepository;
+import com.example.railway.repository.StationRepository;
+import com.example.railway.repository.TicketOrderRepository;
+import com.example.railway.repository.TrainRepository;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class RailwayApiIntegrationTests {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @Autowired
+    private StationRepository stationRepository;
+
+    @Autowired
+    private TrainRepository trainRepository;
+
+    @Autowired
+    private SeatInventoryRepository seatInventoryRepository;
+
+    @Autowired
+    private TicketOrderRepository ticketOrderRepository;
 
     @Test
     void shouldSearchTrainInventories() {
@@ -150,6 +178,58 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldPreventOversellUnderConcurrentPurchase() throws Exception {
+        SeatInventory inventory = createSingleSeatInventory();
+        int requestCount = 16;
+        ExecutorService executorService = Executors.newFixedThreadPool(requestCount);
+        CountDownLatch ready = new CountDownLatch(requestCount);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<ResponseEntity<String>>> futures = new ArrayList<Future<ResponseEntity<String>>>();
+
+        for (int i = 0; i < requestCount; i++) {
+            final int index = i;
+            futures.add(executorService.submit(new Callable<ResponseEntity<String>>() {
+                @Override
+                public ResponseEntity<String> call() throws Exception {
+                    ready.countDown();
+                    start.await(5, TimeUnit.SECONDS);
+                    return createOrderRaw(
+                            9000L + index,
+                            inventory.getTrain().getId(),
+                            inventory.getId(),
+                            "ConcurrentUser" + index
+                    );
+                }
+            }));
+        }
+
+        assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+        start.countDown();
+
+        int successCount = 0;
+        int failedCount = 0;
+        for (Future<ResponseEntity<String>> future : futures) {
+            ResponseEntity<String> response = future.get(10, TimeUnit.SECONDS);
+            int status = response.getStatusCodeValue();
+            if (status >= 200 && status < 300) {
+                successCount++;
+            } else {
+                failedCount++;
+                assertThat(status).isIn(400, 409);
+            }
+        }
+        executorService.shutdownNow();
+
+        SeatInventory latestInventory = seatInventoryRepository.findById(inventory.getId())
+                .orElseThrow(() -> new AssertionError("expected inventory"));
+
+        assertThat(successCount).isEqualTo(1);
+        assertThat(failedCount).isEqualTo(requestCount - 1);
+        assertThat(latestInventory.getRemainingSeats()).isEqualTo(0);
+        assertThat(ticketOrderRepository.countByInventory_Id(inventory.getId())).isEqualTo(1);
+    }
+
+    @Test
     void dashboardShouldExposeOrderAndRiskMetrics() {
         TrainSearchResponse train = firstTrainInventory();
         createOrder(3104L, train, "DashboardUser");
@@ -169,6 +249,39 @@ class RailwayApiIntegrationTests {
         request.setPassengerName(passengerName);
         request.setPassengerIdCard("11010120000101" + userId);
         return restTemplate.postForObject("/api/orders", request, OrderResponse.class);
+    }
+
+    private ResponseEntity<String> createOrderRaw(long userId, Long trainId, Long inventoryId, String passengerName) {
+        CreateOrderRequest request = new CreateOrderRequest();
+        request.setUserId(userId);
+        request.setTrainId(trainId);
+        request.setInventoryId(inventoryId);
+        request.setPassengerName(passengerName);
+        request.setPassengerIdCard("11010120000202" + userId);
+        return restTemplate.postForEntity("/api/orders", request, String.class);
+    }
+
+    private SeatInventory createSingleSeatInventory() {
+        String suffix = Long.toString(System.nanoTime(), 36);
+        if (suffix.length() > 8) {
+            suffix = suffix.substring(suffix.length() - 8);
+        }
+        Station departure = stationRepository.save(new Station("CF" + suffix, "并发测试始发站", "测试"));
+        Station arrival = stationRepository.save(new Station("CT" + suffix, "并发测试到达站", "测试"));
+        Train train = trainRepository.save(new Train(
+                "C" + suffix,
+                departure,
+                arrival,
+                LocalTime.of(10, 0),
+                LocalTime.of(11, 0)
+        ));
+        return seatInventoryRepository.save(new SeatInventory(
+                train,
+                LocalDate.now().plusDays(30),
+                "SECOND_CLASS",
+                1,
+                new BigDecimal("88.00")
+        ));
     }
 
     private AuthResponse login(String username, String password) {
