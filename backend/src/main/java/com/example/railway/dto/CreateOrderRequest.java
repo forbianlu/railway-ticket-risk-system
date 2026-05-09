@@ -9,6 +9,9 @@ public class CreateOrderRequest {
     @NotNull
     private Long userId;
 
+    @Size(max = 64)
+    private String requestId;
+
     @NotNull
     private Long trainId;
 
@@ -29,6 +32,14 @@ public class CreateOrderRequest {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
     }
 
     public Long getTrainId() {

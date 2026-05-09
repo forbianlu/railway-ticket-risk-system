@@ -87,6 +87,24 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldReturnExistingOrderForDuplicateRequestId() {
+        TrainSearchResponse before = firstTrainInventory();
+        long userId = 3107L;
+        String requestId = "idem-" + System.nanoTime();
+        long orderCountBefore = ticketOrderRepository.countByInventory_Id(before.getInventoryId());
+
+        OrderResponse first = createOrder(userId, before, "IdempotentUserA", requestId);
+        OrderResponse second = createOrder(userId, before, "IdempotentUserB", requestId);
+        TrainSearchResponse after = findInventory(before.getInventoryId());
+
+        assertThat(second.getId()).isEqualTo(first.getId());
+        assertThat(second.getOrderNo()).isEqualTo(first.getOrderNo());
+        assertThat(second.getRequestId()).isEqualTo(requestId);
+        assertThat(after.getRemainingSeats()).isEqualTo(before.getRemainingSeats() - 1);
+        assertThat(ticketOrderRepository.countByInventory_Id(before.getInventoryId())).isEqualTo(orderCountBefore + 1);
+    }
+
+    @Test
     void shouldRefundOrderAndReleaseInventory() {
         TrainSearchResponse before = firstTrainInventory();
         long userId = 3102L;
@@ -242,8 +260,13 @@ class RailwayApiIntegrationTests {
     }
 
     private OrderResponse createOrder(long userId, TrainSearchResponse train, String passengerName) {
+        return createOrder(userId, train, passengerName, "test-" + userId + "-" + System.nanoTime());
+    }
+
+    private OrderResponse createOrder(long userId, TrainSearchResponse train, String passengerName, String requestId) {
         CreateOrderRequest request = new CreateOrderRequest();
         request.setUserId(userId);
+        request.setRequestId(requestId);
         request.setTrainId(train.getTrainId());
         request.setInventoryId(train.getInventoryId());
         request.setPassengerName(passengerName);

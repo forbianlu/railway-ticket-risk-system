@@ -226,6 +226,7 @@ async function createOrder(trainId, inventoryId) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId,
+        requestId: generateRequestId(),
         trainId: Number(trainId),
         inventoryId: Number(inventoryId),
         passengerName,
@@ -429,6 +430,13 @@ function roleText(value) {
     RISK_OFFICER: "风控专员",
   };
   return map[value] || value;
+}
+
+function generateRequestId() {
+  if (window.crypto && window.crypto.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+  return `REQ-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 function showToast(message) {

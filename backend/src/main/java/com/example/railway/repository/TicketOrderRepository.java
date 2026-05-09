@@ -3,6 +3,7 @@ package com.example.railway.repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +18,8 @@ public interface TicketOrderRepository extends JpaRepository<TicketOrder, Long> 
     List<TicketOrder> findTop20ByOrderByCreatedAtDesc();
 
     List<TicketOrder> findByUserIdOrderByCreatedAtDesc(Long userId);
+
+    Optional<TicketOrder> findByUserIdAndRequestId(Long userId, String requestId);
 
     long countByStatus(OrderStatus status);
 

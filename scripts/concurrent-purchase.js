@@ -55,6 +55,7 @@ async function createOrder(target, index) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       userId,
+      requestId: `stress-${Date.now()}-${index}`,
       trainId: target.trainId,
       inventoryId: target.inventoryId,
       passengerName: `LoadUser${index}`,

@@ -70,12 +70,15 @@ Content-Type: application/json
 
 {
   "userId": 1001,
+  "requestId": "8f7f5c41-b6fd-48ab-8ec5-96b08d3c26d1",
   "trainId": 1,
   "inventoryId": 1,
   "passengerName": "张三",
   "passengerIdCard": "110101200001010011"
 }
 ```
+
+`requestId` 为可选幂等号。客户端重复提交相同 `userId + requestId` 时，系统返回第一次创建的订单，不重复扣减库存。
 
 ## 退票
 

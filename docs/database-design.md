@@ -52,6 +52,7 @@
 | --- | --- | --- |
 | id | bigint | 主键 |
 | order_no | varchar | 订单号 |
+| request_id | varchar | 幂等请求号，同一用户内唯一 |
 | passenger_name | varchar | 乘客姓名 |
 | passenger_id_card | varchar | 证件号 |
 | user_id | bigint | 用户 ID |

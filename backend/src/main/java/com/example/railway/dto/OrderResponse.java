@@ -11,6 +11,7 @@ public class OrderResponse {
     private Long id;
     private String orderNo;
     private Long userId;
+    private String requestId;
     private String trainNo;
     private String passengerName;
     private LocalDate travelDate;
@@ -25,6 +26,7 @@ public class OrderResponse {
         response.setId(order.getId());
         response.setOrderNo(order.getOrderNo());
         response.setUserId(order.getUserId());
+        response.setRequestId(order.getRequestId());
         response.setTrainNo(order.getTrain().getTrainNo());
         response.setPassengerName(order.getPassengerName());
         response.setTravelDate(order.getTravelDate());
@@ -58,6 +60,14 @@ public class OrderResponse {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
     }
 
     public String getTrainNo() {

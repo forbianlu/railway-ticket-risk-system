@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -47,6 +48,12 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public Map<String, Object> handleOptimisticLockException(ObjectOptimisticLockingFailureException exception) {
         return error("INVENTORY_CONFLICT", "余票库存正在被其他请求更新，请刷新后重试");
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Map<String, Object> handleDataIntegrityViolationException(DataIntegrityViolationException exception) {
+        return error("DATA_CONFLICT", "请求与已有数据冲突，请刷新后重试");
     }
 
     @ExceptionHandler(Exception.class)

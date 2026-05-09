@@ -18,7 +18,10 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "ticket_orders", uniqueConstraints = @UniqueConstraint(name = "uk_order_no", columnNames = "order_no"))
+@Table(name = "ticket_orders", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_order_no", columnNames = "order_no"),
+        @UniqueConstraint(name = "uk_order_user_request", columnNames = {"user_id", "request_id"})
+})
 public class TicketOrder {
 
     @Id
@@ -28,8 +31,11 @@ public class TicketOrder {
     @Column(name = "order_no", nullable = false, length = 40)
     private String orderNo;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long userId;
+
+    @Column(name = "request_id", length = 64)
+    private String requestId;
 
     @Column(nullable = false, length = 64)
     private String passengerName;
@@ -81,6 +87,14 @@ public class TicketOrder {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
     }
 
     public String getPassengerName() {

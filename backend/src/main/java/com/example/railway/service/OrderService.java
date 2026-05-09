@@ -44,6 +44,15 @@ public class OrderService {
 
     @Transactional
     public OrderResponse createOrder(CreateOrderRequest request) {
+        String requestId = normalizeRequestId(request.getRequestId());
+        if (requestId != null) {
+            TicketOrder existingOrder = ticketOrderRepository.findByUserIdAndRequestId(request.getUserId(), requestId)
+                    .orElse(null);
+            if (existingOrder != null) {
+                return OrderResponse.from(existingOrder);
+            }
+        }
+
         SeatInventory inventory = seatInventoryRepository.findById(request.getInventoryId())
                 .orElseThrow(() -> new BusinessException("座位库存不存在"));
 
@@ -57,6 +66,7 @@ public class OrderService {
         TicketOrder order = new TicketOrder();
         order.setOrderNo(generateOrderNo());
         order.setUserId(request.getUserId());
+        order.setRequestId(requestId);
         order.setPassengerName(request.getPassengerName());
         order.setPassengerIdCard(request.getPassengerIdCard());
         order.setTrain(inventory.getTrain());
@@ -129,6 +139,14 @@ public class OrderService {
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
         int random = ThreadLocalRandom.current().nextInt(1000, 10000);
         return "RT" + timestamp + random;
+    }
+
+    private String normalizeRequestId(String requestId) {
+        if (requestId == null) {
+            return null;
+        }
+        String normalized = requestId.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private void evictTrainSearchCacheAfterCommit(SeatInventory inventory) {
