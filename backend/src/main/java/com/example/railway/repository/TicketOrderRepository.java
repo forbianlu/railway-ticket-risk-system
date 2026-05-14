@@ -27,11 +27,15 @@ public interface TicketOrderRepository extends JpaRepository<TicketOrder, Long> 
 
     long countByUserIdAndStatusAndRefundedAtAfter(Long userId, OrderStatus status, LocalDateTime refundedAt);
 
+    long countByUserIdAndStatusAndPaidAtAfter(Long userId, OrderStatus status, LocalDateTime paidAt);
+
     long countByInventory_Id(Long inventoryId);
 
     @Query("select coalesce(sum(o.amount), 0) from TicketOrder o where o.userId = :userId and o.createdAt >= :createdAt and o.status = com.example.railway.domain.OrderStatus.PAID")
     BigDecimal sumPaidAmountByUserAfter(@Param("userId") Long userId, @Param("createdAt") LocalDateTime createdAt);
 
-    @Query("select o.train.trainNo, count(o.id) from TicketOrder o group by o.train.trainNo order by count(o.id) desc")
+    List<TicketOrder> findByStatusAndPaymentDeadlineAtBefore(OrderStatus status, LocalDateTime deadline);
+
+    @Query("select o.train.trainNo, count(o.id) from TicketOrder o where o.status in (com.example.railway.domain.OrderStatus.PAID, com.example.railway.domain.OrderStatus.REFUNDED) group by o.train.trainNo order by count(o.id) desc")
     List<Object[]> findPopularTrainStats(Pageable pageable);
 }

@@ -60,7 +60,7 @@ Authorization: Bearer {token}
 GET /api/trains/search?from=BJP&to=SHH&date=2026-06-01
 ```
 
-查询结果会按 `from + to + date` 写入本地 TTL 缓存，下单或退票成功后失效对应线路日期缓存。
+查询结果会按 `from + to + date` 写入本地 TTL 缓存，锁票、支付、关闭待支付订单或退票成功后失效对应线路日期缓存。
 
 ## 创建订单
 
@@ -80,11 +80,55 @@ Content-Type: application/json
 
 `requestId` 为可选幂等号。客户端重复提交相同 `userId + requestId` 时，系统返回第一次创建的订单，不重复扣减库存。
 
+创建订单会扣减余票并生成 `PENDING_PAYMENT` 待支付订单，默认支付截止时间为创建后 15 分钟。此时库存被锁定，但不会触发支付后风控规则。
+
+响应中的主要订单字段：
+
+```json
+{
+  "id": 1,
+  "orderNo": "RT202605091230001234",
+  "requestId": "8f7f5c41-b6fd-48ab-8ec5-96b08d3c26d1",
+  "status": "PENDING_PAYMENT",
+  "paymentDeadlineAt": "2026-05-09T12:45:00",
+  "paidAt": null,
+  "closedAt": null
+}
+```
+
+## 支付订单
+
+```http
+POST /api/orders/1/pay
+```
+
+待支付订单支付成功后状态变为 `PAID`，写入支付时间，失效对应车次查询缓存，并触发下单后风控规则。已支付订单重复支付会直接返回原订单，不重复触发风控。
+
+如果支付时订单已超过 `paymentDeadlineAt`，系统会关闭订单、释放库存，并返回 `CLOSED` 状态。
+
+## 关闭待支付订单
+
+```http
+POST /api/orders/1/close
+```
+
+该接口用于主动关闭 `PENDING_PAYMENT` 订单。关闭后订单状态变为 `CLOSED`，库存释放，车次查询缓存失效。`PAID`、`REFUNDED`、`CLOSED` 订单不能关闭。
+
+## 批量关闭超时订单
+
+```http
+POST /api/orders/close-expired
+```
+
+该接口会扫描超过支付截止时间的待支付订单并关闭。系统也内置定时任务，默认每 60 秒自动执行一次。
+
 ## 退票
 
 ```http
 POST /api/orders/1/refund
 ```
+
+仅 `PAID` 订单允许退票。退票成功后状态变为 `REFUNDED`，库存释放，并触发退票后风控规则。
 
 ## 查询订单
 

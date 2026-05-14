@@ -67,7 +67,13 @@ public class TicketOrder {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    private LocalDateTime paymentDeadlineAt;
+
+    private LocalDateTime paidAt;
+
     private LocalDateTime refundedAt;
+
+    private LocalDateTime closedAt;
 
     public Long getId() {
         return id;
@@ -169,11 +175,35 @@ public class TicketOrder {
         this.createdAt = createdAt;
     }
 
+    public LocalDateTime getPaymentDeadlineAt() {
+        return paymentDeadlineAt;
+    }
+
+    public void setPaymentDeadlineAt(LocalDateTime paymentDeadlineAt) {
+        this.paymentDeadlineAt = paymentDeadlineAt;
+    }
+
+    public LocalDateTime getPaidAt() {
+        return paidAt;
+    }
+
+    public void setPaidAt(LocalDateTime paidAt) {
+        this.paidAt = paidAt;
+    }
+
     public LocalDateTime getRefundedAt() {
         return refundedAt;
     }
 
     public void setRefundedAt(LocalDateTime refundedAt) {
         this.refundedAt = refundedAt;
+    }
+
+    public LocalDateTime getClosedAt() {
+        return closedAt;
+    }
+
+    public void setClosedAt(LocalDateTime closedAt) {
+        this.closedAt = closedAt;
     }
 }

@@ -233,7 +233,7 @@ async function createOrder(trainId, inventoryId) {
         passengerIdCard,
       }),
     });
-    showToast("购票成功，已完成余票扣减和风控校验");
+    showToast("订单已创建，库存已锁定，请在 15 分钟内支付");
     await refreshAll();
   } catch (error) {
     showToast(error.message || "购票失败");
@@ -266,15 +266,56 @@ function renderOrders(orders) {
         <td>${order.passengerName}</td>
         <td>${order.travelDate}</td>
         <td>¥${order.amount}</td>
-        <td><span class="status ${order.status === "REFUNDED" ? "refunded" : ""}">${statusText(order.status)}</span></td>
-        <td>${order.status === "PAID" ? `<button class="danger-button" type="button" data-refund="${order.id}">退票</button>` : "-"}</td>
+        <td><span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span></td>
+        <td>${renderOrderActions(order)}</td>
       </tr>
     `)
     .join("");
 
+  document.querySelectorAll("[data-pay]").forEach(button => {
+    button.addEventListener("click", () => payOrder(button.dataset.pay));
+  });
+  document.querySelectorAll("[data-close-order]").forEach(button => {
+    button.addEventListener("click", () => closeOrder(button.dataset.closeOrder));
+  });
   document.querySelectorAll("[data-refund]").forEach(button => {
     button.addEventListener("click", () => refundOrder(button.dataset.refund));
   });
+}
+
+function renderOrderActions(order) {
+  if (order.status === "PENDING_PAYMENT") {
+    return `
+      <div class="inline-actions">
+        <button class="secondary-button compact-button" type="button" data-pay="${order.id}">支付</button>
+        <button class="danger-button compact-button" type="button" data-close-order="${order.id}">关闭</button>
+      </div>
+    `;
+  }
+  if (order.status === "PAID") {
+    return `<button class="danger-button" type="button" data-refund="${order.id}">退票</button>`;
+  }
+  return "-";
+}
+
+async function payOrder(orderId) {
+  try {
+    const order = await request(`/orders/${orderId}/pay`, { method: "POST" });
+    showToast(order.status === "PAID" ? "支付成功，已触发风控校验" : "订单已超时关闭，库存已释放");
+    await refreshAll();
+  } catch (error) {
+    showToast(error.message || "支付失败");
+  }
+}
+
+async function closeOrder(orderId) {
+  try {
+    await request(`/orders/${orderId}/close`, { method: "POST" });
+    showToast("订单已关闭，库存已释放");
+    await refreshAll();
+  } catch (error) {
+    showToast(error.message || "关闭订单失败");
+  }
 }
 
 async function refundOrder(orderId) {
@@ -398,11 +439,23 @@ function seatTypeText(value) {
 
 function statusText(value) {
   const map = {
+    PENDING_PAYMENT: "待支付",
     PAID: "已支付",
     REFUNDED: "已退票",
+    CLOSED: "已关闭",
     CANCELLED: "已取消",
   };
   return map[value] || value;
+}
+
+function orderStatusClass(value) {
+  const map = {
+    PENDING_PAYMENT: "pending",
+    REFUNDED: "refunded",
+    CLOSED: "closed",
+    CANCELLED: "closed",
+  };
+  return map[value] || "";
 }
 
 function riskTypeText(value) {

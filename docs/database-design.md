@@ -52,7 +52,7 @@
 | --- | --- | --- |
 | id | bigint | 主键 |
 | order_no | varchar | 订单号 |
-| request_id | varchar | 幂等请求号，同一用户内唯一 |
+| request_id | varchar | 幂等请求号，与 user_id 组成唯一约束 |
 | passenger_name | varchar | 乘客姓名 |
 | passenger_id_card | varchar | 证件号 |
 | user_id | bigint | 用户 ID |
@@ -61,9 +61,22 @@
 | travel_date | date | 乘车日期 |
 | seat_type | varchar | 座位类型 |
 | amount | decimal | 金额 |
-| status | varchar | 订单状态 |
+| status | varchar | 订单状态：PENDING_PAYMENT、PAID、REFUNDED、CLOSED、CANCELLED |
 | created_at | timestamp | 创建时间 |
+| payment_deadline_at | timestamp | 支付截止时间 |
+| paid_at | timestamp | 支付时间 |
 | refunded_at | timestamp | 退票时间 |
+| closed_at | timestamp | 关闭时间 |
+
+订单状态说明：
+
+| 状态 | 说明 | 库存影响 |
+| --- | --- | --- |
+| PENDING_PAYMENT | 待支付，订单已创建并锁定 1 张余票 | 已扣减库存 |
+| PAID | 已支付，订单生效并参与风控统计 | 继续占用库存 |
+| REFUNDED | 已退票 | 释放库存 |
+| CLOSED | 待支付订单关闭或超时关闭 | 释放库存 |
+| CANCELLED | 预留状态，供后续取消订单扩展 | 视业务规则处理 |
 
 ## risk_events
 

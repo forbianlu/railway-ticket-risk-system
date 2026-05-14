@@ -26,16 +26,16 @@
   <text x="84" y="211" class="muted small">出发站 / 到达站</text>
 
   <rect x="254" y="150" width="140" height="86" rx="14" class="primary"/>
-  <text x="290" y="184" class="ink label">创建订单</text>
-  <text x="286" y="211" class="muted small">校验库存</text>
+  <text x="282" y="184" class="ink label">创建待支付</text>
+  <text x="286" y="211" class="muted small">校验幂等与库存</text>
 
   <rect x="450" y="150" width="140" height="86" rx="14" class="primary"/>
-  <text x="486" y="184" class="ink label">扣减余票</text>
-  <text x="486" y="211" class="muted small">事务提交</text>
+  <text x="486" y="184" class="ink label">锁定余票</text>
+  <text x="486" y="211" class="muted small">待支付占票</text>
 
   <rect x="646" y="150" width="140" height="86" rx="14" class="risk"/>
-  <text x="682" y="184" class="ink label">风控校验</text>
-  <text x="672" y="211" class="muted small">命中规则生成事件</text>
+  <text x="674" y="184" class="ink label">支付风控</text>
+  <text x="672" y="211" class="muted small">支付后触发规则</text>
 
   <rect x="842" y="150" width="140" height="86" rx="14" class="step"/>
   <text x="878" y="184" class="ink label">运营看板</text>

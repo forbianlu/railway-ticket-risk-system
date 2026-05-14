@@ -19,7 +19,10 @@ public class OrderResponse {
     private BigDecimal amount;
     private String status;
     private LocalDateTime createdAt;
+    private LocalDateTime paymentDeadlineAt;
+    private LocalDateTime paidAt;
     private LocalDateTime refundedAt;
+    private LocalDateTime closedAt;
 
     public static OrderResponse from(TicketOrder order) {
         OrderResponse response = new OrderResponse();
@@ -34,7 +37,10 @@ public class OrderResponse {
         response.setAmount(order.getAmount());
         response.setStatus(order.getStatus().name());
         response.setCreatedAt(order.getCreatedAt());
+        response.setPaymentDeadlineAt(order.getPaymentDeadlineAt());
+        response.setPaidAt(order.getPaidAt());
         response.setRefundedAt(order.getRefundedAt());
+        response.setClosedAt(order.getClosedAt());
         return response;
     }
 
@@ -126,11 +132,35 @@ public class OrderResponse {
         this.createdAt = createdAt;
     }
 
+    public LocalDateTime getPaymentDeadlineAt() {
+        return paymentDeadlineAt;
+    }
+
+    public void setPaymentDeadlineAt(LocalDateTime paymentDeadlineAt) {
+        this.paymentDeadlineAt = paymentDeadlineAt;
+    }
+
+    public LocalDateTime getPaidAt() {
+        return paidAt;
+    }
+
+    public void setPaidAt(LocalDateTime paidAt) {
+        this.paidAt = paidAt;
+    }
+
     public LocalDateTime getRefundedAt() {
         return refundedAt;
     }
 
     public void setRefundedAt(LocalDateTime refundedAt) {
         this.refundedAt = refundedAt;
+    }
+
+    public LocalDateTime getClosedAt() {
+        return closedAt;
+    }
+
+    public void setClosedAt(LocalDateTime closedAt) {
+        this.closedAt = closedAt;
     }
 }

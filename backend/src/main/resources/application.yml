@@ -32,6 +32,8 @@ auth:
     secret: railway-ticket-risk-demo-secret
 
 railway:
+  order:
+    close-expired-delay-ms: 60000
   cache:
     train-search:
       enabled: true

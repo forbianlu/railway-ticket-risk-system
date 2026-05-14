@@ -1,0 +1,100 @@
+<svg width="1120" height="520" viewBox="0 0 1120 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .page { fill: #F6F8FB; }
+      .panel { fill: #FFFFFF; stroke: #D9E2EC; stroke-width: 1.2; }
+      .start { fill: #EEF4FF; stroke: #C7D7FE; stroke-width: 1.4; }
+      .pending { fill: #FFF8E6; stroke: #F1D38A; stroke-width: 1.4; }
+      .paid { fill: #E9F6F0; stroke: #B5D9C8; stroke-width: 1.4; }
+      .closed { fill: #F2F4F7; stroke: #D0D5DD; stroke-width: 1.4; }
+      .refund { fill: #FDF2F2; stroke: #F8C7C7; stroke-width: 1.4; }
+      .ink { fill: #172033; font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif; }
+      .muted { fill: #667085; font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif; }
+      .title { font-size: 26px; font-weight: 700; }
+      .label { font-size: 18px; font-weight: 700; }
+      .small { font-size: 13px; }
+      .path { stroke: #116149; stroke-width: 2.4; fill: none; }
+      .path-gray { stroke: #667085; stroke-width: 2.2; fill: none; }
+      .path-red { stroke: #B42318; stroke-width: 2.2; fill: none; }
+      .chip { fill: #F0F3F7; }
+    </style>
+    <marker id="arrow-green" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2L10 6L2 10" fill="none" stroke="#116149" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrow-gray" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2L10 6L2 10" fill="none" stroke="#667085" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2 2L10 6L2 10" fill="none" stroke="#B42318" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <filter id="shadow" x="-12%" y="-18%" width="124%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#172033" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect class="page" width="1120" height="520" rx="28"/>
+  <rect class="panel" x="34" y="30" width="1052" height="460" rx="22"/>
+
+  <text x="70" y="78" class="ink title">订单支付状态流转</text>
+  <text x="70" y="109" class="muted small">创建订单先锁定库存，支付成功后订单生效；未支付订单关闭或超时后释放库存。</text>
+
+  <g filter="url(#shadow)">
+    <rect x="70" y="205" width="190" height="108" rx="14" class="start"/>
+    <circle cx="108" cy="239" r="16" fill="#3B82F6"/>
+    <path d="M101 239h14M108 232v14" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+    <text x="98" y="274" class="ink label">CREATE_ORDER</text>
+    <text x="98" y="298" class="muted small">校验幂等号 / 锁定库存</text>
+  </g>
+
+  <path d="M270 259H342" class="path" marker-end="url(#arrow-green)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="354" y="205" width="210" height="108" rx="14" class="pending"/>
+    <rect x="392" y="230" width="42" height="32" rx="8" fill="#F2C94C"/>
+    <path d="M404 246h18M413 237v18" stroke="#183B56" stroke-width="2" stroke-linecap="round"/>
+    <text x="392" y="274" class="ink label">PENDING_PAYMENT</text>
+    <text x="392" y="298" class="muted small">待支付，库存已锁定</text>
+  </g>
+
+  <path d="M564 233C640 164 700 153 784 160" class="path" marker-end="url(#arrow-green)"/>
+  <text x="625" y="170" class="muted small">pay / trigger risk</text>
+
+  <g filter="url(#shadow)">
+    <rect x="798" y="112" width="210" height="108" rx="14" class="paid"/>
+    <circle cx="836" cy="146" r="16" fill="#116149"/>
+    <path d="M828 146l6 6l13-15" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="862" y="151" class="ink label">PAID</text>
+    <text x="862" y="176" class="muted small">已支付，进入风控统计</text>
+  </g>
+
+  <path d="M564 285C641 354 702 366 786 361" class="path-gray" marker-end="url(#arrow-gray)"/>
+  <text x="603" y="357" class="muted small">close expired / release inventory</text>
+
+  <g filter="url(#shadow)">
+    <rect x="798" y="298" width="210" height="108" rx="14" class="closed"/>
+    <circle cx="836" cy="332" r="16" fill="#667085"/>
+    <path d="M829 325l14 14M843 325l-14 14" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round"/>
+    <text x="862" y="337" class="ink label">CLOSED</text>
+    <text x="862" y="362" class="muted small">已关闭，库存已释放</text>
+  </g>
+
+  <path d="M1008 166H1054V352H1016" class="path-red" marker-end="url(#arrow-red)"/>
+  <text x="1019" y="255" class="muted small" transform="rotate(90 1019 255)">refund / release inventory</text>
+
+  <g filter="url(#shadow)">
+    <rect x="798" y="406" width="210" height="54" rx="14" class="refund"/>
+    <text x="828" y="438" class="ink label">REFUNDED</text>
+    <text x="930" y="438" class="muted small">终态</text>
+  </g>
+
+  <path d="M903 220V394" class="path-red" marker-end="url(#arrow-red)"/>
+  <text x="917" y="269" class="muted small">refund</text>
+
+  <rect x="70" y="406" width="670" height="54" rx="14" class="chip"/>
+  <circle cx="100" cy="433" r="5" fill="#F2C94C"/>
+  <text x="116" y="438" class="muted small">PENDING_PAYMENT 只能支付或关闭</text>
+  <circle cx="342" cy="433" r="5" fill="#116149"/>
+  <text x="358" y="438" class="muted small">PAID 才能退票</text>
+  <circle cx="512" cy="433" r="5" fill="#667085"/>
+  <text x="528" y="438" class="muted small">CLOSED / REFUNDED 为终态</text>
+</svg>

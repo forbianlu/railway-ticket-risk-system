@@ -31,8 +31,9 @@ public class RapidPurchaseRiskRule implements RiskRule {
     @Override
     public Optional<RiskHit> evaluate(RiskContext context) {
         TicketOrder order = context.getOrder();
-        long recentOrders = ticketOrderRepository.countByUserIdAndCreatedAtAfter(
+        long recentOrders = ticketOrderRepository.countByUserIdAndStatusAndPaidAtAfter(
                 order.getUserId(),
+                com.example.railway.domain.OrderStatus.PAID,
                 context.getEvaluatedAt().minusMinutes(10)
         );
         if (recentOrders < RAPID_PURCHASE_LIMIT) {

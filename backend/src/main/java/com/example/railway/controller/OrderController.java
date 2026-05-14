@@ -36,6 +36,21 @@ public class OrderController {
         return orderService.refund(orderId);
     }
 
+    @PostMapping("/{id}/pay")
+    public OrderResponse pay(@PathVariable("id") Long orderId) {
+        return orderService.pay(orderId);
+    }
+
+    @PostMapping("/{id}/close")
+    public OrderResponse close(@PathVariable("id") Long orderId) {
+        return orderService.closeUnpaidOrder(orderId);
+    }
+
+    @PostMapping("/close-expired")
+    public List<OrderResponse> closeExpiredOrders() {
+        return orderService.closeExpiredOrders();
+    }
+
     @GetMapping
     public List<OrderResponse> listOrders(@RequestParam(value = "userId", required = false) Long userId) {
         return orderService.listOrders(userId);

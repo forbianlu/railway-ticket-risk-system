@@ -24,6 +24,8 @@ import com.example.railway.repository.TicketOrderRepository;
 @Service
 public class OrderService {
 
+    private static final long PAYMENT_TIMEOUT_MINUTES = 15;
+
     private final TicketOrderRepository ticketOrderRepository;
     private final SeatInventoryRepository seatInventoryRepository;
     private final RiskService riskService;
@@ -74,8 +76,10 @@ public class OrderService {
         order.setTravelDate(inventory.getTravelDate());
         order.setSeatType(inventory.getSeatType());
         order.setAmount(inventory.getPrice());
-        order.setStatus(OrderStatus.PAID);
-        order.setCreatedAt(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        order.setStatus(OrderStatus.PENDING_PAYMENT);
+        order.setCreatedAt(now);
+        order.setPaymentDeadlineAt(now.plusMinutes(PAYMENT_TIMEOUT_MINUTES));
 
         TicketOrder saved = ticketOrderRepository.save(order);
         evictTrainSearchCacheAfterCommit(inventory);
@@ -84,7 +88,38 @@ public class OrderService {
                 "CREATE_ORDER",
                 "ORDER",
                 String.valueOf(saved.getId()),
-                "创建购票订单 " + saved.getOrderNo()
+                "创建待支付订单 " + saved.getOrderNo() + "，库存已锁定"
+        );
+        return OrderResponse.from(saved);
+    }
+
+    @Transactional
+    public OrderResponse pay(Long orderId) {
+        TicketOrder order = ticketOrderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException("订单不存在"));
+
+        if (OrderStatus.PAID.equals(order.getStatus())) {
+            return OrderResponse.from(order);
+        }
+        if (!OrderStatus.PENDING_PAYMENT.equals(order.getStatus())) {
+            throw new BusinessException("当前订单状态不允许支付");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (order.getPaymentDeadlineAt() != null && order.getPaymentDeadlineAt().isBefore(now)) {
+            return OrderResponse.from(closePendingOrder(order, now, "订单支付超时关闭"));
+        }
+
+        order.setStatus(OrderStatus.PAID);
+        order.setPaidAt(now);
+        TicketOrder saved = ticketOrderRepository.save(order);
+        evictTrainSearchCacheAfterCommit(order.getInventory());
+        operationLogService.record(
+                "USER-" + order.getUserId(),
+                "PAY_ORDER",
+                "ORDER",
+                String.valueOf(saved.getId()),
+                "订单 " + saved.getOrderNo() + " 已支付"
         );
         riskService.evaluateAfterOrderCreated(saved);
         return OrderResponse.from(saved);
@@ -119,6 +154,33 @@ public class OrderService {
         return OrderResponse.from(saved);
     }
 
+    @Transactional
+    public OrderResponse closeUnpaidOrder(Long orderId) {
+        TicketOrder order = ticketOrderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException("订单不存在"));
+        if (OrderStatus.CLOSED.equals(order.getStatus())) {
+            throw new BusinessException("订单已关闭，不能重复关闭");
+        }
+        if (!OrderStatus.PENDING_PAYMENT.equals(order.getStatus())) {
+            throw new BusinessException("当前订单状态不允许关闭");
+        }
+        return OrderResponse.from(closePendingOrder(order, LocalDateTime.now(), "关闭待支付订单并释放库存"));
+    }
+
+    @Transactional
+    public List<OrderResponse> closeExpiredOrders() {
+        List<TicketOrder> orders = ticketOrderRepository.findByStatusAndPaymentDeadlineAtBefore(
+                OrderStatus.PENDING_PAYMENT,
+                LocalDateTime.now()
+        );
+        List<OrderResponse> responses = new ArrayList<OrderResponse>();
+        LocalDateTime now = LocalDateTime.now();
+        for (TicketOrder order : orders) {
+            responses.add(OrderResponse.from(closePendingOrder(order, now, "订单支付超时关闭")));
+        }
+        return responses;
+    }
+
     @Transactional(readOnly = true)
     public List<OrderResponse> listOrders(Long userId) {
         List<TicketOrder> orders;
@@ -147,6 +209,23 @@ public class OrderService {
         }
         String normalized = requestId.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private TicketOrder closePendingOrder(TicketOrder order, LocalDateTime now, String reason) {
+        order.setStatus(OrderStatus.CLOSED);
+        order.setClosedAt(now);
+        order.getInventory().releaseOne();
+        TicketOrder saved = ticketOrderRepository.save(order);
+        seatInventoryRepository.save(order.getInventory());
+        evictTrainSearchCacheAfterCommit(order.getInventory());
+        operationLogService.record(
+                "SYSTEM",
+                "CLOSE_ORDER",
+                "ORDER",
+                String.valueOf(saved.getId()),
+                reason + " " + saved.getOrderNo()
+        );
+        return saved;
     }
 
     private void evictTrainSearchCacheAfterCommit(SeatInventory inventory) {

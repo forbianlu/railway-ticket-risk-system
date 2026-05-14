@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +27,7 @@ import org.springframework.http.ResponseEntity;
 
 import com.example.railway.domain.SeatInventory;
 import com.example.railway.domain.Station;
+import com.example.railway.domain.TicketOrder;
 import com.example.railway.domain.Train;
 import com.example.railway.dto.AuthResponse;
 import com.example.railway.dto.CreateOrderRequest;
@@ -77,9 +79,15 @@ class RailwayApiIntegrationTests {
         long userId = 3101L;
 
         OrderResponse created = createOrder(userId, train, "ApiOrderUser");
+        TrainSearchResponse afterCreate = findInventory(train.getInventoryId());
+        OrderResponse paid = payOrder(created.getId());
         OrderResponse[] orders = restTemplate.getForObject("/api/orders?userId={userId}", OrderResponse[].class, userId);
 
-        assertThat(created.getStatus()).isEqualTo("PAID");
+        assertThat(created.getStatus()).isEqualTo("PENDING_PAYMENT");
+        assertThat(created.getPaymentDeadlineAt()).isNotNull();
+        assertThat(afterCreate.getRemainingSeats()).isEqualTo(train.getRemainingSeats() - 1);
+        assertThat(paid.getStatus()).isEqualTo("PAID");
+        assertThat(paid.getPaidAt()).isNotNull();
         assertThat(orders).isNotNull();
         assertThat(Arrays.asList(orders))
                 .extracting(OrderResponse::getOrderNo)
@@ -99,6 +107,8 @@ class RailwayApiIntegrationTests {
 
         assertThat(second.getId()).isEqualTo(first.getId());
         assertThat(second.getOrderNo()).isEqualTo(first.getOrderNo());
+        assertThat(first.getStatus()).isEqualTo("PENDING_PAYMENT");
+        assertThat(second.getStatus()).isEqualTo("PENDING_PAYMENT");
         assertThat(second.getRequestId()).isEqualTo(requestId);
         assertThat(after.getRemainingSeats()).isEqualTo(before.getRemainingSeats() - 1);
         assertThat(ticketOrderRepository.countByInventory_Id(before.getInventoryId())).isEqualTo(orderCountBefore + 1);
@@ -109,7 +119,7 @@ class RailwayApiIntegrationTests {
         TrainSearchResponse before = firstTrainInventory();
         long userId = 3102L;
 
-        OrderResponse created = createOrder(userId, before, "RefundUser");
+        OrderResponse created = createPaidOrder(userId, before, "RefundUser");
         TrainSearchResponse afterCreate = findInventory(before.getInventoryId());
 
         OrderResponse refunded = restTemplate.postForObject(
@@ -126,13 +136,93 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldRejectInvalidOrderStateTransitions() {
+        TrainSearchResponse closeBefore = firstTrainInventory();
+        OrderResponse pendingToClose = createOrder(3109L, closeBefore, "ClosePendingUser");
+        OrderResponse closed = closeOrder(pendingToClose.getId());
+        TrainSearchResponse afterClose = findInventory(closeBefore.getInventoryId());
+
+        assertThat(closed.getStatus()).isEqualTo("CLOSED");
+        assertThat(closed.getClosedAt()).isNotNull();
+        assertThat(afterClose.getRemainingSeats()).isEqualTo(closeBefore.getRemainingSeats());
+        assertThat(payOrderRaw(closed.getId()).getStatusCodeValue()).isEqualTo(400);
+        assertThat(closeOrderRaw(closed.getId()).getStatusCodeValue()).isEqualTo(400);
+
+        TrainSearchResponse paidBefore = firstTrainInventory();
+        OrderResponse paid = createPaidOrder(3110L, paidBefore, "PaidCannotCloseUser");
+        assertThat(closeOrderRaw(paid.getId()).getStatusCodeValue()).isEqualTo(400);
+
+        TrainSearchResponse refundBefore = firstTrainInventory();
+        OrderResponse pendingToRefund = createOrder(3111L, refundBefore, "PendingCannotRefundUser");
+        assertThat(refundOrderRaw(pendingToRefund.getId()).getStatusCodeValue()).isEqualTo(400);
+    }
+
+    @Test
+    void shouldKeepPaymentIdempotentWithoutDuplicateRiskEvents() {
+        TrainSearchResponse train = firstTrainInventory();
+        long userId = 3112L;
+
+        createPaidOrder(userId, train, "PaymentRiskA");
+        createPaidOrder(userId, train, "PaymentRiskB");
+        OrderResponse thirdPaid = createPaidOrder(userId, train, "PaymentRiskC");
+        long riskCountAfterPay = countRisksForUser(userId);
+
+        OrderResponse duplicatePay = payOrder(thirdPaid.getId());
+        long riskCountAfterDuplicatePay = countRisksForUser(userId);
+
+        assertThat(thirdPaid.getStatus()).isEqualTo("PAID");
+        assertThat(duplicatePay.getStatus()).isEqualTo("PAID");
+        assertThat(duplicatePay.getId()).isEqualTo(thirdPaid.getId());
+        assertThat(riskCountAfterPay).isGreaterThan(0);
+        assertThat(riskCountAfterDuplicatePay).isEqualTo(riskCountAfterPay);
+    }
+
+    @Test
+    void shouldRejectDuplicateRefund() {
+        TrainSearchResponse before = firstTrainInventory();
+        OrderResponse paid = createPaidOrder(3113L, before, "DuplicateRefundUser");
+
+        OrderResponse refunded = refundOrder(paid.getId());
+        ResponseEntity<String> duplicateRefund = refundOrderRaw(paid.getId());
+
+        assertThat(refunded.getStatus()).isEqualTo("REFUNDED");
+        assertThat(duplicateRefund.getStatusCodeValue()).isEqualTo(400);
+    }
+
+    @Test
+    void shouldCloseExpiredPendingOrderAndReleaseInventory() {
+        TrainSearchResponse before = firstTrainInventory();
+        OrderResponse created = createOrder(3108L, before, "ExpiredPaymentUser");
+        OrderResponse active = createOrder(3114L, before, "ActivePaymentUser");
+        TicketOrder order = ticketOrderRepository.findById(created.getId())
+                .orElseThrow(() -> new AssertionError("expected order"));
+        order.setPaymentDeadlineAt(LocalDateTime.now().minusMinutes(1));
+        ticketOrderRepository.save(order);
+
+        OrderResponse[] closedOrders = restTemplate.postForObject("/api/orders/close-expired", null, OrderResponse[].class);
+        TrainSearchResponse afterClose = findInventory(before.getInventoryId());
+
+        assertThat(closedOrders).isNotNull();
+        assertThat(Arrays.asList(closedOrders))
+                .extracting(OrderResponse::getId)
+                .contains(created.getId());
+        assertThat(Arrays.asList(closedOrders))
+                .extracting(OrderResponse::getId)
+                .doesNotContain(active.getId());
+        TicketOrder activeOrder = ticketOrderRepository.findById(active.getId())
+                .orElseThrow(() -> new AssertionError("expected active order"));
+        assertThat(activeOrder.getStatus().name()).isEqualTo("PENDING_PAYMENT");
+        assertThat(afterClose.getRemainingSeats()).isEqualTo(before.getRemainingSeats() - 1);
+    }
+
+    @Test
     void shouldGenerateAndHandleRiskEvents() {
         TrainSearchResponse train = firstTrainInventory();
         long userId = 3103L;
 
-        createOrder(userId, train, "RiskUserA");
-        createOrder(userId, train, "RiskUserB");
-        createOrder(userId, train, "RiskUserC");
+        createPaidOrder(userId, train, "RiskUserA");
+        createPaidOrder(userId, train, "RiskUserB");
+        createPaidOrder(userId, train, "RiskUserC");
 
         List<RiskEventResponse> risks = Arrays.asList(restTemplate.getForObject("/api/risks", RiskEventResponse[].class));
         RiskEventResponse unhandledRisk = risks.stream()
@@ -153,8 +243,8 @@ class RailwayApiIntegrationTests {
     void shouldProtectRiskHandlingWithRole() {
         TrainSearchResponse train = firstTrainInventory();
         long userId = 3105L;
-        createOrder(userId, train, "ProtectedRiskA");
-        createOrder(userId, train, "ProtectedRiskB");
+        createPaidOrder(userId, train, "ProtectedRiskA");
+        createPaidOrder(userId, train, "ProtectedRiskB");
 
         RiskEventResponse risk = Arrays.stream(restTemplate.getForObject("/api/risks", RiskEventResponse[].class))
                 .filter(item -> Long.valueOf(userId).equals(item.getUserId()))
@@ -188,11 +278,33 @@ class RailwayApiIntegrationTests {
         assertThat(afterSecondSearch.getEntryCount()).isGreaterThan(0);
         assertThat(afterSecondSearch.getHitCount()).isGreaterThan(0);
 
-        createOrder(3106L, secondSearch.get(0), "CacheEvictUser");
+        OrderResponse created = createOrder(3106L, secondSearch.get(0), "CacheEvictUser");
         TrainSearchCacheStats afterOrder = trainSearchCacheStats(admin);
 
         assertThat(afterOrder.getEntryCount()).isEqualTo(0);
         assertThat(afterOrder.getEvictCount()).isGreaterThan(0);
+
+        searchToday();
+        searchToday();
+        assertThat(trainSearchCacheStats(admin).getEntryCount()).isGreaterThan(0);
+        OrderResponse paid = payOrder(created.getId());
+        assertThat(paid.getStatus()).isEqualTo("PAID");
+        assertThat(trainSearchCacheStats(admin).getEntryCount()).isEqualTo(0);
+
+        searchToday();
+        searchToday();
+        assertThat(trainSearchCacheStats(admin).getEntryCount()).isGreaterThan(0);
+        OrderResponse refunded = refundOrder(paid.getId());
+        assertThat(refunded.getStatus()).isEqualTo("REFUNDED");
+        assertThat(trainSearchCacheStats(admin).getEntryCount()).isEqualTo(0);
+
+        OrderResponse pending = createOrder(3115L, firstTrainInventory(), "CacheCloseUser");
+        searchToday();
+        searchToday();
+        assertThat(trainSearchCacheStats(admin).getEntryCount()).isGreaterThan(0);
+        OrderResponse closed = closeOrder(pending.getId());
+        assertThat(closed.getStatus()).isEqualTo("CLOSED");
+        assertThat(trainSearchCacheStats(admin).getEntryCount()).isEqualTo(0);
     }
 
     @Test
@@ -250,7 +362,7 @@ class RailwayApiIntegrationTests {
     @Test
     void dashboardShouldExposeOrderAndRiskMetrics() {
         TrainSearchResponse train = firstTrainInventory();
-        createOrder(3104L, train, "DashboardUser");
+        createPaidOrder(3104L, train, "DashboardUser");
 
         DashboardSummary summary = restTemplate.getForObject("/api/dashboard/summary", DashboardSummary.class);
 
@@ -263,6 +375,10 @@ class RailwayApiIntegrationTests {
         return createOrder(userId, train, passengerName, "test-" + userId + "-" + System.nanoTime());
     }
 
+    private OrderResponse createPaidOrder(long userId, TrainSearchResponse train, String passengerName) {
+        return payOrder(createOrder(userId, train, passengerName).getId());
+    }
+
     private OrderResponse createOrder(long userId, TrainSearchResponse train, String passengerName, String requestId) {
         CreateOrderRequest request = new CreateOrderRequest();
         request.setUserId(userId);
@@ -272,6 +388,38 @@ class RailwayApiIntegrationTests {
         request.setPassengerName(passengerName);
         request.setPassengerIdCard("11010120000101" + userId);
         return restTemplate.postForObject("/api/orders", request, OrderResponse.class);
+    }
+
+    private OrderResponse payOrder(Long orderId) {
+        return restTemplate.postForObject("/api/orders/{id}/pay", null, OrderResponse.class, orderId);
+    }
+
+    private ResponseEntity<String> payOrderRaw(Long orderId) {
+        return restTemplate.postForEntity("/api/orders/{id}/pay", null, String.class, orderId);
+    }
+
+    private OrderResponse closeOrder(Long orderId) {
+        return restTemplate.postForObject("/api/orders/{id}/close", null, OrderResponse.class, orderId);
+    }
+
+    private ResponseEntity<String> closeOrderRaw(Long orderId) {
+        return restTemplate.postForEntity("/api/orders/{id}/close", null, String.class, orderId);
+    }
+
+    private OrderResponse refundOrder(Long orderId) {
+        return restTemplate.postForObject("/api/orders/{id}/refund", null, OrderResponse.class, orderId);
+    }
+
+    private ResponseEntity<String> refundOrderRaw(Long orderId) {
+        return restTemplate.postForEntity("/api/orders/{id}/refund", null, String.class, orderId);
+    }
+
+    private long countRisksForUser(long userId) {
+        RiskEventResponse[] risks = restTemplate.getForObject("/api/risks", RiskEventResponse[].class);
+        assertThat(risks).isNotNull();
+        return Arrays.stream(risks)
+                .filter(risk -> Long.valueOf(userId).equals(risk.getUserId()))
+                .count();
     }
 
     private ResponseEntity<String> createOrderRaw(long userId, Long trainId, Long inventoryId, String passengerName) {
