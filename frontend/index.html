@@ -57,12 +57,28 @@
             <strong id="metric-total-orders">0</strong>
           </div>
           <div class="metric">
-            <span>有效订单</span>
+            <span>待支付</span>
+            <strong id="metric-pending-orders">0</strong>
+          </div>
+          <div class="metric">
+            <span>已支付</span>
             <strong id="metric-paid-orders">0</strong>
+          </div>
+          <div class="metric">
+            <span>已关闭</span>
+            <strong id="metric-closed-orders">0</strong>
           </div>
           <div class="metric">
             <span>退票订单</span>
             <strong id="metric-refunded-orders">0</strong>
+          </div>
+          <div class="metric">
+            <span>退票率</span>
+            <strong id="metric-refund-rate">0%</strong>
+          </div>
+          <div class="metric">
+            <span>风险率</span>
+            <strong id="metric-risk-rate">0%</strong>
           </div>
           <div class="metric alert">
             <span>未处理风险</span>
@@ -112,14 +128,38 @@
       <section id="orders" class="section">
         <div class="section-title">
           <h2>订单管理</h2>
-          <p>展示最近订单，支持退票以验证库存释放和风控规则</p>
+          <p>支持按用户、状态、订单号和创建日期筛选，分页查看订单状态流转</p>
         </div>
-        <div class="toolbar compact">
+        <div class="toolbar orders-toolbar">
           <label>
             用户 ID
             <input id="order-user-id" type="number" value="1001" min="1">
           </label>
+          <label>
+            订单状态
+            <select id="order-status">
+              <option value="">全部状态</option>
+              <option value="PENDING_PAYMENT">待支付</option>
+              <option value="PAID">已支付</option>
+              <option value="CLOSED">已关闭</option>
+              <option value="REFUNDED">已退票</option>
+              <option value="CANCELLED">已取消</option>
+            </select>
+          </label>
+          <label>
+            订单号
+            <input id="order-no" type="text" placeholder="支持模糊查询">
+          </label>
+          <label>
+            起始日期
+            <input id="order-from-date" type="date">
+          </label>
+          <label>
+            结束日期
+            <input id="order-to-date" type="date">
+          </label>
           <button id="load-orders" class="secondary-button" type="button">查看订单</button>
+          <button id="reset-orders" class="ghost-button" type="button">重置</button>
         </div>
         <div class="table-wrap">
           <table>
@@ -137,6 +177,13 @@
             </thead>
             <tbody id="order-results"></tbody>
           </table>
+        </div>
+        <div class="pagination">
+          <span id="order-page-info">第 1 / 1 页，共 0 条</span>
+          <div class="inline-actions">
+            <button id="prev-orders" class="secondary-button compact-button" type="button">上一页</button>
+            <button id="next-orders" class="secondary-button compact-button" type="button">下一页</button>
+          </div>
         </div>
       </section>
 

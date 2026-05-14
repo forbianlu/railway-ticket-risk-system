@@ -7,6 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import javax.persistence.criteria.Predicate;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -17,6 +23,7 @@ import com.example.railway.domain.OrderStatus;
 import com.example.railway.domain.SeatInventory;
 import com.example.railway.domain.TicketOrder;
 import com.example.railway.dto.CreateOrderRequest;
+import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
 import com.example.railway.repository.SeatInventoryRepository;
 import com.example.railway.repository.TicketOrderRepository;
@@ -25,6 +32,9 @@ import com.example.railway.repository.TicketOrderRepository;
 public class OrderService {
 
     private static final long PAYMENT_TIMEOUT_MINUTES = 15;
+    private static final int DEFAULT_PAGE = 0;
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final TicketOrderRepository ticketOrderRepository;
     private final SeatInventoryRepository seatInventoryRepository;
@@ -182,19 +192,34 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<OrderResponse> listOrders(Long userId) {
-        List<TicketOrder> orders;
-        if (userId == null) {
-            orders = ticketOrderRepository.findTop20ByOrderByCreatedAtDesc();
-        } else {
-            orders = ticketOrderRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    public OrderPageResponse listOrders(Long userId,
+                                        String status,
+                                        LocalDate fromDate,
+                                        LocalDate toDate,
+                                        String orderNo,
+                                        Integer page,
+                                        Integer size) {
+        final OrderStatus orderStatus = parseOrderStatus(status);
+        final LocalDateTime startAt = fromDate == null ? null : fromDate.atStartOfDay();
+        final LocalDateTime endAt = toDate == null ? null : toDate.plusDays(1).atStartOfDay();
+        final String normalizedOrderNo = normalizeText(orderNo);
+
+        if (startAt != null && endAt != null && !startAt.isBefore(endAt)) {
+            throw new BusinessException("创建时间范围不合法");
         }
 
-        List<OrderResponse> responses = new ArrayList<OrderResponse>();
-        for (TicketOrder order : orders) {
-            responses.add(OrderResponse.from(order));
-        }
-        return responses;
+        int pageNumber = normalizePage(page);
+        int pageSize = normalizeSize(size);
+        PageRequest pageRequest = PageRequest.of(
+                pageNumber,
+                pageSize,
+                Sort.by(Sort.Direction.DESC, "createdAt", "id")
+        );
+        Page<TicketOrder> orderPage = ticketOrderRepository.findAll(
+                buildOrderSpecification(userId, orderStatus, startAt, endAt, normalizedOrderNo),
+                pageRequest
+        );
+        return OrderPageResponse.from(orderPage);
     }
 
     private String generateOrderNo() {
@@ -209,6 +234,75 @@ public class OrderService {
         }
         String normalized = requestId.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private OrderStatus parseOrderStatus(String status) {
+        String normalized = normalizeText(status);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return OrderStatus.valueOf(normalized.toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException("订单状态不合法: " + status);
+        }
+    }
+
+    private int normalizePage(Integer page) {
+        if (page == null) {
+            return DEFAULT_PAGE;
+        }
+        if (page < 0) {
+            throw new BusinessException("页码不能小于 0");
+        }
+        return page;
+    }
+
+    private int normalizeSize(Integer size) {
+        if (size == null) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        if (size <= 0) {
+            throw new BusinessException("每页大小必须大于 0");
+        }
+        return Math.min(size, MAX_PAGE_SIZE);
+    }
+
+    private Specification<TicketOrder> buildOrderSpecification(final Long userId,
+                                                              final OrderStatus status,
+                                                              final LocalDateTime startAt,
+                                                              final LocalDateTime endAt,
+                                                              final String orderNo) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<Predicate>();
+            if (userId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("userId"), userId));
+            }
+            if (status != null) {
+                predicates.add(criteriaBuilder.equal(root.get("status"), status));
+            }
+            if (startAt != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.<LocalDateTime>get("createdAt"), startAt));
+            }
+            if (endAt != null) {
+                predicates.add(criteriaBuilder.lessThan(root.<LocalDateTime>get("createdAt"), endAt));
+            }
+            if (orderNo != null) {
+                predicates.add(criteriaBuilder.like(
+                        criteriaBuilder.lower(root.<String>get("orderNo")),
+                        "%" + orderNo.toLowerCase() + "%"
+                ));
+            }
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
     private TicketOrder closePendingOrder(TicketOrder order, LocalDateTime now, String reason) {

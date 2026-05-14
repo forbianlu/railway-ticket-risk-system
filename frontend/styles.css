@@ -305,7 +305,8 @@ input {
 }
 
 .primary-button,
-.secondary-button {
+.secondary-button,
+.ghost-button {
   height: 40px;
   border: 0;
   border-radius: 6px;
@@ -327,6 +328,17 @@ input {
   background: #e3f4ed;
 }
 
+.ghost-button {
+  border: 1px solid var(--line);
+  color: var(--muted);
+  background: #ffffff;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .danger-button {
   height: 34px;
   border: 1px solid #f0c8c5;
@@ -341,6 +353,20 @@ input {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.orders-toolbar {
+  grid-template-columns: minmax(130px, 0.8fr) minmax(150px, 1fr) minmax(180px, 1.1fr) repeat(2, minmax(150px, 1fr)) auto auto;
+}
+
+.pagination {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .table-wrap {
@@ -521,8 +547,14 @@ body[data-capture="risks"] .section:not(#risks) {
 
   .metric-grid,
   .toolbar,
+  .orders-toolbar,
   .split {
     grid-template-columns: 1fr;
+  }
+
+  .pagination {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .section-heading {

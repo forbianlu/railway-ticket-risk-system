@@ -26,14 +26,35 @@ public class DashboardService {
 
     @Transactional(readOnly = true)
     public DashboardSummary summary() {
+        long totalOrderCount = ticketOrderRepository.count();
+        long pendingPaymentOrderCount = ticketOrderRepository.countByStatus(OrderStatus.PENDING_PAYMENT);
+        long paidOrderCount = ticketOrderRepository.countByStatus(OrderStatus.PAID);
+        long closedOrderCount = ticketOrderRepository.countByStatus(OrderStatus.CLOSED);
+        long refundedOrderCount = ticketOrderRepository.countByStatus(OrderStatus.REFUNDED);
+        long totalRiskEventCount = riskEventRepository.count();
+        long unhandledRiskCount = riskEventRepository.countByHandledFalse();
+        long effectiveOrderCount = paidOrderCount + refundedOrderCount;
+
         DashboardSummary summary = new DashboardSummary();
-        summary.setTotalOrders(ticketOrderRepository.count());
-        summary.setPaidOrders(ticketOrderRepository.countByStatus(OrderStatus.PAID));
-        summary.setRefundedOrders(ticketOrderRepository.countByStatus(OrderStatus.REFUNDED));
-        summary.setTotalRiskEvents(riskEventRepository.count());
-        summary.setOpenRiskEvents(riskEventRepository.countByHandledFalse());
+        summary.setTotalOrders(totalOrderCount);
+        summary.setPaidOrders(paidOrderCount);
+        summary.setRefundedOrders(refundedOrderCount);
+        summary.setTotalRiskEvents(totalRiskEventCount);
+        summary.setOpenRiskEvents(unhandledRiskCount);
+        summary.setTotalOrderCount(totalOrderCount);
+        summary.setPendingPaymentOrderCount(pendingPaymentOrderCount);
+        summary.setPaidOrderCount(paidOrderCount);
+        summary.setClosedOrderCount(closedOrderCount);
+        summary.setRefundedOrderCount(refundedOrderCount);
+        summary.setUnhandledRiskCount(unhandledRiskCount);
+        summary.setRefundRate(rate(refundedOrderCount, effectiveOrderCount));
+        summary.setRiskRate(rate(totalRiskEventCount, effectiveOrderCount));
         summary.setPopularTrains(popularTrains());
         return summary;
+    }
+
+    private double rate(long numerator, long denominator) {
+        return numerator * 1.0D / Math.max(1L, denominator);
     }
 
     private List<TrainOrderStat> popularTrains() {

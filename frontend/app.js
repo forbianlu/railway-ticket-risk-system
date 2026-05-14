@@ -3,14 +3,26 @@ const API_BASE = "http://localhost:8080/api";
 const state = {
   stations: [],
   auth: loadStoredAuth(),
+  orderPage: {
+    page: 0,
+    size: 10,
+    totalPages: 0,
+    totalElements: 0,
+    first: true,
+    last: true,
+  },
 };
 
 const elements = {
   apiStatus: document.querySelector("#api-status"),
   apiStatusText: document.querySelector("#api-status-text"),
   totalOrders: document.querySelector("#metric-total-orders"),
+  pendingOrders: document.querySelector("#metric-pending-orders"),
   paidOrders: document.querySelector("#metric-paid-orders"),
+  closedOrders: document.querySelector("#metric-closed-orders"),
   refundedOrders: document.querySelector("#metric-refunded-orders"),
+  refundRate: document.querySelector("#metric-refund-rate"),
+  riskRate: document.querySelector("#metric-risk-rate"),
   openRisks: document.querySelector("#metric-open-risks"),
   popularTrains: document.querySelector("#popular-trains"),
   fromStation: document.querySelector("#from-station"),
@@ -19,6 +31,13 @@ const elements = {
   trainResults: document.querySelector("#train-results"),
   orderResults: document.querySelector("#order-results"),
   orderUserId: document.querySelector("#order-user-id"),
+  orderStatus: document.querySelector("#order-status"),
+  orderNo: document.querySelector("#order-no"),
+  orderFromDate: document.querySelector("#order-from-date"),
+  orderToDate: document.querySelector("#order-to-date"),
+  orderPageInfo: document.querySelector("#order-page-info"),
+  prevOrders: document.querySelector("#prev-orders"),
+  nextOrders: document.querySelector("#next-orders"),
   riskList: document.querySelector("#risk-list"),
   logList: document.querySelector("#log-list"),
   authRole: document.querySelector("#auth-role"),
@@ -36,6 +55,9 @@ document.querySelector("#search-form").addEventListener("submit", event => {
   searchTrains();
 });
 document.querySelector("#load-orders").addEventListener("click", loadOrders);
+document.querySelector("#reset-orders").addEventListener("click", resetOrderFilters);
+elements.prevOrders.addEventListener("click", () => changeOrderPage(-1));
+elements.nextOrders.addEventListener("click", () => changeOrderPage(1));
 elements.loginForm.addEventListener("submit", event => {
   event.preventDefault();
   login();
@@ -144,10 +166,14 @@ async function refreshAll() {
 async function loadDashboard() {
   try {
     const summary = await request("/dashboard/summary");
-    elements.totalOrders.textContent = summary.totalOrders;
-    elements.paidOrders.textContent = summary.paidOrders;
-    elements.refundedOrders.textContent = summary.refundedOrders;
-    elements.openRisks.textContent = summary.openRiskEvents;
+    elements.totalOrders.textContent = summary.totalOrderCount ?? summary.totalOrders;
+    elements.pendingOrders.textContent = summary.pendingPaymentOrderCount ?? 0;
+    elements.paidOrders.textContent = summary.paidOrderCount ?? summary.paidOrders;
+    elements.closedOrders.textContent = summary.closedOrderCount ?? 0;
+    elements.refundedOrders.textContent = summary.refundedOrderCount ?? summary.refundedOrders;
+    elements.refundRate.textContent = formatPercent(summary.refundRate);
+    elements.riskRate.textContent = formatPercent(summary.riskRate);
+    elements.openRisks.textContent = summary.unhandledRiskCount ?? summary.openRiskEvents;
     renderPopularTrains(summary.popularTrains || []);
   } catch (error) {
     renderPopularTrains([]);
@@ -241,13 +267,27 @@ async function createOrder(trainId, inventoryId) {
 }
 
 async function loadOrders() {
-  const userId = elements.orderUserId.value;
-  const path = userId ? `/orders?userId=${userId}` : "/orders";
+  state.orderPage.page = 0;
+  await loadOrdersPage();
+}
+
+async function loadOrdersPage() {
+  const path = buildOrderQueryPath();
   try {
-    const orders = await request(path);
-    renderOrders(orders);
+    const page = await request(path);
+    state.orderPage = {
+      page: page.page,
+      size: page.size,
+      totalPages: page.totalPages,
+      totalElements: page.totalElements,
+      first: page.first,
+      last: page.last,
+    };
+    renderOrders(page.content || []);
+    renderOrderPagination();
   } catch (error) {
     elements.orderResults.innerHTML = tableEmpty(8, "无法获取订单数据");
+    renderOrderPagination();
   }
 }
 
@@ -278,9 +318,55 @@ function renderOrders(orders) {
   document.querySelectorAll("[data-close-order]").forEach(button => {
     button.addEventListener("click", () => closeOrder(button.dataset.closeOrder));
   });
-  document.querySelectorAll("[data-refund]").forEach(button => {
+    document.querySelectorAll("[data-refund]").forEach(button => {
     button.addEventListener("click", () => refundOrder(button.dataset.refund));
   });
+}
+
+function buildOrderQueryPath() {
+  const params = new URLSearchParams();
+  appendParam(params, "userId", elements.orderUserId.value);
+  appendParam(params, "status", elements.orderStatus.value);
+  appendParam(params, "orderNo", elements.orderNo.value);
+  appendParam(params, "fromDate", elements.orderFromDate.value);
+  appendParam(params, "toDate", elements.orderToDate.value);
+  params.set("page", String(state.orderPage.page));
+  params.set("size", String(state.orderPage.size));
+  return `/orders?${params.toString()}`;
+}
+
+function appendParam(params, key, value) {
+  const normalized = String(value || "").trim();
+  if (normalized) {
+    params.set(key, normalized);
+  }
+}
+
+function renderOrderPagination() {
+  const totalPages = Math.max(1, state.orderPage.totalPages || 0);
+  const currentPage = Math.min((state.orderPage.page || 0) + 1, totalPages);
+  elements.orderPageInfo.textContent = `第 ${currentPage} / ${totalPages} 页，共 ${state.orderPage.totalElements || 0} 条`;
+  elements.prevOrders.disabled = Boolean(state.orderPage.first);
+  elements.nextOrders.disabled = Boolean(state.orderPage.last);
+}
+
+async function changeOrderPage(offset) {
+  const nextPage = Math.max(0, state.orderPage.page + offset);
+  if (nextPage === state.orderPage.page) {
+    return;
+  }
+  state.orderPage.page = nextPage;
+  await loadOrdersPage();
+}
+
+async function resetOrderFilters() {
+  elements.orderUserId.value = "1001";
+  elements.orderStatus.value = "";
+  elements.orderNo.value = "";
+  elements.orderFromDate.value = "";
+  elements.orderToDate.value = "";
+  state.orderPage.page = 0;
+  await loadOrdersPage();
 }
 
 function renderOrderActions(order) {
@@ -426,6 +512,11 @@ function emptyItem(message) {
 
 function formatTime(value) {
   return String(value || "").slice(0, 5);
+}
+
+function formatPercent(value) {
+  const number = Number(value || 0);
+  return `${(number * 100).toFixed(1)}%`;
 }
 
 function seatTypeText(value) {

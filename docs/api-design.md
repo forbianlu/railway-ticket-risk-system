@@ -133,7 +133,44 @@ POST /api/orders/1/refund
 ## 查询订单
 
 ```http
-GET /api/orders?userId=1001
+GET /api/orders?userId=1001&status=PAID&fromDate=2026-05-01&toDate=2026-05-31&orderNo=RT2026&page=0&size=10
+```
+
+查询参数：
+
+| 参数 | 是否必填 | 说明 |
+| --- | --- | --- |
+| userId | 否 | 按用户 ID 筛选 |
+| status | 否 | 订单状态：`PENDING_PAYMENT`、`PAID`、`CLOSED`、`REFUNDED`、`CANCELLED` |
+| fromDate | 否 | 创建日期起始，格式 `yyyy-MM-dd`，包含当天 |
+| toDate | 否 | 创建日期结束，格式 `yyyy-MM-dd`，包含当天 |
+| orderNo | 否 | 按订单号模糊查询 |
+| page | 否 | 页码，从 0 开始，默认 0 |
+| size | 否 | 每页大小，默认 10，最大 100 |
+
+非法 `status`、负数页码或非正数页大小会返回 400。
+
+分页响应：
+
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "orderNo": "RT202605150001234",
+      "userId": 1001,
+      "trainNo": "G101",
+      "status": "PAID",
+      "createdAt": "2026-05-15T09:30:00"
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
 ```
 
 ## 查询风险事件
@@ -156,6 +193,23 @@ Authorization: Bearer {token}
 ```http
 GET /api/dashboard/summary
 ```
+
+新增指标字段：
+
+```json
+{
+  "totalOrderCount": 20,
+  "pendingPaymentOrderCount": 3,
+  "paidOrderCount": 10,
+  "closedOrderCount": 4,
+  "refundedOrderCount": 3,
+  "unhandledRiskCount": 2,
+  "refundRate": 0.23,
+  "riskRate": 0.15
+}
+```
+
+其中 `refundRate = refundedOrderCount / max(1, paidOrderCount + refundedOrderCount)`，`riskRate = totalRiskEvents / max(1, paidOrderCount + refundedOrderCount)`。接口继续保留 `totalOrders`、`paidOrders`、`refundedOrders`、`openRiskEvents` 等旧字段，方便前端兼容。
 
 ## 审计日志
 

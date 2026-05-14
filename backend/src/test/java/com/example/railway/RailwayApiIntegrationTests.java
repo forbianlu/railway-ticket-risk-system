@@ -33,6 +33,7 @@ import com.example.railway.dto.AuthResponse;
 import com.example.railway.dto.CreateOrderRequest;
 import com.example.railway.dto.DashboardSummary;
 import com.example.railway.dto.LoginRequest;
+import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
 import com.example.railway.dto.RiskEventResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
@@ -81,7 +82,7 @@ class RailwayApiIntegrationTests {
         OrderResponse created = createOrder(userId, train, "ApiOrderUser");
         TrainSearchResponse afterCreate = findInventory(train.getInventoryId());
         OrderResponse paid = payOrder(created.getId());
-        OrderResponse[] orders = restTemplate.getForObject("/api/orders?userId={userId}", OrderResponse[].class, userId);
+        OrderPageResponse orders = fetchOrderPage("/api/orders?userId={userId}", userId);
 
         assertThat(created.getStatus()).isEqualTo("PENDING_PAYMENT");
         assertThat(created.getPaymentDeadlineAt()).isNotNull();
@@ -89,9 +90,72 @@ class RailwayApiIntegrationTests {
         assertThat(paid.getStatus()).isEqualTo("PAID");
         assertThat(paid.getPaidAt()).isNotNull();
         assertThat(orders).isNotNull();
-        assertThat(Arrays.asList(orders))
+        assertThat(orders.getContent())
                 .extracting(OrderResponse::getOrderNo)
                 .contains(created.getOrderNo());
+    }
+
+    @Test
+    void shouldFilterAndPaginateOrders() {
+        TrainSearchResponse train = firstTrainInventory();
+        long userId = 3120L;
+
+        OrderResponse pending = createOrder(userId, train, "QueryPendingUser");
+        OrderResponse paid = createPaidOrder(userId, train, "QueryPaidUser");
+        OrderResponse closed = closeOrder(createOrder(userId, train, "QueryClosedUser").getId());
+        OrderResponse refunded = refundOrder(createPaidOrder(userId, train, "QueryRefundedUser").getId());
+
+        TicketOrder oldOrder = ticketOrderRepository.findById(pending.getId())
+                .orElseThrow(() -> new AssertionError("expected order"));
+        oldOrder.setCreatedAt(LocalDateTime.now().minusDays(3));
+        ticketOrderRepository.save(oldOrder);
+
+        OrderPageResponse defaultPage = fetchOrderPage("/api/orders?userId={userId}", userId);
+        OrderPageResponse firstPage = fetchOrderPage("/api/orders?userId={userId}&page=0&size=2", userId);
+        OrderPageResponse secondPage = fetchOrderPage("/api/orders?userId={userId}&page=1&size=2", userId);
+        OrderPageResponse pendingPage = fetchOrderPage("/api/orders?userId={userId}&status=PENDING_PAYMENT", userId);
+        OrderPageResponse paidPage = fetchOrderPage("/api/orders?userId={userId}&status=PAID", userId);
+        OrderPageResponse closedPage = fetchOrderPage("/api/orders?userId={userId}&status=CLOSED", userId);
+        OrderPageResponse refundedPage = fetchOrderPage("/api/orders?userId={userId}&status=REFUNDED", userId);
+        OrderPageResponse orderNoPage = fetchOrderPage("/api/orders?orderNo={orderNo}", paid.getOrderNo().substring(0, 8));
+        OrderPageResponse recentPage = fetchOrderPage(
+                "/api/orders?userId={userId}&fromDate={fromDate}&toDate={toDate}",
+                userId,
+                LocalDate.now().minusDays(1),
+                LocalDate.now()
+        );
+        ResponseEntity<String> invalidStatus = restTemplate.getForEntity("/api/orders?status=UNKNOWN", String.class);
+
+        assertThat(defaultPage.getPage()).isEqualTo(0);
+        assertThat(defaultPage.getSize()).isEqualTo(10);
+        assertThat(defaultPage.getTotalElements()).isEqualTo(4);
+        assertThat(defaultPage.getTotalPages()).isEqualTo(1);
+        assertThat(defaultPage.isFirst()).isTrue();
+        assertThat(defaultPage.isLast()).isTrue();
+
+        assertThat(firstPage.getContent()).hasSize(2);
+        assertThat(firstPage.getTotalElements()).isEqualTo(4);
+        assertThat(firstPage.getTotalPages()).isEqualTo(2);
+        assertThat(firstPage.isFirst()).isTrue();
+        assertThat(firstPage.isLast()).isFalse();
+        assertThat(secondPage.getContent()).hasSize(2);
+        assertThat(secondPage.isLast()).isTrue();
+
+        assertThat(pendingPage.getContent()).extracting(OrderResponse::getStatus).containsOnly("PENDING_PAYMENT");
+        assertThat(paidPage.getContent()).extracting(OrderResponse::getStatus).containsOnly("PAID");
+        assertThat(closedPage.getContent()).extracting(OrderResponse::getStatus).containsOnly("CLOSED");
+        assertThat(refundedPage.getContent()).extracting(OrderResponse::getStatus).containsOnly("REFUNDED");
+        assertThat(pendingPage.getContent()).extracting(OrderResponse::getId).contains(pending.getId());
+        assertThat(paidPage.getContent()).extracting(OrderResponse::getId).contains(paid.getId());
+        assertThat(closedPage.getContent()).extracting(OrderResponse::getId).contains(closed.getId());
+        assertThat(refundedPage.getContent()).extracting(OrderResponse::getId).contains(refunded.getId());
+
+        assertThat(defaultPage.getContent()).extracting(OrderResponse::getUserId).containsOnly(userId);
+        assertThat(orderNoPage.getContent()).extracting(OrderResponse::getOrderNo).contains(paid.getOrderNo());
+        assertThat(recentPage.getContent()).extracting(OrderResponse::getId)
+                .contains(paid.getId(), closed.getId(), refunded.getId())
+                .doesNotContain(pending.getId());
+        assertThat(invalidStatus.getStatusCodeValue()).isEqualTo(400);
     }
 
     @Test
@@ -362,12 +426,25 @@ class RailwayApiIntegrationTests {
     @Test
     void dashboardShouldExposeOrderAndRiskMetrics() {
         TrainSearchResponse train = firstTrainInventory();
-        createPaidOrder(3104L, train, "DashboardUser");
+        createOrder(3104L, train, "DashboardPendingUser");
+        createPaidOrder(3104L, train, "DashboardPaidUser");
+        closeOrder(createOrder(3104L, train, "DashboardClosedUser").getId());
+        refundOrder(createPaidOrder(3104L, train, "DashboardRefundedUser").getId());
 
         DashboardSummary summary = restTemplate.getForObject("/api/dashboard/summary", DashboardSummary.class);
 
         assertThat(summary.getTotalOrders()).isGreaterThan(0);
         assertThat(summary.getPaidOrders()).isGreaterThan(0);
+        assertThat(summary.getTotalOrderCount()).isGreaterThan(0);
+        assertThat(summary.getPendingPaymentOrderCount()).isGreaterThan(0);
+        assertThat(summary.getPaidOrderCount()).isGreaterThan(0);
+        assertThat(summary.getClosedOrderCount()).isGreaterThan(0);
+        assertThat(summary.getRefundedOrderCount()).isGreaterThan(0);
+        assertThat(summary.getUnhandledRiskCount()).isGreaterThanOrEqualTo(0);
+        assertThat(Double.isFinite(summary.getRefundRate())).isTrue();
+        assertThat(Double.isFinite(summary.getRiskRate())).isTrue();
+        assertThat(summary.getRefundRate()).isGreaterThanOrEqualTo(0.0D);
+        assertThat(summary.getRiskRate()).isGreaterThanOrEqualTo(0.0D);
         assertThat(summary.getPopularTrains()).isNotEmpty();
     }
 
@@ -412,6 +489,13 @@ class RailwayApiIntegrationTests {
 
     private ResponseEntity<String> refundOrderRaw(Long orderId) {
         return restTemplate.postForEntity("/api/orders/{id}/refund", null, String.class, orderId);
+    }
+
+    private OrderPageResponse fetchOrderPage(String url, Object... uriVariables) {
+        OrderPageResponse response = restTemplate.getForObject(url, OrderPageResponse.class, uriVariables);
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).isNotNull();
+        return response;
     }
 
     private long countRisksForUser(long userId) {
