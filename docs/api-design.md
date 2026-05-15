@@ -280,7 +280,38 @@ GET /api/payments?orderId=1&status=SUCCESS&paymentNo=PAY2026&page=0&size=10
 ## 查询风险事件
 
 ```http
-GET /api/risks
+GET /api/risks?status=PENDING&scene=ORDER_CREATED
+```
+
+查询参数：
+
+| 参数 | 是否必填 | 说明 |
+| --- | --- | --- |
+| status | 否 | 风险状态：`PENDING`、`CONFIRMED`、`FALSE_POSITIVE`、`CLOSED` |
+| scene | 否 | 风控场景：`ORDER_CREATED`、`ORDER_REFUNDED` |
+
+响应示例：
+
+```json
+[
+  {
+    "id": 1,
+    "orderId": 12,
+    "orderNo": "RT202605150001234",
+    "userId": 1001,
+    "riskType": "RAPID_PURCHASE",
+    "riskLevel": "MEDIUM",
+    "scene": "ORDER_CREATED",
+    "status": "PENDING",
+    "reason": "用户 10 分钟内下单次数达到 3 次",
+    "handled": false,
+    "handleRemark": null,
+    "handledBy": null,
+    "handledAt": null,
+    "closedAt": null,
+    "createdAt": "2026-05-15T10:10:00"
+  }
+]
 ```
 
 ## 处理风险事件
@@ -288,9 +319,50 @@ GET /api/risks
 ```http
 POST /api/risks/1/handle
 Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "status": "CONFIRMED",
+  "remark": "短时间多次购票，确认存在异常购票行为"
+}
 ```
 
 该接口仅允许 `RISK_OFFICER` 和 `ADMIN` 角色访问，操作人默认取当前登录用户。
+
+状态流转规则：
+
+- `PENDING -> CONFIRMED`
+- `PENDING -> FALSE_POSITIVE`
+- `PENDING -> CLOSED`
+- `CONFIRMED -> CLOSED`
+- `FALSE_POSITIVE -> CLOSED`
+- `CLOSED` 不允许重复处置
+
+为了兼容早期“标记已处理”按钮，如果请求体为空，后端按 `CLOSED` 处理。
+
+响应中会返回最新风险事件状态、处置备注、处理人、处理时间和关闭时间。每次处置都会写入 `risk_event_handle_records` 和 `operation_logs`。
+
+## 查询风险处置历史
+
+```http
+GET /api/risks/1/handle-records
+```
+
+响应示例：
+
+```json
+[
+  {
+    "id": 1,
+    "riskEventId": 1,
+    "fromStatus": "PENDING",
+    "toStatus": "CONFIRMED",
+    "remark": "短时间多次购票，确认存在异常购票行为",
+    "operatorName": "risk",
+    "operatedAt": "2026-05-15T10:12:00"
+  }
+]
+```
 
 ## 运营看板
 
@@ -313,7 +385,7 @@ GET /api/dashboard/summary
 }
 ```
 
-其中 `refundRate = refundedOrderCount / max(1, paidOrderCount + refundedOrderCount)`，`riskRate = totalRiskEvents / max(1, paidOrderCount + refundedOrderCount)`。接口继续保留 `totalOrders`、`paidOrders`、`refundedOrders`、`openRiskEvents` 等旧字段，方便前端兼容。
+其中 `refundRate = refundedOrderCount / max(1, paidOrderCount + refundedOrderCount)`，`riskRate = totalRiskEvents / max(1, paidOrderCount + refundedOrderCount)`。`unhandledRiskCount` 和 `openRiskEvents` 基于 `RiskStatus.PENDING` 统计。接口继续保留 `totalOrders`、`paidOrders`、`refundedOrders`、`openRiskEvents` 等旧字段，方便前端兼容。
 
 ## 审计日志
 

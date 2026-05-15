@@ -40,8 +40,26 @@ public class RiskEvent {
     @Column(nullable = false, length = 500)
     private String reason;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private RiskStatus status = RiskStatus.PENDING;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32)
+    private RiskScene scene;
+
     @Column(nullable = false)
     private Boolean handled = false;
+
+    @Column(length = 500)
+    private String handleRemark;
+
+    @Column(length = 64)
+    private String handledBy;
+
+    private LocalDateTime handledAt;
+
+    private LocalDateTime closedAt;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -90,12 +108,60 @@ public class RiskEvent {
         this.reason = reason;
     }
 
+    public RiskStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(RiskStatus status) {
+        this.status = status;
+    }
+
+    public RiskScene getScene() {
+        return scene;
+    }
+
+    public void setScene(RiskScene scene) {
+        this.scene = scene;
+    }
+
     public Boolean getHandled() {
         return handled;
     }
 
     public void setHandled(Boolean handled) {
         this.handled = handled;
+    }
+
+    public String getHandleRemark() {
+        return handleRemark;
+    }
+
+    public void setHandleRemark(String handleRemark) {
+        this.handleRemark = handleRemark;
+    }
+
+    public String getHandledBy() {
+        return handledBy;
+    }
+
+    public void setHandledBy(String handledBy) {
+        this.handledBy = handledBy;
+    }
+
+    public LocalDateTime getHandledAt() {
+        return handledAt;
+    }
+
+    public void setHandledAt(LocalDateTime handledAt) {
+        this.handledAt = handledAt;
+    }
+
+    public LocalDateTime getClosedAt() {
+        return closedAt;
+    }
+
+    public void setClosedAt(LocalDateTime closedAt) {
+        this.closedAt = closedAt;
     }
 
     public LocalDateTime getCreatedAt() {

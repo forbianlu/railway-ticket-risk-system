@@ -53,6 +53,8 @@ const elements = {
   paymentPageInfo: document.querySelector("#payment-page-info"),
   prevPayments: document.querySelector("#prev-payments"),
   nextPayments: document.querySelector("#next-payments"),
+  riskStatus: document.querySelector("#risk-status"),
+  riskScene: document.querySelector("#risk-scene"),
   riskList: document.querySelector("#risk-list"),
   logList: document.querySelector("#log-list"),
   authRole: document.querySelector("#auth-role"),
@@ -77,6 +79,7 @@ document.querySelector("#create-payment").addEventListener("click", createPaymen
 document.querySelector("#load-payments").addEventListener("click", loadPayments);
 elements.prevPayments.addEventListener("click", () => changePaymentPage(-1));
 elements.nextPayments.addEventListener("click", () => changePaymentPage(1));
+document.querySelector("#load-risks").addEventListener("click", loadRisks);
 elements.loginForm.addEventListener("submit", event => {
   event.preventDefault();
   login();
@@ -580,7 +583,7 @@ async function changePaymentPage(offset) {
 
 async function loadRisks() {
   try {
-    const risks = await request("/risks");
+    const risks = await request(buildRiskQueryPath());
     if (risks.length === 0) {
       elements.riskList.innerHTML = emptyItem("暂无风险事件");
       return;
@@ -590,13 +593,17 @@ async function loadRisks() {
         <div class="event-item">
           <div class="event-header">
             <strong>${riskLevelText(risk.riskLevel)} · ${riskTypeText(risk.riskType)}</strong>
-            <span class="handled-pill ${risk.handled ? "done" : "open"}">${risk.handled ? "已处理" : "待处理"}</span>
+            <span class="handled-pill ${riskStatusClass(risk.status)}">${riskStatusText(risk.status)}</span>
           </div>
-          <span>用户：${risk.userId} / 订单：${risk.orderNo || "-"}</span>
-          <span>${risk.reason}</span>
+          <span>用户：${risk.userId} / 订单：${risk.orderNo || "-"} / 场景：${riskSceneText(risk.scene)}</span>
+          <span>${escapeHtml(risk.reason)}</span>
+          <span>处理人：${risk.handledBy || "-"} / 处理时间：${formatDateTime(risk.handledAt) || "-"}</span>
+          <span>备注：${risk.handleRemark ? escapeHtml(risk.handleRemark) : "-"}</span>
           <div class="risk-actions">
-            ${risk.handled || !canHandleRisk() ? "" : `<button class="secondary-button compact-button" type="button" data-handle-risk="${risk.id}">标记已处理</button>`}
+            ${renderRiskActionControls(risk)}
+            <button class="secondary-button compact-button" type="button" data-risk-history="${risk.id}">处置历史</button>
           </div>
+          <div id="risk-history-${risk.id}" class="risk-history"></div>
         </div>
       `)
       .join("");
@@ -604,18 +611,94 @@ async function loadRisks() {
     document.querySelectorAll("[data-handle-risk]").forEach(button => {
       button.addEventListener("click", () => handleRisk(button.dataset.handleRisk));
     });
+    document.querySelectorAll("[data-risk-history]").forEach(button => {
+      button.addEventListener("click", () => loadRiskHistory(button.dataset.riskHistory));
+    });
   } catch (error) {
     elements.riskList.innerHTML = emptyItem("无法获取风险事件");
   }
 }
 
+function buildRiskQueryPath() {
+  const params = new URLSearchParams();
+  if (elements.riskStatus.value) {
+    params.set("status", elements.riskStatus.value);
+  }
+  if (elements.riskScene.value) {
+    params.set("scene", elements.riskScene.value);
+  }
+  const query = params.toString();
+  return query ? `/risks?${query}` : "/risks";
+}
+
+function renderRiskActionControls(risk) {
+  const options = riskTargetStatuses(risk.status);
+  if (!canHandleRisk() || options.length === 0) {
+    return "";
+  }
+  const optionHtml = options
+    .map(status => `<option value="${status}">${riskStatusText(status)}</option>`)
+    .join("");
+  return `
+    <select class="risk-status-select" data-risk-target-status="${risk.id}" aria-label="处置结果">
+      ${optionHtml}
+    </select>
+    <input class="risk-remark-input" data-risk-remark="${risk.id}" type="text" maxlength="500" placeholder="处置备注">
+    <button class="secondary-button compact-button" type="button" data-handle-risk="${risk.id}">提交处置</button>
+  `;
+}
+
+function riskTargetStatuses(status) {
+  if (status === "PENDING" || !status) {
+    return ["CONFIRMED", "FALSE_POSITIVE", "CLOSED"];
+  }
+  if (status === "CONFIRMED" || status === "FALSE_POSITIVE") {
+    return ["CLOSED"];
+  }
+  return [];
+}
+
 async function handleRisk(riskId) {
   try {
-    await request(`/risks/${riskId}/handle`, { method: "POST" });
+    const statusSelect = document.querySelector(`[data-risk-target-status="${riskId}"]`);
+    const remarkInput = document.querySelector(`[data-risk-remark="${riskId}"]`);
+    await request(`/risks/${riskId}/handle`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        status: statusSelect ? statusSelect.value : "CLOSED",
+        remark: remarkInput ? remarkInput.value : "",
+      }),
+    });
     showToast("风险事件已处理");
     await refreshAll();
   } catch (error) {
     showToast(error.message || "处理风险事件失败");
+  }
+}
+
+async function loadRiskHistory(riskId) {
+  const container = document.querySelector(`#risk-history-${riskId}`);
+  if (!container) {
+    return;
+  }
+  try {
+    const records = await request(`/risks/${riskId}/handle-records`);
+    if (records.length === 0) {
+      container.innerHTML = `<span class="muted-text">暂无处置历史</span>`;
+      return;
+    }
+    container.innerHTML = records
+      .map(record => `
+        <div class="history-row">
+          <strong>${riskStatusText(record.fromStatus)} → ${riskStatusText(record.toStatus)}</strong>
+          <span>${record.operatorName || "-"} / ${formatDateTime(record.operatedAt) || "-"}</span>
+          <span>${record.remark ? escapeHtml(record.remark) : "无备注"}</span>
+        </div>
+      `)
+      .join("");
+  } catch (error) {
+    container.innerHTML = `<span class="muted-text">无法获取处置历史</span>`;
   }
 }
 
@@ -753,6 +836,34 @@ function riskLevelText(value) {
   return map[value] || value;
 }
 
+function riskStatusText(value) {
+  const map = {
+    PENDING: "待处理",
+    CONFIRMED: "已确认风险",
+    FALSE_POSITIVE: "误报",
+    CLOSED: "已关闭",
+  };
+  return map[value] || value || "待处理";
+}
+
+function riskStatusClass(value) {
+  const map = {
+    PENDING: "open",
+    CONFIRMED: "confirmed",
+    FALSE_POSITIVE: "false-positive",
+    CLOSED: "done",
+  };
+  return map[value] || "open";
+}
+
+function riskSceneText(value) {
+  const map = {
+    ORDER_CREATED: "支付成功",
+    ORDER_REFUNDED: "退票后",
+  };
+  return map[value] || "-";
+}
+
 function roleText(value) {
   const map = {
     ADMIN: "系统管理员",
@@ -760,6 +871,15 @@ function roleText(value) {
     RISK_OFFICER: "风控专员",
   };
   return map[value] || value;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function generateRequestId() {

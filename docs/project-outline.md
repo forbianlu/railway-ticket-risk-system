@@ -74,7 +74,9 @@
 - 风险等级
 - 触发原因
 - 关联订单
-- 处理状态
+- 处理状态：待处理、已确认风险、误报、已关闭
+- 处置备注、处理人、处理时间
+- 处置历史记录
 
 风控实现采用规则引擎结构：
 
@@ -82,6 +84,7 @@
 - `RiskScene` 区分下单后、退票后等触发场景
 - `RiskService` 负责调度规则并生成风险事件
 - 每条规则独立实现，便于后续扩展
+- `RiskEventHandleRecord` 记录每次人工处置动作，支持审计追踪
 
 ### 4.4 运营看板
 
@@ -122,6 +125,8 @@
 - `seat_inventories`
 - `ticket_orders`
 - `risk_events`
+- `risk_event_handle_records`
+- `payment_records`
 - `operation_logs`
 - `app_users`
 
@@ -146,6 +151,8 @@
 - `POST /api/payments/callback`
 - `GET /api/payments`
 - `GET /api/risks`
+- `POST /api/risks/{id}/handle`
+- `GET /api/risks/{id}/handle-records`
 - `GET /api/cache/train-search`
 - `GET /api/dashboard/summary`
 
@@ -164,6 +171,7 @@
 - 订单分页筛选
 - 运营看板状态指标和风险指标
 - 基础风控规则
+- 风险处置闭环和处置历史
 - 登录与角色权限
 - 车次查询本地 TTL 缓存
 - 并发购票防超卖集成测试

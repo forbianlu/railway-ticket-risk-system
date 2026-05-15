@@ -6,6 +6,7 @@ erDiagram
     SEAT_INVENTORIES ||--o{ TICKET_ORDERS : locks
     TICKET_ORDERS ||--o{ PAYMENT_RECORDS : pays
     TICKET_ORDERS ||--o{ RISK_EVENTS : triggers
+    RISK_EVENTS ||--o{ RISK_EVENT_HANDLE_RECORDS : records
 
     APP_USERS {
         bigint id PK
@@ -71,9 +72,25 @@ erDiagram
         bigint user_id
         varchar risk_type
         varchar risk_level
+        varchar scene
+        varchar status
         varchar reason
         boolean handled
+        varchar handle_remark
+        varchar handled_by
+        timestamp handled_at
+        timestamp closed_at
         timestamp created_at
+    }
+
+    RISK_EVENT_HANDLE_RECORDS {
+        bigint id PK
+        bigint risk_event_id FK
+        varchar from_status
+        varchar to_status
+        varchar remark
+        varchar operator_name
+        timestamp operated_at
     }
 
     PAYMENT_RECORDS {

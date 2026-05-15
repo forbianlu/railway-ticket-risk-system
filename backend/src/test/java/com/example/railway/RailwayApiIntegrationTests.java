@@ -25,6 +25,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
+import com.example.railway.domain.OperationLog;
 import com.example.railway.domain.SeatInventory;
 import com.example.railway.domain.Station;
 import com.example.railway.domain.TicketOrder;
@@ -39,7 +40,9 @@ import com.example.railway.dto.OrderResponse;
 import com.example.railway.dto.PaymentCallbackRequest;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
+import com.example.railway.dto.RiskEventHandleRecordResponse;
 import com.example.railway.dto.RiskEventResponse;
+import com.example.railway.dto.RiskHandleRequest;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
 import com.example.railway.repository.SeatInventoryRepository;
@@ -409,6 +412,102 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldHandleRiskWorkflowWithStatusRemarkHistoryAndDashboardCount() {
+        TrainSearchResponse train = firstTrainInventory();
+        long userId = 3140L;
+        createPaidOrder(userId, train, "RiskWorkflowA");
+        createPaidOrder(userId, train, "RiskWorkflowB");
+        createPaidOrder(userId, train, "RiskWorkflowC");
+
+        RiskEventResponse pendingRisk = fetchRisks("/api/risks?status=PENDING").stream()
+                .filter(risk -> Long.valueOf(userId).equals(risk.getUserId()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected pending risk event"));
+        DashboardSummary beforeHandle = restTemplate.getForObject("/api/dashboard/summary", DashboardSummary.class);
+
+        RiskEventResponse confirmed = handleRisk(
+                pendingRisk.getId(),
+                login("admin", "admin123"),
+                "CONFIRMED",
+                "短时间多次购票，确认存在异常购票行为"
+        );
+        DashboardSummary afterHandle = restTemplate.getForObject("/api/dashboard/summary", DashboardSummary.class);
+        List<RiskEventHandleRecordResponse> firstRecords = fetchRiskHandleRecords(pendingRisk.getId());
+        OperationLog[] logs = latestLogs(login("admin", "admin123"));
+
+        assertThat(pendingRisk.getStatus()).isEqualTo("PENDING");
+        assertThat(pendingRisk.getHandled()).isFalse();
+        assertThat(pendingRisk.getScene()).isEqualTo("ORDER_CREATED");
+        assertThat(confirmed.getStatus()).isEqualTo("CONFIRMED");
+        assertThat(confirmed.getHandled()).isTrue();
+        assertThat(confirmed.getHandleRemark()).isEqualTo("短时间多次购票，确认存在异常购票行为");
+        assertThat(confirmed.getHandledBy()).isEqualTo("admin");
+        assertThat(confirmed.getHandledAt()).isNotNull();
+        assertThat(confirmed.getClosedAt()).isNull();
+        assertThat(afterHandle.getUnhandledRiskCount()).isEqualTo(beforeHandle.getUnhandledRiskCount() - 1);
+        assertThat(firstRecords).hasSize(1);
+        assertThat(firstRecords.get(0).getFromStatus()).isEqualTo("PENDING");
+        assertThat(firstRecords.get(0).getToStatus()).isEqualTo("CONFIRMED");
+        assertThat(firstRecords.get(0).getRemark()).isEqualTo("短时间多次购票，确认存在异常购票行为");
+        assertThat(firstRecords.get(0).getOperatorName()).isEqualTo("admin");
+        assertThat(Arrays.stream(logs))
+                .anyMatch(log -> "HANDLE_RISK_EVENT".equals(log.getAction())
+                        && String.valueOf(pendingRisk.getId()).equals(log.getTargetId()));
+
+        RiskEventResponse closed = handleRisk(
+                pendingRisk.getId(),
+                login("risk", "risk123"),
+                "CLOSED",
+                "已完成人工复核并归档"
+        );
+        List<RiskEventHandleRecordResponse> allRecords = fetchRiskHandleRecords(pendingRisk.getId());
+        ResponseEntity<String> duplicateClose = handleRiskRaw(
+                pendingRisk.getId(),
+                login("risk", "risk123"),
+                "CLOSED",
+                "重复关闭"
+        );
+
+        assertThat(closed.getStatus()).isEqualTo("CLOSED");
+        assertThat(closed.getHandledBy()).isEqualTo("risk");
+        assertThat(closed.getClosedAt()).isNotNull();
+        assertThat(allRecords).hasSize(2);
+        assertThat(allRecords.get(1).getFromStatus()).isEqualTo("CONFIRMED");
+        assertThat(allRecords.get(1).getToStatus()).isEqualTo("CLOSED");
+        assertThat(duplicateClose.getStatusCodeValue()).isEqualTo(400);
+    }
+
+    @Test
+    void shouldLetRiskOfficerMarkFalsePositiveAndFilterRisks() {
+        TrainSearchResponse train = firstTrainInventory();
+        long userId = 3141L;
+        createPaidOrder(userId, train, "FalsePositiveA");
+        createPaidOrder(userId, train, "FalsePositiveB");
+        createPaidOrder(userId, train, "FalsePositiveC");
+
+        RiskEventResponse pendingRisk = fetchRisks("/api/risks?status=PENDING&scene=ORDER_CREATED").stream()
+                .filter(risk -> Long.valueOf(userId).equals(risk.getUserId()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected pending risk event"));
+
+        RiskEventResponse falsePositive = handleRisk(
+                pendingRisk.getId(),
+                login("risk", "risk123"),
+                "FALSE_POSITIVE",
+                "核对订单后判断为正常购票"
+        );
+        List<RiskEventResponse> falsePositiveRisks = fetchRisks("/api/risks?status=FALSE_POSITIVE");
+
+        assertThat(falsePositive.getStatus()).isEqualTo("FALSE_POSITIVE");
+        assertThat(falsePositive.getHandleRemark()).isEqualTo("核对订单后判断为正常购票");
+        assertThat(falsePositive.getHandledBy()).isEqualTo("risk");
+        assertThat(falsePositive.getHandledAt()).isNotNull();
+        assertThat(falsePositiveRisks)
+                .extracting(RiskEventResponse::getId)
+                .contains(pendingRisk.getId());
+    }
+
+    @Test
     void shouldProtectRiskHandlingWithRole() {
         TrainSearchResponse train = firstTrainInventory();
         long userId = 3105L;
@@ -691,13 +790,61 @@ class RailwayApiIntegrationTests {
     }
 
     private RiskEventResponse handleRisk(Long riskId, AuthResponse auth) {
+        return handleRisk(riskId, auth, "CLOSED", "旧版标记已处理兼容调用");
+    }
+
+    private RiskEventResponse handleRisk(Long riskId, AuthResponse auth, String status, String remark) {
         ResponseEntity<RiskEventResponse> response = restTemplate.exchange(
                 "/api/risks/{id}/handle",
                 HttpMethod.POST,
-                authorizedEntity(auth),
+                authorizedEntity(auth, riskHandleRequest(status, remark)),
                 RiskEventResponse.class,
                 riskId
         );
+        return response.getBody();
+    }
+
+    private ResponseEntity<String> handleRiskRaw(Long riskId, AuthResponse auth, String status, String remark) {
+        return restTemplate.exchange(
+                "/api/risks/{id}/handle",
+                HttpMethod.POST,
+                authorizedEntity(auth, riskHandleRequest(status, remark)),
+                String.class,
+                riskId
+        );
+    }
+
+    private RiskHandleRequest riskHandleRequest(String status, String remark) {
+        RiskHandleRequest request = new RiskHandleRequest();
+        request.setStatus(status);
+        request.setRemark(remark);
+        return request;
+    }
+
+    private List<RiskEventResponse> fetchRisks(String url, Object... uriVariables) {
+        RiskEventResponse[] risks = restTemplate.getForObject(url, RiskEventResponse[].class, uriVariables);
+        assertThat(risks).isNotNull();
+        return Arrays.asList(risks);
+    }
+
+    private List<RiskEventHandleRecordResponse> fetchRiskHandleRecords(Long riskId) {
+        RiskEventHandleRecordResponse[] records = restTemplate.getForObject(
+                "/api/risks/{id}/handle-records",
+                RiskEventHandleRecordResponse[].class,
+                riskId
+        );
+        assertThat(records).isNotNull();
+        return Arrays.asList(records);
+    }
+
+    private OperationLog[] latestLogs(AuthResponse auth) {
+        ResponseEntity<OperationLog[]> response = restTemplate.exchange(
+                "/api/logs",
+                HttpMethod.GET,
+                authorizedEntity(auth),
+                OperationLog[].class
+        );
+        assertThat(response.getBody()).isNotNull();
         return response.getBody();
     }
 
@@ -724,6 +871,12 @@ class RailwayApiIntegrationTests {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + auth.getToken());
         return new HttpEntity<Void>(headers);
+    }
+
+    private <T> HttpEntity<T> authorizedEntity(AuthResponse auth, T body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + auth.getToken());
+        return new HttpEntity<T>(body, headers);
     }
 
     private TrainSearchResponse firstTrainInventory() {

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.railway.domain.OrderStatus;
+import com.example.railway.domain.RiskStatus;
 import com.example.railway.dto.DashboardSummary;
 import com.example.railway.dto.TrainOrderStat;
 import com.example.railway.repository.RiskEventRepository;
@@ -32,7 +33,7 @@ public class DashboardService {
         long closedOrderCount = ticketOrderRepository.countByStatus(OrderStatus.CLOSED);
         long refundedOrderCount = ticketOrderRepository.countByStatus(OrderStatus.REFUNDED);
         long totalRiskEventCount = riskEventRepository.count();
-        long unhandledRiskCount = riskEventRepository.countByHandledFalse();
+        long unhandledRiskCount = riskEventRepository.countByStatus(RiskStatus.PENDING);
         long effectiveOrderCount = paidOrderCount + refundedOrderCount;
 
         DashboardSummary summary = new DashboardSummary();

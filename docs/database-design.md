@@ -87,9 +87,36 @@
 | user_id | bigint | 用户 ID |
 | risk_type | varchar | 风险类型 |
 | risk_level | varchar | 风险等级 |
+| scene | varchar | 风控触发场景：ORDER_CREATED、ORDER_REFUNDED |
+| status | varchar | 风险状态：PENDING、CONFIRMED、FALSE_POSITIVE、CLOSED |
 | reason | varchar | 触发原因 |
-| handled | boolean | 是否处理 |
+| handled | boolean | 是否处理，兼容旧前端；当前等价于 status != PENDING |
+| handle_remark | varchar | 最新处置备注 |
+| handled_by | varchar | 最新处理人 |
+| handled_at | timestamp | 最新处理时间 |
+| closed_at | timestamp | 关闭归档时间 |
 | created_at | timestamp | 创建时间 |
+
+风险状态说明：
+
+| 状态 | 说明 |
+| --- | --- |
+| PENDING | 系统规则生成后等待人工审核 |
+| CONFIRMED | 风控人员确认存在风险 |
+| FALSE_POSITIVE | 风控人员判断为误报 |
+| CLOSED | 事件已完成处置并归档 |
+
+## risk_event_handle_records
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint | 主键 |
+| risk_event_id | bigint | 风险事件 ID |
+| from_status | varchar | 处置前状态 |
+| to_status | varchar | 处置后状态 |
+| remark | varchar | 处置备注 |
+| operator_name | varchar | 操作人 |
+| operated_at | timestamp | 操作时间 |
 
 ## payment_records
 

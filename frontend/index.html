@@ -241,14 +241,35 @@
         </div>
       </section>
 
-      <section id="risks" class="section split">
-        <div>
-          <div class="section-title">
-            <h2>风险事件</h2>
-            <p>短时间多次购票、高金额订单、频繁退票会生成事件</p>
+        <section id="risks" class="section split">
+          <div>
+            <div class="section-title">
+              <h2>风险事件</h2>
+              <p>按状态筛选风险事件，并记录处置备注与历史</p>
+            </div>
+            <div class="toolbar compact risk-toolbar">
+              <label>
+                状态
+                <select id="risk-status">
+                  <option value="">全部状态</option>
+                  <option value="PENDING">待处理</option>
+                  <option value="CONFIRMED">已确认风险</option>
+                  <option value="FALSE_POSITIVE">误报</option>
+                  <option value="CLOSED">已关闭</option>
+                </select>
+              </label>
+              <label>
+                场景
+                <select id="risk-scene">
+                  <option value="">全部场景</option>
+                  <option value="ORDER_CREATED">支付成功</option>
+                  <option value="ORDER_REFUNDED">退票后</option>
+                </select>
+              </label>
+              <button id="load-risks" class="secondary-button" type="button">查询</button>
+            </div>
+            <div id="risk-list" class="event-list"></div>
           </div>
-          <div id="risk-list" class="event-list"></div>
-        </div>
         <div>
           <div class="section-title">
             <h2>热门车次</h2>

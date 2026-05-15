@@ -12,7 +12,7 @@
 - 热门查询缓存：车次余票查询支持本地 TTL 缓存，锁票、支付、关闭和退票后按线路日期失效缓存。
 - 并发压测验证：集成测试模拟 16 个请求抢 1 张票，验证只生成 1 个订单且库存不为负。
 - 风控规则引擎：将风险规则拆成独立 `RiskRule`，按 `RiskScene` 调度。
-- 风险处置闭环：风险事件支持待处理、已处理状态流转，并写入审计日志。
+- 风险处置闭环：风险事件支持 `PENDING`、`CONFIRMED`、`FALSE_POSITIVE`、`CLOSED` 状态流转，保存处置备注、处理人、处理时间和处置历史。
 - 角色权限控制：支持管理员、风控专员、运营人员演示账号，使用签名令牌和注解式角色校验保护敏感接口。
 - 订单运营管理：订单列表支持用户、状态、订单号、创建日期筛选，并返回分页元信息。
 - 运营看板：统计总订单、待支付、已支付、已关闭、已退票、退票率、风险率、未处理风险和热门车次。
@@ -96,8 +96,9 @@ GET  /api/orders?userId=1001&status=PAID&page=0&size=10
 POST /api/payments
 POST /api/payments/callback
 GET  /api/payments?status=SUCCESS&page=0&size=10
-GET  /api/risks
+GET  /api/risks?status=PENDING&scene=ORDER_CREATED
 POST /api/risks/{id}/handle
+GET  /api/risks/{id}/handle-records
 GET  /api/cache/train-search
 DELETE /api/cache/train-search
 GET  /api/dashboard/summary
@@ -193,12 +194,12 @@ INVENTORY_ID=1
 - 支付失败回调后流水变为 `FAILED`，订单仍保持待支付，可重新创建流水或等待超时关闭。
 - 连续退票后库存释放，并触发频繁退票风险。
 - 待支付订单可手动关闭或超时批量关闭，关闭后库存自动释放。
-- 风险事件可标记已处理，处置动作进入操作日志。
+- 风险事件可确认为风险、标记误报或关闭归档，处置备注进入历史表和操作日志。
 - 未登录访问受保护接口返回 401，运营人员处理风险事件返回 403。
 - 车次查询重复请求可命中缓存，锁票、支付、关闭和退票后按线路日期失效缓存。
 - 16 个并发请求抢 1 张票时，只成功生成 1 个待支付订单，库存最终为 0。
 - 使用同一 `requestId` 重复下单时返回原订单，库存只扣减一次。
-- 集成测试覆盖车次查询、下单、支付流水、支付回调幂等、超时关闭、订单幂等、退票、订单分页筛选、看板增强指标、风控生成、风险处置、权限保护、缓存失效和并发防超卖。
+- 集成测试覆盖车次查询、下单、支付流水、支付回调幂等、超时关闭、订单幂等、退票、订单分页筛选、看板增强指标、风控生成、风险状态流转、处置历史、权限保护、缓存失效和并发防超卖。
 
 ## 简历写法示例
 
@@ -211,12 +212,15 @@ INVENTORY_ID=1
 
 支付链路补充：新增支付流水表和模拟支付回调接口，支付流水使用 `PENDING`、`SUCCESS`、`FAILED` 状态独立记录支付侧处理结果；成功回调复用订单支付状态机，将订单从待支付确认到已支付，并通过 `callbackRequestId` 保证重复回调不会重复改订单、重复写成功业务日志或重复触发风控。
 
+风控闭环补充：风险事件不再只用 `handled` 布尔值表示处理结果，而是升级为 `PENDING`、`CONFIRMED`、`FALSE_POSITIVE`、`CLOSED` 状态机；处置时保存备注、处理人和处理时间，并写入 `risk_event_handle_records` 历史表，便于展示风控审核、权限控制和审计追踪能力。
+
 ## 文档
 
 - 项目大纲：`docs/project-outline.md`
 - API 设计：`docs/api-design.md`
 - 订单状态机设计：`docs/order-state-design.md`
 - 支付流水设计：`docs/payment-design.md`
+- 风险处置闭环设计：`docs/risk-handling-design.md`
 - 订单幂等设计：`docs/idempotency-design.md`
 - 缓存设计：`docs/cache-design.md`
 - 并发防超卖设计：`docs/concurrency-design.md`

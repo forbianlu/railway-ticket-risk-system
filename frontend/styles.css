@@ -363,6 +363,10 @@ button:disabled {
   grid-template-columns: minmax(150px, 0.8fr) minmax(150px, 0.8fr) minmax(220px, 1.1fr) auto auto;
 }
 
+.risk-toolbar {
+  grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) auto;
+}
+
 .pagination {
   margin-top: 14px;
   display: flex;
@@ -495,8 +499,44 @@ tr:last-child td {
   background: #dff5ea;
 }
 
+.handled-pill.confirmed {
+  color: #7c2d12;
+  background: #fed7aa;
+}
+
+.handled-pill.false-positive {
+  color: #475569;
+  background: #e2e8f0;
+}
+
 .risk-actions {
   margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.risk-status-select {
+  width: 140px;
+}
+
+.risk-remark-input {
+  min-width: 220px;
+  flex: 1;
+}
+
+.risk-history {
+  margin-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.history-row {
+  border-left: 3px solid var(--primary);
+  padding-left: 10px;
+  display: grid;
+  gap: 2px;
 }
 
 .compact-button {
@@ -558,6 +598,7 @@ body[data-capture="risks"] .section:not(#risks) {
   .toolbar,
   .orders-toolbar,
   .payments-toolbar,
+  .risk-toolbar,
   .split {
     grid-template-columns: 1fr;
   }
