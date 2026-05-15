@@ -20,6 +20,7 @@
         <a href="#dashboard">运营看板</a>
         <a href="#search">车次查询</a>
         <a href="#orders">订单管理</a>
+        <a href="#payments">支付流水</a>
         <a href="#risks">风险事件</a>
         <a href="#logs">审计日志</a>
       </nav>
@@ -183,6 +184,59 @@
           <div class="inline-actions">
             <button id="prev-orders" class="secondary-button compact-button" type="button">上一页</button>
             <button id="next-orders" class="secondary-button compact-button" type="button">下一页</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="payments" class="section">
+        <div class="section-title">
+          <h2>支付流水</h2>
+          <p>创建模拟支付流水，通过成功或失败回调验证支付幂等和风控触发</p>
+        </div>
+        <div class="toolbar payments-toolbar">
+          <label>
+            订单 ID
+            <input id="payment-order-id" type="number" min="1" placeholder="待支付订单 ID">
+          </label>
+          <label>
+            支付状态
+            <select id="payment-status">
+              <option value="">全部状态</option>
+              <option value="PENDING">待支付</option>
+              <option value="SUCCESS">支付成功</option>
+              <option value="FAILED">支付失败</option>
+            </select>
+          </label>
+          <label>
+            支付流水号
+            <input id="payment-no-filter" type="text" placeholder="支持模糊查询">
+          </label>
+          <button id="create-payment" class="primary-button" type="button">创建流水</button>
+          <button id="load-payments" class="secondary-button" type="button">查询流水</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>支付流水号</th>
+                <th>订单</th>
+                <th>用户</th>
+                <th>金额</th>
+                <th>状态</th>
+                <th>渠道</th>
+                <th>创建时间</th>
+                <th>支付时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="payment-results"></tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="payment-page-info">第 1 / 1 页，共 0 条</span>
+          <div class="inline-actions">
+            <button id="prev-payments" class="secondary-button compact-button" type="button">上一页</button>
+            <button id="next-payments" class="secondary-button compact-button" type="button">下一页</button>
           </div>
         </div>
       </section>

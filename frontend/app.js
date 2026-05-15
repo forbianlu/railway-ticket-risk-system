@@ -11,6 +11,14 @@ const state = {
     first: true,
     last: true,
   },
+  paymentPage: {
+    page: 0,
+    size: 10,
+    totalPages: 0,
+    totalElements: 0,
+    first: true,
+    last: true,
+  },
 };
 
 const elements = {
@@ -38,6 +46,13 @@ const elements = {
   orderPageInfo: document.querySelector("#order-page-info"),
   prevOrders: document.querySelector("#prev-orders"),
   nextOrders: document.querySelector("#next-orders"),
+  paymentOrderId: document.querySelector("#payment-order-id"),
+  paymentStatus: document.querySelector("#payment-status"),
+  paymentNoFilter: document.querySelector("#payment-no-filter"),
+  paymentResults: document.querySelector("#payment-results"),
+  paymentPageInfo: document.querySelector("#payment-page-info"),
+  prevPayments: document.querySelector("#prev-payments"),
+  nextPayments: document.querySelector("#next-payments"),
   riskList: document.querySelector("#risk-list"),
   logList: document.querySelector("#log-list"),
   authRole: document.querySelector("#auth-role"),
@@ -58,6 +73,10 @@ document.querySelector("#load-orders").addEventListener("click", loadOrders);
 document.querySelector("#reset-orders").addEventListener("click", resetOrderFilters);
 elements.prevOrders.addEventListener("click", () => changeOrderPage(-1));
 elements.nextOrders.addEventListener("click", () => changeOrderPage(1));
+document.querySelector("#create-payment").addEventListener("click", createPaymentFromInput);
+document.querySelector("#load-payments").addEventListener("click", loadPayments);
+elements.prevPayments.addEventListener("click", () => changePaymentPage(-1));
+elements.nextPayments.addEventListener("click", () => changePaymentPage(1));
 elements.loginForm.addEventListener("submit", event => {
   event.preventDefault();
   login();
@@ -158,6 +177,7 @@ async function refreshAll() {
     loadDashboard(),
     searchTrains(),
     loadOrders(),
+    loadPayments(),
     loadRisks(),
     loadLogs(),
   ]);
@@ -315,10 +335,13 @@ function renderOrders(orders) {
   document.querySelectorAll("[data-pay]").forEach(button => {
     button.addEventListener("click", () => payOrder(button.dataset.pay));
   });
+  document.querySelectorAll("[data-create-payment]").forEach(button => {
+    button.addEventListener("click", () => createPayment(button.dataset.createPayment));
+  });
   document.querySelectorAll("[data-close-order]").forEach(button => {
     button.addEventListener("click", () => closeOrder(button.dataset.closeOrder));
   });
-    document.querySelectorAll("[data-refund]").forEach(button => {
+  document.querySelectorAll("[data-refund]").forEach(button => {
     button.addEventListener("click", () => refundOrder(button.dataset.refund));
   });
 }
@@ -373,6 +396,7 @@ function renderOrderActions(order) {
   if (order.status === "PENDING_PAYMENT") {
     return `
       <div class="inline-actions">
+        <button class="secondary-button compact-button" type="button" data-create-payment="${order.id}">流水</button>
         <button class="secondary-button compact-button" type="button" data-pay="${order.id}">支付</button>
         <button class="danger-button compact-button" type="button" data-close-order="${order.id}">关闭</button>
       </div>
@@ -412,6 +436,146 @@ async function refundOrder(orderId) {
   } catch (error) {
     showToast(error.message || "退票失败");
   }
+}
+
+async function createPaymentFromInput() {
+  const orderId = elements.paymentOrderId.value;
+  if (!orderId) {
+    showToast("请输入待支付订单 ID");
+    return;
+  }
+  await createPayment(orderId);
+}
+
+async function createPayment(orderId) {
+  try {
+    const payment = await request("/payments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderId: Number(orderId),
+        requestId: generatePaymentRequestId(orderId),
+      }),
+    });
+    elements.paymentOrderId.value = payment.orderId;
+    showToast("支付流水已创建：" + payment.paymentNo);
+    state.paymentPage.page = 0;
+    await loadPaymentsPage();
+  } catch (error) {
+    showToast(error.message || "创建支付流水失败");
+  }
+}
+
+async function loadPayments() {
+  state.paymentPage.page = 0;
+  await loadPaymentsPage();
+}
+
+async function loadPaymentsPage() {
+  try {
+    const page = await request(buildPaymentQueryPath());
+    state.paymentPage = {
+      page: page.page,
+      size: page.size,
+      totalPages: page.totalPages,
+      totalElements: page.totalElements,
+      first: page.first,
+      last: page.last,
+    };
+    renderPayments(page.content || []);
+    renderPaymentPagination();
+  } catch (error) {
+    elements.paymentResults.innerHTML = tableEmpty(9, "无法获取支付流水");
+    renderPaymentPagination();
+  }
+}
+
+function buildPaymentQueryPath() {
+  const params = new URLSearchParams();
+  appendParam(params, "orderId", elements.paymentOrderId.value);
+  appendParam(params, "status", elements.paymentStatus.value);
+  appendParam(params, "paymentNo", elements.paymentNoFilter.value);
+  params.set("page", String(state.paymentPage.page));
+  params.set("size", String(state.paymentPage.size));
+  return `/payments?${params.toString()}`;
+}
+
+function renderPayments(payments) {
+  if (payments.length === 0) {
+    elements.paymentResults.innerHTML = tableEmpty(9, "暂无支付流水");
+    return;
+  }
+  elements.paymentResults.innerHTML = payments
+    .map(payment => `
+      <tr>
+        <td>${payment.paymentNo}</td>
+        <td>${payment.orderNo}<br><span class="muted-text">#${payment.orderId}</span></td>
+        <td>${payment.userId}</td>
+        <td>¥${payment.amount}</td>
+        <td><span class="status ${paymentStatusClass(payment.status)}">${paymentStatusText(payment.status)}</span></td>
+        <td>${payment.channel}</td>
+        <td>${formatDateTime(payment.createdAt)}</td>
+        <td>${formatDateTime(payment.paidAt) || "-"}</td>
+        <td>${renderPaymentActions(payment)}</td>
+      </tr>
+    `)
+    .join("");
+
+  document.querySelectorAll("[data-payment-success]").forEach(button => {
+    button.addEventListener("click", () => callbackPayment(button.dataset.paymentSuccess, true));
+  });
+  document.querySelectorAll("[data-payment-fail]").forEach(button => {
+    button.addEventListener("click", () => callbackPayment(button.dataset.paymentFail, false));
+  });
+}
+
+function renderPaymentActions(payment) {
+  if (payment.status !== "PENDING") {
+    return "-";
+  }
+  return `
+    <div class="inline-actions">
+      <button class="secondary-button compact-button" type="button" data-payment-success="${payment.paymentNo}">成功回调</button>
+      <button class="danger-button compact-button" type="button" data-payment-fail="${payment.paymentNo}">失败回调</button>
+    </div>
+  `;
+}
+
+async function callbackPayment(paymentNo, success) {
+  try {
+    const payment = await request("/payments/callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paymentNo,
+        callbackRequestId: generateCallbackRequestId(paymentNo, success),
+        success,
+        message: success ? "mock payment success" : "mock payment failed",
+      }),
+    });
+    showToast(success ? "支付成功回调已处理" : "支付失败回调已处理");
+    elements.paymentOrderId.value = payment.orderId;
+    await refreshAll();
+  } catch (error) {
+    showToast(error.message || "支付回调失败");
+  }
+}
+
+function renderPaymentPagination() {
+  const totalPages = Math.max(1, state.paymentPage.totalPages || 0);
+  const currentPage = Math.min((state.paymentPage.page || 0) + 1, totalPages);
+  elements.paymentPageInfo.textContent = `第 ${currentPage} / ${totalPages} 页，共 ${state.paymentPage.totalElements || 0} 条`;
+  elements.prevPayments.disabled = Boolean(state.paymentPage.first);
+  elements.nextPayments.disabled = Boolean(state.paymentPage.last);
+}
+
+async function changePaymentPage(offset) {
+  const nextPage = Math.max(0, state.paymentPage.page + offset);
+  if (nextPage === state.paymentPage.page) {
+    return;
+  }
+  state.paymentPage.page = nextPage;
+  await loadPaymentsPage();
 }
 
 async function loadRisks() {
@@ -514,6 +678,10 @@ function formatTime(value) {
   return String(value || "").slice(0, 5);
 }
 
+function formatDateTime(value) {
+  return value ? String(value).replace("T", " ").slice(0, 16) : "";
+}
+
 function formatPercent(value) {
   const number = Number(value || 0);
   return `${(number * 100).toFixed(1)}%`;
@@ -545,6 +713,24 @@ function orderStatusClass(value) {
     REFUNDED: "refunded",
     CLOSED: "closed",
     CANCELLED: "closed",
+  };
+  return map[value] || "";
+}
+
+function paymentStatusText(value) {
+  const map = {
+    PENDING: "待支付",
+    SUCCESS: "支付成功",
+    FAILED: "支付失败",
+  };
+  return map[value] || value;
+}
+
+function paymentStatusClass(value) {
+  const map = {
+    PENDING: "pending",
+    SUCCESS: "",
+    FAILED: "closed",
   };
   return map[value] || "";
 }
@@ -581,6 +767,14 @@ function generateRequestId() {
     return window.crypto.randomUUID();
   }
   return `REQ-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function generatePaymentRequestId(orderId) {
+  return `PAYREQ-${orderId}-${generateRequestId()}`;
+}
+
+function generateCallbackRequestId(paymentNo, success) {
+  return `CALLBACK-${success ? "SUCCESS" : "FAILED"}-${paymentNo}-${generateRequestId()}`;
 }
 
 function showToast(message) {

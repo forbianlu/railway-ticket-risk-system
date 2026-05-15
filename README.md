@@ -6,6 +6,7 @@
 
 - 完整票务闭环：查询车次、创建待支付订单、锁定库存、支付确认、退票释放库存、超时关闭释放库存。
 - 订单状态机：支持 `PENDING_PAYMENT -> PAID -> REFUNDED`，以及待支付订单关闭为 `CLOSED`。
+- 支付流水与回调幂等：支持创建模拟支付流水、处理支付成功/失败回调，并用 `callbackRequestId` 防止重复回调重复触发风控。
 - 库存防超卖：座位库存使用 JPA 乐观锁版本号，锁票冲突时返回明确提示。
 - 订单幂等提交：下单支持 `requestId`，同一用户重复提交同一请求不会重复扣库存。
 - 热门查询缓存：车次余票查询支持本地 TTL 缓存，锁票、支付、关闭和退票后按线路日期失效缓存。
@@ -92,6 +93,9 @@ POST /api/orders/{id}/close
 POST /api/orders/close-expired
 POST /api/orders/{id}/refund
 GET  /api/orders?userId=1001&status=PAID&page=0&size=10
+POST /api/payments
+POST /api/payments/callback
+GET  /api/payments?status=SUCCESS&page=0&size=10
 GET  /api/risks
 POST /api/risks/{id}/handle
 GET  /api/cache/train-search
@@ -185,6 +189,8 @@ INVENTORY_ID=1
 已验证链路：
 
 - 创建待支付订单后余票锁定，支付成功后触发短时多次购票、高金额订单风险。
+- 支付流水创建后为 `PENDING`，成功回调后变为 `SUCCESS` 并确认订单支付，重复回调不重复触发风控。
+- 支付失败回调后流水变为 `FAILED`，订单仍保持待支付，可重新创建流水或等待超时关闭。
 - 连续退票后库存释放，并触发频繁退票风险。
 - 待支付订单可手动关闭或超时批量关闭，关闭后库存自动释放。
 - 风险事件可标记已处理，处置动作进入操作日志。
@@ -192,7 +198,7 @@ INVENTORY_ID=1
 - 车次查询重复请求可命中缓存，锁票、支付、关闭和退票后按线路日期失效缓存。
 - 16 个并发请求抢 1 张票时，只成功生成 1 个待支付订单，库存最终为 0。
 - 使用同一 `requestId` 重复下单时返回原订单，库存只扣减一次。
-- 集成测试覆盖车次查询、下单、支付、超时关闭、订单幂等、退票、订单分页筛选、看板增强指标、风控生成、风险处置、权限保护、缓存失效和并发防超卖。
+- 集成测试覆盖车次查询、下单、支付流水、支付回调幂等、超时关闭、订单幂等、退票、订单分页筛选、看板增强指标、风控生成、风险处置、权限保护、缓存失效和并发防超卖。
 
 ## 简历写法示例
 
@@ -203,11 +209,14 @@ INVENTORY_ID=1
 
 运营管理补充：订单查询接口支持按用户、状态、订单号和创建日期组合筛选，并使用 Spring Data JPA `Specification` + `PageRequest` 返回分页结果；运营看板补充待支付、已关闭、退票率、风险率等指标，便于从后台管理视角分析订单状态分布和交易风险。
 
+支付链路补充：新增支付流水表和模拟支付回调接口，支付流水使用 `PENDING`、`SUCCESS`、`FAILED` 状态独立记录支付侧处理结果；成功回调复用订单支付状态机，将订单从待支付确认到已支付，并通过 `callbackRequestId` 保证重复回调不会重复改订单、重复写成功业务日志或重复触发风控。
+
 ## 文档
 
 - 项目大纲：`docs/project-outline.md`
 - API 设计：`docs/api-design.md`
 - 订单状态机设计：`docs/order-state-design.md`
+- 支付流水设计：`docs/payment-design.md`
 - 订单幂等设计：`docs/idempotency-design.md`
 - 缓存设计：`docs/cache-design.md`
 - 并发防超卖设计：`docs/concurrency-design.md`

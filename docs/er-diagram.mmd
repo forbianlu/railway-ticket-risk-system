@@ -4,6 +4,7 @@ erDiagram
     TRAINS ||--o{ SEAT_INVENTORIES : has
     TRAINS ||--o{ TICKET_ORDERS : creates
     SEAT_INVENTORIES ||--o{ TICKET_ORDERS : locks
+    TICKET_ORDERS ||--o{ PAYMENT_RECORDS : pays
     TICKET_ORDERS ||--o{ RISK_EVENTS : triggers
 
     APP_USERS {
@@ -73,6 +74,23 @@ erDiagram
         varchar reason
         boolean handled
         timestamp created_at
+    }
+
+    PAYMENT_RECORDS {
+        bigint id PK
+        varchar payment_no
+        bigint order_id FK
+        varchar order_no
+        bigint user_id
+        decimal amount
+        varchar status
+        varchar channel
+        varchar request_id
+        varchar callback_request_id
+        varchar callback_message
+        timestamp paid_at
+        timestamp created_at
+        timestamp updated_at
     }
 
     OPERATION_LOGS {

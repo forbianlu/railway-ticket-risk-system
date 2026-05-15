@@ -42,6 +42,8 @@
 - 查询缓存：按出发站、到达站、乘车日期缓存余票结果
 - 创建订单：校验余票，校验幂等号，扣减库存，生成待支付订单
 - 模拟支付：待支付订单支付成功后进入已支付状态，并触发支付后风控规则
+- 支付流水：为待支付订单创建支付流水，记录支付号、渠道、金额和支付状态
+- 支付回调：模拟第三方支付成功/失败回调，使用 `callbackRequestId` 保证重复回调幂等
 - 超时关闭：待支付订单超过支付截止时间后关闭，释放已锁定库存
 - 订单查询：按用户、订单状态、订单号、创建日期组合筛选，并支持分页返回
 - 退票：更新订单状态，释放库存
@@ -140,6 +142,9 @@
 - `POST /api/orders/close-expired`
 - `POST /api/orders/{id}/refund`
 - `GET /api/orders`
+- `POST /api/payments`
+- `POST /api/payments/callback`
+- `GET /api/payments`
 - `GET /api/risks`
 - `GET /api/cache/train-search`
 - `GET /api/dashboard/summary`
@@ -155,6 +160,7 @@
 - 车次查询
 - 下单与退票
 - 订单支付状态机和超时关闭
+- 支付流水表和支付回调幂等
 - 订单分页筛选
 - 运营看板状态指标和风险指标
 - 基础风控规则

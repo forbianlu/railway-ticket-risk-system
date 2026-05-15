@@ -359,6 +359,10 @@ button:disabled {
   grid-template-columns: minmax(130px, 0.8fr) minmax(150px, 1fr) minmax(180px, 1.1fr) repeat(2, minmax(150px, 1fr)) auto auto;
 }
 
+.payments-toolbar {
+  grid-template-columns: minmax(150px, 0.8fr) minmax(150px, 0.8fr) minmax(220px, 1.1fr) auto auto;
+}
+
 .pagination {
   margin-top: 14px;
   display: flex;
@@ -367,6 +371,11 @@ button:disabled {
   gap: 12px;
   color: var(--muted);
   font-size: 13px;
+}
+
+.muted-text {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .table-wrap {
@@ -548,6 +557,7 @@ body[data-capture="risks"] .section:not(#risks) {
   .metric-grid,
   .toolbar,
   .orders-toolbar,
+  .payments-toolbar,
   .split {
     grid-template-columns: 1fr;
   }

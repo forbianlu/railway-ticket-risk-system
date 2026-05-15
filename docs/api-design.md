@@ -136,6 +136,110 @@ POST /api/orders/1/refund
 GET /api/orders?userId=1001&status=PAID&fromDate=2026-05-01&toDate=2026-05-31&orderNo=RT2026&page=0&size=10
 ```
 
+## 创建支付流水
+
+```http
+POST /api/payments
+Content-Type: application/json
+
+{
+  "orderId": 1,
+  "requestId": "pay-req-001"
+}
+```
+
+语义：
+
+- 只能为 `PENDING_PAYMENT` 订单创建支付流水。
+- 同一订单已有 `PENDING` 支付流水时直接返回原流水。
+- 相同 `requestId` 重复创建时直接返回原流水。
+- `PAID`、`CLOSED`、`REFUNDED` 订单不能创建新支付流水。
+
+响应：
+
+```json
+{
+  "id": 1,
+  "paymentNo": "PAY202605150930001234",
+  "orderId": 1,
+  "orderNo": "RT202605150001234",
+  "userId": 1001,
+  "amount": 553.00,
+  "status": "PENDING",
+  "channel": "MOCK",
+  "requestId": "pay-req-001",
+  "callbackRequestId": null,
+  "paidAt": null,
+  "createdAt": "2026-05-15T09:30:00"
+}
+```
+
+## 支付回调
+
+```http
+POST /api/payments/callback
+Content-Type: application/json
+
+{
+  "paymentNo": "PAY202605150930001234",
+  "callbackRequestId": "callback-001",
+  "success": true,
+  "message": "mock payment success"
+}
+```
+
+成功回调语义：
+
+- `PENDING` 支付流水变为 `SUCCESS`。
+- 订单从 `PENDING_PAYMENT` 变为 `PAID`。
+- 写入支付成功时间。
+- 触发支付后风控规则。
+- 写入操作日志。
+- 失效对应车次查询缓存。
+
+失败回调语义：
+
+- `PENDING` 支付流水变为 `FAILED`。
+- 订单保持 `PENDING_PAYMENT`。
+- 不触发风控。
+- 用户可重新创建支付流水，或等待订单超时关闭。
+
+回调幂等：
+
+- 相同 `callbackRequestId` 重复回调直接返回第一次处理后的支付流水。
+- 已经 `SUCCESS` 的支付流水再次收到回调直接返回原流水，不重复触发风控。
+- 已经 `FAILED` 的支付流水不再允许改为 `SUCCESS`，需要重新创建支付流水。
+
+## 查询支付流水
+
+```http
+GET /api/payments?orderId=1&status=SUCCESS&paymentNo=PAY2026&page=0&size=10
+```
+
+查询参数：
+
+| 参数 | 是否必填 | 说明 |
+| --- | --- | --- |
+| orderId | 否 | 按订单 ID 筛选 |
+| status | 否 | 支付状态：`PENDING`、`SUCCESS`、`FAILED` |
+| paymentNo | 否 | 支付流水号模糊查询 |
+| page | 否 | 页码，从 0 开始，默认 0 |
+| size | 否 | 每页大小，默认 10，最大 100 |
+
+分页响应结构与订单分页一致：
+
+```json
+{
+  "content": [],
+  "page": 0,
+  "size": 10,
+  "totalElements": 0,
+  "totalPages": 0,
+  "first": true,
+  "last": true
+}
+```
+
 查询参数：
 
 | 参数 | 是否必填 | 说明 |

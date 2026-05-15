@@ -31,10 +31,14 @@ import com.example.railway.domain.TicketOrder;
 import com.example.railway.domain.Train;
 import com.example.railway.dto.AuthResponse;
 import com.example.railway.dto.CreateOrderRequest;
+import com.example.railway.dto.CreatePaymentRequest;
 import com.example.railway.dto.DashboardSummary;
 import com.example.railway.dto.LoginRequest;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
+import com.example.railway.dto.PaymentCallbackRequest;
+import com.example.railway.dto.PaymentPageResponse;
+import com.example.railway.dto.PaymentResponse;
 import com.example.railway.dto.RiskEventResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
@@ -251,6 +255,107 @@ class RailwayApiIntegrationTests {
 
         assertThat(refunded.getStatus()).isEqualTo("REFUNDED");
         assertThat(duplicateRefund.getStatusCodeValue()).isEqualTo(400);
+    }
+
+    @Test
+    void shouldCreatePaymentAndHandleSuccessCallbackIdempotently() {
+        TrainSearchResponse train = firstTrainInventory();
+        long userId = 3130L;
+        createPaidOrder(userId, train, "PaymentCallbackRiskA");
+        createPaidOrder(userId, train, "PaymentCallbackRiskB");
+        OrderResponse pending = createOrder(userId, train, "PaymentCallbackRiskC");
+        long riskCountBeforeCallback = countRisksForUser(userId);
+        String requestId = "pay-create-" + System.nanoTime();
+
+        PaymentResponse created = createPayment(pending.getId(), requestId);
+        PaymentResponse duplicateCreate = createPayment(pending.getId(), requestId);
+        PaymentResponse success = callbackPayment(created.getPaymentNo(), "callback-success-" + System.nanoTime(), true);
+        long riskCountAfterCallback = countRisksForUser(userId);
+        PaymentResponse duplicateCallback = callbackPayment(created.getPaymentNo(), success.getCallbackRequestId(), true);
+        long riskCountAfterDuplicateCallback = countRisksForUser(userId);
+        TicketOrder paidOrder = ticketOrderRepository.findById(pending.getId())
+                .orElseThrow(() -> new AssertionError("expected order"));
+
+        assertThat(created.getStatus()).isEqualTo("PENDING");
+        assertThat(duplicateCreate.getId()).isEqualTo(created.getId());
+        assertThat(success.getStatus()).isEqualTo("SUCCESS");
+        assertThat(success.getPaidAt()).isNotNull();
+        assertThat(paidOrder.getStatus().name()).isEqualTo("PAID");
+        assertThat(riskCountAfterCallback).isGreaterThan(riskCountBeforeCallback);
+        assertThat(duplicateCallback.getId()).isEqualTo(success.getId());
+        assertThat(riskCountAfterDuplicateCallback).isEqualTo(riskCountAfterCallback);
+        assertThat(ticketOrderRepository.findById(pending.getId())
+                .orElseThrow(() -> new AssertionError("expected order"))
+                .getStatus().name()).isEqualTo("PAID");
+    }
+
+    @Test
+    void shouldHandleFailedPaymentAndRejectInvalidPaymentCreation() {
+        TrainSearchResponse train = firstTrainInventory();
+        long userId = 3131L;
+        OrderResponse pending = createOrder(userId, train, "PaymentFailedUser");
+        PaymentResponse payment = createPayment(pending.getId(), "pay-failed-" + System.nanoTime());
+        long riskCountBeforeCallback = countRisksForUser(userId);
+
+        PaymentResponse failed = callbackPayment(payment.getPaymentNo(), "callback-failed-" + System.nanoTime(), false);
+        long riskCountAfterCallback = countRisksForUser(userId);
+        TicketOrder orderAfterFailedPayment = ticketOrderRepository.findById(pending.getId())
+                .orElseThrow(() -> new AssertionError("expected order"));
+        ResponseEntity<String> successAfterFailed = callbackPaymentRaw(
+                payment.getPaymentNo(),
+                "callback-success-after-failed-" + System.nanoTime(),
+                true
+        );
+
+        OrderResponse closed = closeOrder(createOrder(3132L, train, "PaymentClosedUser").getId());
+        OrderResponse refunded = refundOrder(createPaidOrder(3133L, train, "PaymentRefundedUser").getId());
+        ResponseEntity<String> createForClosed = createPaymentRaw(closed.getId(), "pay-closed-" + System.nanoTime());
+        ResponseEntity<String> createForRefunded = createPaymentRaw(refunded.getId(), "pay-refunded-" + System.nanoTime());
+
+        assertThat(failed.getStatus()).isEqualTo("FAILED");
+        assertThat(orderAfterFailedPayment.getStatus().name()).isEqualTo("PENDING_PAYMENT");
+        assertThat(riskCountAfterCallback).isEqualTo(riskCountBeforeCallback);
+        assertThat(successAfterFailed.getStatusCodeValue()).isEqualTo(400);
+        assertThat(createForClosed.getStatusCodeValue()).isEqualTo(400);
+        assertThat(createForRefunded.getStatusCodeValue()).isEqualTo(400);
+    }
+
+    @Test
+    void shouldPageAndFilterPaymentRecords() {
+        TrainSearchResponse train = firstTrainInventory();
+        long userId = 3134L;
+        PaymentResponse pending = createPayment(
+                createOrder(userId, train, "PaymentPagePending").getId(),
+                "pay-page-pending-" + System.nanoTime()
+        );
+        PaymentResponse success = callbackPayment(
+                createPayment(createOrder(userId, train, "PaymentPageSuccess").getId(), "pay-page-success-" + System.nanoTime()).getPaymentNo(),
+                "callback-page-success-" + System.nanoTime(),
+                true
+        );
+        PaymentResponse failed = callbackPayment(
+                createPayment(createOrder(userId, train, "PaymentPageFailed").getId(), "pay-page-failed-" + System.nanoTime()).getPaymentNo(),
+                "callback-page-failed-" + System.nanoTime(),
+                false
+        );
+
+        PaymentPageResponse orderPage = fetchPaymentPage("/api/payments?orderId={orderId}", pending.getOrderId());
+        PaymentPageResponse firstPage = fetchPaymentPage("/api/payments?page=0&size=1");
+        PaymentPageResponse successPage = fetchPaymentPage("/api/payments?status=SUCCESS");
+        PaymentPageResponse failedPage = fetchPaymentPage("/api/payments?status=FAILED");
+        PaymentPageResponse paymentNoPage = fetchPaymentPage("/api/payments?paymentNo={paymentNo}", success.getPaymentNo().substring(0, 8));
+        ResponseEntity<String> invalidStatus = restTemplate.getForEntity("/api/payments?status=UNKNOWN", String.class);
+
+        assertThat(orderPage.getContent()).extracting(PaymentResponse::getId).contains(pending.getId());
+        assertThat(firstPage.getContent()).hasSize(1);
+        assertThat(firstPage.getTotalElements()).isGreaterThanOrEqualTo(3);
+        assertThat(firstPage.getPage()).isEqualTo(0);
+        assertThat(firstPage.getSize()).isEqualTo(1);
+        assertThat(successPage.getContent()).extracting(PaymentResponse::getStatus).contains("SUCCESS");
+        assertThat(failedPage.getContent()).extracting(PaymentResponse::getStatus).contains("FAILED");
+        assertThat(paymentNoPage.getContent()).extracting(PaymentResponse::getPaymentNo).contains(success.getPaymentNo());
+        assertThat(failed.getStatus()).isEqualTo("FAILED");
+        assertThat(invalidStatus.getStatusCodeValue()).isEqualTo(400);
     }
 
     @Test
@@ -493,6 +598,45 @@ class RailwayApiIntegrationTests {
 
     private OrderPageResponse fetchOrderPage(String url, Object... uriVariables) {
         OrderPageResponse response = restTemplate.getForObject(url, OrderPageResponse.class, uriVariables);
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).isNotNull();
+        return response;
+    }
+
+    private PaymentResponse createPayment(Long orderId, String requestId) {
+        CreatePaymentRequest request = new CreatePaymentRequest();
+        request.setOrderId(orderId);
+        request.setRequestId(requestId);
+        return restTemplate.postForObject("/api/payments", request, PaymentResponse.class);
+    }
+
+    private ResponseEntity<String> createPaymentRaw(Long orderId, String requestId) {
+        CreatePaymentRequest request = new CreatePaymentRequest();
+        request.setOrderId(orderId);
+        request.setRequestId(requestId);
+        return restTemplate.postForEntity("/api/payments", request, String.class);
+    }
+
+    private PaymentResponse callbackPayment(String paymentNo, String callbackRequestId, boolean success) {
+        PaymentCallbackRequest request = new PaymentCallbackRequest();
+        request.setPaymentNo(paymentNo);
+        request.setCallbackRequestId(callbackRequestId);
+        request.setSuccess(success);
+        request.setMessage(success ? "mock payment success" : "mock payment failed");
+        return restTemplate.postForObject("/api/payments/callback", request, PaymentResponse.class);
+    }
+
+    private ResponseEntity<String> callbackPaymentRaw(String paymentNo, String callbackRequestId, boolean success) {
+        PaymentCallbackRequest request = new PaymentCallbackRequest();
+        request.setPaymentNo(paymentNo);
+        request.setCallbackRequestId(callbackRequestId);
+        request.setSuccess(success);
+        request.setMessage(success ? "mock payment success" : "mock payment failed");
+        return restTemplate.postForEntity("/api/payments/callback", request, String.class);
+    }
+
+    private PaymentPageResponse fetchPaymentPage(String url, Object... uriVariables) {
+        PaymentPageResponse response = restTemplate.getForObject(url, PaymentPageResponse.class, uriVariables);
         assertThat(response).isNotNull();
         assertThat(response.getContent()).isNotNull();
         return response;

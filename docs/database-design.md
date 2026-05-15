@@ -91,6 +91,33 @@
 | handled | boolean | 是否处理 |
 | created_at | timestamp | 创建时间 |
 
+## payment_records
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint | 主键 |
+| payment_no | varchar | 支付流水号，唯一 |
+| order_id | bigint | 关联订单 ID |
+| order_no | varchar | 关联订单号，便于展示 |
+| user_id | bigint | 用户 ID |
+| amount | decimal | 支付金额 |
+| status | varchar | 支付状态：PENDING、SUCCESS、FAILED |
+| channel | varchar | 支付渠道，当前为 MOCK |
+| request_id | varchar | 创建支付流水请求号，用于创建幂等 |
+| callback_request_id | varchar | 支付回调请求号，用于回调幂等 |
+| callback_message | varchar | 回调消息 |
+| paid_at | timestamp | 支付成功时间 |
+| created_at | timestamp | 创建时间 |
+| updated_at | timestamp | 更新时间 |
+
+支付流水状态说明：
+
+| 状态 | 说明 | 对订单影响 |
+| --- | --- | --- |
+| PENDING | 已创建支付流水，等待回调 | 订单仍为 PENDING_PAYMENT |
+| SUCCESS | 支付成功 | 订单变为 PAID，触发支付后风控 |
+| FAILED | 支付失败 | 订单保持 PENDING_PAYMENT，可重新创建流水或等待关闭 |
+
 ## operation_logs
 
 | 字段 | 类型 | 说明 |
