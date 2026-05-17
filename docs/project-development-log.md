@@ -1,5 +1,15 @@
 # 项目开发日志
 
+## 阶段提交索引
+
+| 阶段 | 提交 | 说明 |
+| --- | --- | --- |
+| 订单支付状态机与超时关闭 | `7403c58 add order payment state machine` | 创建订单进入待支付、支付成功、关闭、超时关闭、退票和库存释放 |
+| 订单分页筛选与运营看板指标增强 | `caf77b0 add order filtering and dashboard metrics` | 订单多条件分页查询，运营看板补充状态统计、退票率、风险率 |
+| 支付流水表与支付回调幂等 | `b40b735 add payment records and callback idempotency` | 支付流水、模拟支付回调、`callbackRequestId` 幂等 |
+| 风险处置闭环增强 | `0fc4543 enhance risk handling workflow` | 风险状态、处置备注、处理人、处理时间、处置历史和权限控制 |
+| 风险事件分页筛选与风险运营报表增强 | `1f77ac7 add risk query pagination and summary` | 风险分页筛选、风险运营报表、前端风险统计展示 |
+
 ## 2026-05-15 风险处置闭环增强
 
 ### 本轮任务目标
@@ -207,3 +217,91 @@ add risk query pagination and summary
 - 为高风险事件增加处理 SLA 和超时提醒。
 - 支持按风险等级、处理人继续筛选。
 - 后续可增加风险趋势图和日报统计。
+
+## 2026-05-17 项目收尾体检与 GitHub 展示优化
+
+### 本轮任务目标
+
+对项目做收尾体检，确认上一轮风险分页报表成果已提交；检查 README、docs、图片资源、API 文档、数据库文档、ER 图、简历面试材料、前端 JS 和 Maven 测试；优化 GitHub 展示效果，并新增最终总结文档。
+
+### 开发前状态
+
+- 订单支付状态机与超时关闭已提交：`7403c58 add order payment state machine`。
+- 订单分页筛选与运营看板指标增强已提交：`caf77b0 add order filtering and dashboard metrics`。
+- 支付流水表与支付回调幂等已提交：`b40b735 add payment records and callback idempotency`。
+- 风险处置闭环增强已提交：`0fc4543 enhance risk handling workflow`。
+- 风险事件分页筛选与风险运营报表增强在本轮开始时尚未提交。
+- 工作区存在未跟踪规划文件 `docs/project-context-for-gpt.md`，本轮继续不纳入核心功能提交。
+
+### 是否提交上一轮风险分页报表功能
+
+已在 Maven 测试通过后提交上一轮风险分页报表成果：
+
+```text
+1f77ac7 add risk query pagination and summary
+```
+
+### 本轮检查了哪些内容
+
+- README 中引用的文档和图片是否存在。
+- docs 目录中的 Markdown 相对链接是否存在。
+- docs/assets 下 README 引用的 SVG 和截图是否存在。
+- API 文档是否覆盖订单、支付、风险、看板、缓存、权限和日志接口。
+- 数据库设计和 ER 图是否包含当前主要表。
+- 简历面试文档是否包含状态机、防超卖、幂等、支付回调、风控、缓存、权限和测试亮点。
+- project-development-log 是否包含最近几轮开发记录。
+- 前端 `frontend/app.js` 是否通过语法检查。
+- 后端 Maven 测试是否通过。
+
+### README 做了哪些优化
+
+- 增加项目简介，明确项目面向铁路局、银行科技岗和央国企软件岗。
+- 强调当前是后端主导型交易与风控系统，避免误导为真实支付、Redis、MQ 或 Spring Security 项目。
+- 重新组织核心亮点、技术栈、系统架构与流程、功能模块、快速启动、测试方式、接口概览、数据库核心表、简历写法和面试可讲点。
+- 补充当前测试数量和前端脚本检查命令。
+- 新增最终总结文档入口。
+
+### docs 做了哪些一致性修复
+
+- 修正 `docs/api-design.md` 中订单分页响应说明的位置，使其回到“查询订单”章节。
+- 确认 `docs/database-design.md` 和 `docs/er-diagram.mmd` 已包含 `app_users`、`stations`、`trains`、`seat_inventories`、`ticket_orders`、`payment_records`、`risk_events`、`risk_event_handle_records`、`operation_logs`。
+- 确认 `docs/resume-and-interview.md` 已包含订单状态机、并发防超卖、订单幂等、支付回调幂等、风控规则引擎、风险处置闭环、查询缓存、权限审计和集成测试。
+- 在本文件顶部追加阶段提交索引，串联最近五轮核心开发成果。
+
+### 是否新增 final-project-summary.md
+
+已新增 `docs/final-project-summary.md`，用于项目复习和面试准备。
+
+### 测试结果
+
+Markdown 链接扫描通过，未发现失效相对链接。
+
+前端 JS 语法检查通过：
+
+```text
+node --check frontend\app.js
+```
+
+Maven 测试通过：
+
+```text
+Tests run: 21
+Failures: 0
+Errors: 0
+Skipped: 0
+BUILD SUCCESS
+```
+
+### 当前提交状态
+
+上一轮风险分页报表成果已提交。本轮“项目收尾体检与 GitHub 展示优化”尚未提交，建议确认后使用：
+
+```text
+polish docs and project showcase
+```
+
+### 后续建议
+
+- 提交本轮文档收尾改动后再 push 到 GitHub。
+- GitHub README 首页可配合截图展示管理台核心页面。
+- 简历中保留 3 到 5 个最强亮点，面试时再展开支付幂等、状态机、风控闭环和并发防超卖。
