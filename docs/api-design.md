@@ -280,7 +280,7 @@ GET /api/payments?orderId=1&status=SUCCESS&paymentNo=PAY2026&page=0&size=10
 ## 查询风险事件
 
 ```http
-GET /api/risks?status=PENDING&scene=ORDER_CREATED
+GET /api/risks?status=PENDING&scene=ORDER_CREATED&userId=1001&orderNo=RT2026&fromDate=2026-05-01&toDate=2026-05-31&page=0&size=10
 ```
 
 查询参数：
@@ -289,30 +289,82 @@ GET /api/risks?status=PENDING&scene=ORDER_CREATED
 | --- | --- | --- |
 | status | 否 | 风险状态：`PENDING`、`CONFIRMED`、`FALSE_POSITIVE`、`CLOSED` |
 | scene | 否 | 风控场景：`ORDER_CREATED`、`ORDER_REFUNDED` |
+| userId | 否 | 按用户 ID 筛选 |
+| orderNo | 否 | 按订单号模糊查询 |
+| fromDate | 否 | 创建日期起始，格式 `yyyy-MM-dd`，包含当天 |
+| toDate | 否 | 创建日期结束，格式 `yyyy-MM-dd`，包含当天 |
+| page | 否 | 页码，从 0 开始，默认 0 |
+| size | 否 | 每页大小，默认 10，最大 100 |
+
+非法 `status`、非法 `scene`、负数页码、非正数页大小或日期范围错误会返回 400。
 
 响应示例：
 
 ```json
-[
-  {
-    "id": 1,
-    "orderId": 12,
-    "orderNo": "RT202605150001234",
-    "userId": 1001,
-    "riskType": "RAPID_PURCHASE",
-    "riskLevel": "MEDIUM",
-    "scene": "ORDER_CREATED",
-    "status": "PENDING",
-    "reason": "用户 10 分钟内下单次数达到 3 次",
-    "handled": false,
-    "handleRemark": null,
-    "handledBy": null,
-    "handledAt": null,
-    "closedAt": null,
-    "createdAt": "2026-05-15T10:10:00"
-  }
-]
+{
+  "content": [
+    {
+      "id": 1,
+      "orderId": 12,
+      "orderNo": "RT202605150001234",
+      "userId": 1001,
+      "riskType": "RAPID_PURCHASE",
+      "riskLevel": "MEDIUM",
+      "scene": "ORDER_CREATED",
+      "status": "PENDING",
+      "reason": "用户 10 分钟内下单次数达到 3 次",
+      "handled": false,
+      "handleRemark": null,
+      "handledBy": null,
+      "handledAt": null,
+      "closedAt": null,
+      "createdAt": "2026-05-15T10:10:00"
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
 ```
+
+## 风险运营报表
+
+```http
+GET /api/risks/summary
+```
+
+响应示例：
+
+```json
+{
+  "totalRiskCount": 12,
+  "pendingRiskCount": 3,
+  "confirmedRiskCount": 4,
+  "falsePositiveRiskCount": 2,
+  "closedRiskCount": 3,
+  "pendingRate": 0.25,
+  "confirmedRate": 0.33,
+  "falsePositiveRate": 0.17,
+  "closedRate": 0.25,
+  "handlingCompletionRate": 0.75,
+  "averageHandleMinutes": 18.5,
+  "riskCountByScene": {
+    "ORDER_CREATED": 8,
+    "ORDER_REFUNDED": 4
+  },
+  "riskCountByStatus": {
+    "PENDING": 3,
+    "CONFIRMED": 4,
+    "FALSE_POSITIVE": 2,
+    "CLOSED": 3
+  }
+}
+```
+
+比例字段统一使用 0 到 1 的小数，分母使用 `max(1, totalRiskCount)` 避免除以 0。`handlingCompletionRate = 非 PENDING 风险数量 / max(1, totalRiskCount)`，`averageHandleMinutes` 基于 `handledAt - createdAt` 计算已首次处置事件的平均耗时。
 
 ## 处理风险事件
 

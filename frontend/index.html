@@ -245,7 +245,7 @@
           <div>
             <div class="section-title">
               <h2>风险事件</h2>
-              <p>按状态筛选风险事件，并记录处置备注与历史</p>
+              <p>按状态、场景、用户、订单号和创建日期筛选风险事件</p>
             </div>
             <div class="toolbar compact risk-toolbar">
               <label>
@@ -266,16 +266,83 @@
                   <option value="ORDER_REFUNDED">退票后</option>
                 </select>
               </label>
+              <label>
+                用户 ID
+                <input id="risk-user-id" type="number" min="1" placeholder="全部用户">
+              </label>
+              <label>
+                订单号
+                <input id="risk-order-no" type="text" placeholder="支持模糊查询">
+              </label>
+              <label>
+                起始日期
+                <input id="risk-from-date" type="date">
+              </label>
+              <label>
+                结束日期
+                <input id="risk-to-date" type="date">
+              </label>
               <button id="load-risks" class="secondary-button" type="button">查询</button>
+              <button id="reset-risks" class="ghost-button" type="button">重置</button>
             </div>
             <div id="risk-list" class="event-list"></div>
+            <div class="pagination">
+              <span id="risk-page-info">第 1 / 1 页，共 0 条</span>
+              <div class="inline-actions">
+                <button id="prev-risks" class="secondary-button compact-button" type="button">上一页</button>
+                <button id="next-risks" class="secondary-button compact-button" type="button">下一页</button>
+              </div>
+            </div>
           </div>
         <div>
           <div class="section-title">
-            <h2>热门车次</h2>
-            <p>根据订单数据聚合的运营指标</p>
+            <h2>风险运营报表</h2>
+            <p>按状态和场景统计风险运营压力</p>
           </div>
-          <div id="popular-trains" class="event-list"></div>
+          <div class="risk-summary-grid">
+            <div class="metric compact-metric">
+              <span>风险总数</span>
+              <strong id="risk-summary-total">0</strong>
+            </div>
+            <div class="metric compact-metric alert">
+              <span>待处理</span>
+              <strong id="risk-summary-pending">0</strong>
+            </div>
+            <div class="metric compact-metric">
+              <span>确认风险</span>
+              <strong id="risk-summary-confirmed">0</strong>
+            </div>
+            <div class="metric compact-metric">
+              <span>误报</span>
+              <strong id="risk-summary-false-positive">0</strong>
+            </div>
+            <div class="metric compact-metric">
+              <span>已关闭</span>
+              <strong id="risk-summary-closed">0</strong>
+            </div>
+            <div class="metric compact-metric">
+              <span>处置完成率</span>
+              <strong id="risk-summary-completion-rate">0%</strong>
+            </div>
+            <div class="metric compact-metric">
+              <span>误报率</span>
+              <strong id="risk-summary-false-positive-rate">0%</strong>
+            </div>
+            <div class="metric compact-metric">
+              <span>确认占比</span>
+              <strong id="risk-summary-confirmed-rate">0%</strong>
+            </div>
+          </div>
+          <div class="risk-breakdown">
+            <div>
+              <strong>按状态</strong>
+              <div id="risk-status-summary" class="event-list"></div>
+            </div>
+            <div>
+              <strong>按场景</strong>
+              <div id="risk-scene-summary" class="event-list"></div>
+            </div>
+          </div>
         </div>
       </section>
 

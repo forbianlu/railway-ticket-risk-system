@@ -19,6 +19,14 @@ const state = {
     first: true,
     last: true,
   },
+  riskPage: {
+    page: 0,
+    size: 10,
+    totalPages: 0,
+    totalElements: 0,
+    first: true,
+    last: true,
+  },
 };
 
 const elements = {
@@ -55,6 +63,23 @@ const elements = {
   nextPayments: document.querySelector("#next-payments"),
   riskStatus: document.querySelector("#risk-status"),
   riskScene: document.querySelector("#risk-scene"),
+  riskUserId: document.querySelector("#risk-user-id"),
+  riskOrderNo: document.querySelector("#risk-order-no"),
+  riskFromDate: document.querySelector("#risk-from-date"),
+  riskToDate: document.querySelector("#risk-to-date"),
+  riskPageInfo: document.querySelector("#risk-page-info"),
+  prevRisks: document.querySelector("#prev-risks"),
+  nextRisks: document.querySelector("#next-risks"),
+  riskSummaryTotal: document.querySelector("#risk-summary-total"),
+  riskSummaryPending: document.querySelector("#risk-summary-pending"),
+  riskSummaryConfirmed: document.querySelector("#risk-summary-confirmed"),
+  riskSummaryFalsePositive: document.querySelector("#risk-summary-false-positive"),
+  riskSummaryClosed: document.querySelector("#risk-summary-closed"),
+  riskSummaryCompletionRate: document.querySelector("#risk-summary-completion-rate"),
+  riskSummaryFalsePositiveRate: document.querySelector("#risk-summary-false-positive-rate"),
+  riskSummaryConfirmedRate: document.querySelector("#risk-summary-confirmed-rate"),
+  riskStatusSummary: document.querySelector("#risk-status-summary"),
+  riskSceneSummary: document.querySelector("#risk-scene-summary"),
   riskList: document.querySelector("#risk-list"),
   logList: document.querySelector("#log-list"),
   authRole: document.querySelector("#auth-role"),
@@ -80,6 +105,9 @@ document.querySelector("#load-payments").addEventListener("click", loadPayments)
 elements.prevPayments.addEventListener("click", () => changePaymentPage(-1));
 elements.nextPayments.addEventListener("click", () => changePaymentPage(1));
 document.querySelector("#load-risks").addEventListener("click", loadRisks);
+document.querySelector("#reset-risks").addEventListener("click", resetRiskFilters);
+elements.prevRisks.addEventListener("click", () => changeRiskPage(-1));
+elements.nextRisks.addEventListener("click", () => changeRiskPage(1));
 elements.loginForm.addEventListener("submit", event => {
   event.preventDefault();
   login();
@@ -182,6 +210,7 @@ async function refreshAll() {
     loadOrders(),
     loadPayments(),
     loadRisks(),
+    loadRiskSummary(),
     loadLogs(),
   ]);
 }
@@ -582,10 +611,25 @@ async function changePaymentPage(offset) {
 }
 
 async function loadRisks() {
+  state.riskPage.page = 0;
+  await loadRisksPage();
+}
+
+async function loadRisksPage() {
   try {
-    const risks = await request(buildRiskQueryPath());
+    const page = await request(buildRiskQueryPath());
+    state.riskPage = {
+      page: page.page,
+      size: page.size,
+      totalPages: page.totalPages,
+      totalElements: page.totalElements,
+      first: page.first,
+      last: page.last,
+    };
+    const risks = page.content || [];
     if (risks.length === 0) {
       elements.riskList.innerHTML = emptyItem("暂无风险事件");
+      renderRiskPagination();
       return;
     }
     elements.riskList.innerHTML = risks
@@ -614,8 +658,10 @@ async function loadRisks() {
     document.querySelectorAll("[data-risk-history]").forEach(button => {
       button.addEventListener("click", () => loadRiskHistory(button.dataset.riskHistory));
     });
+    renderRiskPagination();
   } catch (error) {
     elements.riskList.innerHTML = emptyItem("无法获取风险事件");
+    renderRiskPagination();
   }
 }
 
@@ -627,8 +673,85 @@ function buildRiskQueryPath() {
   if (elements.riskScene.value) {
     params.set("scene", elements.riskScene.value);
   }
+  if (elements.riskUserId.value) {
+    params.set("userId", elements.riskUserId.value);
+  }
+  if (elements.riskOrderNo.value.trim()) {
+    params.set("orderNo", elements.riskOrderNo.value.trim());
+  }
+  if (elements.riskFromDate.value) {
+    params.set("fromDate", elements.riskFromDate.value);
+  }
+  if (elements.riskToDate.value) {
+    params.set("toDate", elements.riskToDate.value);
+  }
+  params.set("page", state.riskPage.page);
+  params.set("size", state.riskPage.size);
   const query = params.toString();
   return query ? `/risks?${query}` : "/risks";
+}
+
+function renderRiskPagination() {
+  const totalPages = Math.max(1, state.riskPage.totalPages || 0);
+  const currentPage = Math.min((state.riskPage.page || 0) + 1, totalPages);
+  elements.riskPageInfo.textContent = `第 ${currentPage} / ${totalPages} 页，共 ${state.riskPage.totalElements || 0} 条`;
+  elements.prevRisks.disabled = Boolean(state.riskPage.first);
+  elements.nextRisks.disabled = Boolean(state.riskPage.last);
+}
+
+async function changeRiskPage(offset) {
+  const nextPage = Math.max(0, state.riskPage.page + offset);
+  if (nextPage === state.riskPage.page) {
+    return;
+  }
+  state.riskPage.page = nextPage;
+  await loadRisksPage();
+}
+
+async function resetRiskFilters() {
+  elements.riskStatus.value = "";
+  elements.riskScene.value = "";
+  elements.riskUserId.value = "";
+  elements.riskOrderNo.value = "";
+  elements.riskFromDate.value = "";
+  elements.riskToDate.value = "";
+  state.riskPage.page = 0;
+  await loadRisksPage();
+}
+
+async function loadRiskSummary() {
+  try {
+    const summary = await request("/risks/summary");
+    elements.riskSummaryTotal.textContent = summary.totalRiskCount || 0;
+    elements.riskSummaryPending.textContent = summary.pendingRiskCount || 0;
+    elements.riskSummaryConfirmed.textContent = summary.confirmedRiskCount || 0;
+    elements.riskSummaryFalsePositive.textContent = summary.falsePositiveRiskCount || 0;
+    elements.riskSummaryClosed.textContent = summary.closedRiskCount || 0;
+    elements.riskSummaryCompletionRate.textContent = formatPercent(summary.handlingCompletionRate);
+    elements.riskSummaryFalsePositiveRate.textContent = formatPercent(summary.falsePositiveRate);
+    elements.riskSummaryConfirmedRate.textContent = formatPercent(summary.confirmedRate);
+    renderRiskBreakdown(elements.riskStatusSummary, summary.riskCountByStatus || {}, riskStatusText);
+    renderRiskBreakdown(elements.riskSceneSummary, summary.riskCountByScene || {}, riskSceneText);
+  } catch (error) {
+    elements.riskStatusSummary.innerHTML = emptyItem("无法获取状态统计");
+    elements.riskSceneSummary.innerHTML = emptyItem("无法获取场景统计");
+  }
+}
+
+function renderRiskBreakdown(container, data, labelFormatter) {
+  const entries = Object.entries(data);
+  if (entries.length === 0) {
+    container.innerHTML = emptyItem("暂无统计");
+    return;
+  }
+  container.innerHTML = entries
+    .map(([key, value]) => `
+      <div class="event-item compact-event">
+        <strong>${labelFormatter(key)}</strong>
+        <span>${value || 0} 个事件</span>
+      </div>
+    `)
+    .join("");
 }
 
 function renderRiskActionControls(risk) {

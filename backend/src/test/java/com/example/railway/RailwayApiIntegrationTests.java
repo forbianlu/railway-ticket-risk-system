@@ -41,8 +41,10 @@ import com.example.railway.dto.PaymentCallbackRequest;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
 import com.example.railway.dto.RiskEventHandleRecordResponse;
+import com.example.railway.dto.RiskEventPageResponse;
 import com.example.railway.dto.RiskEventResponse;
 import com.example.railway.dto.RiskHandleRequest;
+import com.example.railway.dto.RiskSummaryResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
 import com.example.railway.repository.SeatInventoryRepository;
@@ -396,7 +398,7 @@ class RailwayApiIntegrationTests {
         createPaidOrder(userId, train, "RiskUserB");
         createPaidOrder(userId, train, "RiskUserC");
 
-        List<RiskEventResponse> risks = Arrays.asList(restTemplate.getForObject("/api/risks", RiskEventResponse[].class));
+        List<RiskEventResponse> risks = fetchRisks("/api/risks?userId={userId}&size=20", userId);
         RiskEventResponse unhandledRisk = risks.stream()
                 .filter(risk -> Long.valueOf(userId).equals(risk.getUserId()))
                 .filter(risk -> !risk.getHandled())
@@ -508,13 +510,90 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldPageFilterRisksAndExposeRiskSummary() {
+        TrainSearchResponse train = firstTrainInventory();
+        RiskEventResponse pendingRisk = createPendingRisk(3150L, train, "RiskQueryPending");
+        RiskEventResponse confirmedRisk = handleRisk(
+                createPendingRisk(3151L, train, "RiskQueryConfirmed").getId(),
+                login("admin", "admin123"),
+                "CONFIRMED",
+                "分页测试确认风险"
+        );
+        RiskEventResponse falsePositiveRisk = handleRisk(
+                createPendingRisk(3152L, train, "RiskQueryFalsePositive").getId(),
+                login("risk", "risk123"),
+                "FALSE_POSITIVE",
+                "分页测试误报"
+        );
+        RiskEventResponse closedRisk = handleRisk(
+                createPendingRisk(3153L, train, "RiskQueryClosed").getId(),
+                login("risk", "risk123"),
+                "CLOSED",
+                "分页测试关闭"
+        );
+        String today = LocalDate.now().toString();
+
+        RiskEventPageResponse defaultPage = fetchRiskPage("/api/risks?page=0&size=2");
+        RiskEventPageResponse pendingPage = fetchRiskPage("/api/risks?status=PENDING&userId={userId}", pendingRisk.getUserId());
+        RiskEventPageResponse confirmedPage = fetchRiskPage("/api/risks?status=CONFIRMED&userId={userId}", confirmedRisk.getUserId());
+        RiskEventPageResponse falsePositivePage = fetchRiskPage("/api/risks?status=FALSE_POSITIVE&userId={userId}", falsePositiveRisk.getUserId());
+        RiskEventPageResponse closedPage = fetchRiskPage("/api/risks?status=CLOSED&userId={userId}", closedRisk.getUserId());
+        RiskEventPageResponse scenePage = fetchRiskPage("/api/risks?scene=ORDER_CREATED&userId={userId}", pendingRisk.getUserId());
+        RiskEventPageResponse orderNoPage = fetchRiskPage("/api/risks?orderNo={orderNo}", pendingRisk.getOrderNo());
+        RiskEventPageResponse datePage = fetchRiskPage(
+                "/api/risks?userId={userId}&fromDate={fromDate}&toDate={toDate}",
+                pendingRisk.getUserId(),
+                today,
+                today
+        );
+
+        assertThat(defaultPage.getPage()).isEqualTo(0);
+        assertThat(defaultPage.getSize()).isEqualTo(2);
+        assertThat(defaultPage.getContent()).hasSizeLessThanOrEqualTo(2);
+        assertThat(defaultPage.getTotalElements()).isGreaterThanOrEqualTo(defaultPage.getContent().size());
+        assertThat(defaultPage.getTotalPages()).isGreaterThanOrEqualTo(1);
+        assertThat(defaultPage.isFirst()).isTrue();
+
+        assertThat(pendingPage.getContent()).extracting(RiskEventResponse::getStatus).containsOnly("PENDING");
+        assertThat(confirmedPage.getContent()).extracting(RiskEventResponse::getStatus).containsOnly("CONFIRMED");
+        assertThat(falsePositivePage.getContent()).extracting(RiskEventResponse::getStatus).containsOnly("FALSE_POSITIVE");
+        assertThat(closedPage.getContent()).extracting(RiskEventResponse::getStatus).containsOnly("CLOSED");
+        assertThat(scenePage.getContent()).extracting(RiskEventResponse::getScene).containsOnly("ORDER_CREATED");
+        assertThat(orderNoPage.getContent()).extracting(RiskEventResponse::getId).contains(pendingRisk.getId());
+        assertThat(datePage.getContent()).extracting(RiskEventResponse::getId).contains(pendingRisk.getId());
+
+        assertThat(restTemplate.getForEntity("/api/risks?status=UNKNOWN", String.class).getStatusCodeValue()).isEqualTo(400);
+        assertThat(restTemplate.getForEntity("/api/risks?page=-1", String.class).getStatusCodeValue()).isEqualTo(400);
+        assertThat(restTemplate.getForEntity("/api/risks?size=0", String.class).getStatusCodeValue()).isEqualTo(400);
+
+        RiskSummaryResponse summary = restTemplate.getForObject("/api/risks/summary", RiskSummaryResponse.class);
+        assertThat(summary).isNotNull();
+        assertThat(summary.getTotalRiskCount()).isGreaterThanOrEqualTo(4);
+        assertThat(summary.getPendingRiskCount()).isGreaterThan(0);
+        assertThat(summary.getConfirmedRiskCount()).isGreaterThan(0);
+        assertThat(summary.getFalsePositiveRiskCount()).isGreaterThan(0);
+        assertThat(summary.getClosedRiskCount()).isGreaterThan(0);
+        assertThat(Double.isFinite(summary.getPendingRate())).isTrue();
+        assertThat(Double.isFinite(summary.getConfirmedRate())).isTrue();
+        assertThat(Double.isFinite(summary.getFalsePositiveRate())).isTrue();
+        assertThat(Double.isFinite(summary.getClosedRate())).isTrue();
+        assertThat(Double.isFinite(summary.getHandlingCompletionRate())).isTrue();
+        assertThat(Double.isFinite(summary.getAverageHandleMinutes())).isTrue();
+        assertThat(summary.getRiskCountByScene()).containsKey("ORDER_CREATED");
+        assertThat(summary.getRiskCountByStatus()).containsKey("PENDING");
+        assertThat(summary.getRiskCountByStatus().get("CONFIRMED")).isEqualTo(summary.getConfirmedRiskCount());
+        assertThat(summary.getRiskCountByStatus().get("FALSE_POSITIVE")).isEqualTo(summary.getFalsePositiveRiskCount());
+        assertThat(summary.getRiskCountByStatus().get("CLOSED")).isEqualTo(summary.getClosedRiskCount());
+    }
+
+    @Test
     void shouldProtectRiskHandlingWithRole() {
         TrainSearchResponse train = firstTrainInventory();
         long userId = 3105L;
         createPaidOrder(userId, train, "ProtectedRiskA");
         createPaidOrder(userId, train, "ProtectedRiskB");
 
-        RiskEventResponse risk = Arrays.stream(restTemplate.getForObject("/api/risks", RiskEventResponse[].class))
+        RiskEventResponse risk = fetchRisks("/api/risks?userId={userId}&size=20", userId).stream()
                 .filter(item -> Long.valueOf(userId).equals(item.getUserId()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("expected risk event"));
@@ -741,10 +820,18 @@ class RailwayApiIntegrationTests {
         return response;
     }
 
+    private RiskEventResponse createPendingRisk(long userId, TrainSearchResponse train, String passengerPrefix) {
+        createPaidOrder(userId, train, passengerPrefix + "A");
+        createPaidOrder(userId, train, passengerPrefix + "B");
+        createPaidOrder(userId, train, passengerPrefix + "C");
+        return fetchRisks("/api/risks?status=PENDING&userId={userId}&size=20", userId).stream()
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected pending risk event for user " + userId));
+    }
+
     private long countRisksForUser(long userId) {
-        RiskEventResponse[] risks = restTemplate.getForObject("/api/risks", RiskEventResponse[].class);
-        assertThat(risks).isNotNull();
-        return Arrays.stream(risks)
+        List<RiskEventResponse> risks = fetchRisks("/api/risks?userId={userId}&size=100", userId);
+        return risks.stream()
                 .filter(risk -> Long.valueOf(userId).equals(risk.getUserId()))
                 .count();
     }
@@ -822,9 +909,14 @@ class RailwayApiIntegrationTests {
     }
 
     private List<RiskEventResponse> fetchRisks(String url, Object... uriVariables) {
-        RiskEventResponse[] risks = restTemplate.getForObject(url, RiskEventResponse[].class, uriVariables);
-        assertThat(risks).isNotNull();
-        return Arrays.asList(risks);
+        return fetchRiskPage(url, uriVariables).getContent();
+    }
+
+    private RiskEventPageResponse fetchRiskPage(String url, Object... uriVariables) {
+        RiskEventPageResponse response = restTemplate.getForObject(url, RiskEventPageResponse.class, uriVariables);
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).isNotNull();
+        return response;
     }
 
     private List<RiskEventHandleRecordResponse> fetchRiskHandleRecords(Long riskId) {

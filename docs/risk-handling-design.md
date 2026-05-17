@@ -86,6 +86,31 @@
 
 看板中的 `unhandledRiskCount` 和兼容字段 `openRiskEvents` 基于 `RiskStatus.PENDING` 统计，而不是仅依赖 `handled=false`。这样统计口径更清晰：只有等待人工审核的事件才算未处理风险。
 
+## 风险查询分页
+
+`GET /api/risks` 已从最近 50 条列表升级为分页查询，支持以下筛选条件：
+
+- `status`：按 `PENDING`、`CONFIRMED`、`FALSE_POSITIVE`、`CLOSED` 筛选。
+- `scene`：按 `ORDER_CREATED`、`ORDER_REFUNDED` 等触发场景筛选。
+- `userId`：定位某个用户产生的风险。
+- `orderNo`：按订单号模糊查询关联风险。
+- `fromDate`、`toDate`：按创建日期筛选，结束日期包含当天。
+- `page`、`size`：分页参数，页码从 0 开始，每页最大 100 条。
+
+后端使用 Spring Data JPA `Specification` 动态组合条件，并用 `PageRequest` 按 `createdAt`、`id` 倒序返回分页元信息。这样既能保持代码清晰，也便于在面试中解释后台运营系统常见的多条件查询能力。
+
+## 风险运营报表
+
+新增 `GET /api/risks/summary` 风险运营报表接口，返回：
+
+- 总风险数、待处理数、确认风险数、误报数、关闭归档数。
+- 待处理占比、确认风险占比、误报率、关闭率、处置完成率。
+- 平均首次处置耗时，基于 `handledAt - createdAt` 计算已处置事件。
+- 按 `RiskScene` 统计风险数量。
+- 按 `RiskStatus` 统计风险数量。
+
+所有比例字段都使用 `max(1, totalRiskCount)` 作为保护分母，避免没有风险事件时出现除以 0。报表和分页列表配合后，风控人员可以先通过报表判断整体风险压力，再进入列表按状态、场景和日期处理具体事件。
+
 ## 面试价值
 
 这个设计可以服务于铁路局、银行科技岗和央国企软件岗的面试讲解：

@@ -1,10 +1,22 @@
 package com.example.railway.service;
 
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Predicate;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,8 +27,10 @@ import com.example.railway.domain.RiskScene;
 import com.example.railway.domain.RiskStatus;
 import com.example.railway.domain.TicketOrder;
 import com.example.railway.dto.RiskEventHandleRecordResponse;
+import com.example.railway.dto.RiskEventPageResponse;
 import com.example.railway.dto.RiskEventResponse;
 import com.example.railway.dto.RiskHandleRequest;
+import com.example.railway.dto.RiskSummaryResponse;
 import com.example.railway.repository.RiskEventHandleRecordRepository;
 import com.example.railway.repository.RiskEventRepository;
 import com.example.railway.service.risk.RiskContext;
@@ -25,6 +39,10 @@ import com.example.railway.service.risk.RiskRule;
 
 @Service
 public class RiskService {
+
+    private static final int DEFAULT_PAGE = 0;
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final RiskEventRepository riskEventRepository;
     private final RiskEventHandleRecordRepository handleRecordRepository;
@@ -53,28 +71,66 @@ public class RiskService {
 
     @Transactional(readOnly = true)
     public List<RiskEventResponse> latestRisks() {
-        return latestRisks(null, null);
+        return listRisks(null, null, null, null, null, null, DEFAULT_PAGE, 50).getContent();
     }
 
     @Transactional(readOnly = true)
     public List<RiskEventResponse> latestRisks(String statusValue, String sceneValue) {
+        return listRisks(statusValue, sceneValue, null, null, null, null, DEFAULT_PAGE, 50).getContent();
+    }
+
+    @Transactional(readOnly = true)
+    public RiskEventPageResponse listRisks(String statusValue,
+                                           String sceneValue,
+                                           Long userId,
+                                           String orderNo,
+                                           LocalDate fromDate,
+                                           LocalDate toDate,
+                                           Integer page,
+                                           Integer size) {
         RiskStatus status = parseStatus(statusValue, false);
         RiskScene scene = parseScene(sceneValue, false);
-        List<RiskEvent> riskEvents;
-        if (status != null && scene != null) {
-            riskEvents = riskEventRepository.findTop50ByStatusAndSceneOrderByCreatedAtDesc(status, scene);
-        } else if (status != null) {
-            riskEvents = riskEventRepository.findTop50ByStatusOrderByCreatedAtDesc(status);
-        } else if (scene != null) {
-            riskEvents = riskEventRepository.findTop50BySceneOrderByCreatedAtDesc(scene);
-        } else {
-            riskEvents = riskEventRepository.findTop50ByOrderByCreatedAtDesc();
+        LocalDateTime startAt = fromDate == null ? null : fromDate.atStartOfDay();
+        LocalDateTime endAt = toDate == null ? null : toDate.plusDays(1).atStartOfDay();
+        String normalizedOrderNo = normalizeText(orderNo);
+        if (startAt != null && endAt != null && !startAt.isBefore(endAt)) {
+            throw new BusinessException("风险创建时间范围不合法");
         }
-        List<RiskEventResponse> responses = new ArrayList<RiskEventResponse>();
-        for (RiskEvent riskEvent : riskEvents) {
-            responses.add(RiskEventResponse.from(riskEvent));
-        }
-        return responses;
+        PageRequest pageRequest = PageRequest.of(
+                normalizePage(page),
+                normalizeSize(size),
+                Sort.by(Sort.Direction.DESC, "createdAt", "id")
+        );
+        Page<RiskEvent> riskPage = riskEventRepository.findAll(
+                buildRiskSpecification(status, scene, userId, normalizedOrderNo, startAt, endAt),
+                pageRequest
+        );
+        return RiskEventPageResponse.from(riskPage);
+    }
+
+    @Transactional(readOnly = true)
+    public RiskSummaryResponse summary() {
+        long total = riskEventRepository.count();
+        long pending = riskEventRepository.countByStatus(RiskStatus.PENDING);
+        long confirmed = riskEventRepository.countByStatus(RiskStatus.CONFIRMED);
+        long falsePositive = riskEventRepository.countByStatus(RiskStatus.FALSE_POSITIVE);
+        long closed = riskEventRepository.countByStatus(RiskStatus.CLOSED);
+
+        RiskSummaryResponse response = new RiskSummaryResponse();
+        response.setTotalRiskCount(total);
+        response.setPendingRiskCount(pending);
+        response.setConfirmedRiskCount(confirmed);
+        response.setFalsePositiveRiskCount(falsePositive);
+        response.setClosedRiskCount(closed);
+        response.setPendingRate(rate(pending, total));
+        response.setConfirmedRate(rate(confirmed, total));
+        response.setFalsePositiveRate(rate(falsePositive, total));
+        response.setClosedRate(rate(closed, total));
+        response.setHandlingCompletionRate(rate(total - pending, total));
+        response.setAverageHandleMinutes(averageHandleMinutes());
+        response.setRiskCountByStatus(riskCountByStatus(pending, confirmed, falsePositive, closed));
+        response.setRiskCountByScene(riskCountByScene());
+        return response;
     }
 
     @Transactional
@@ -255,5 +311,94 @@ public class RiskService {
             return detail.substring(0, 500);
         }
         return detail;
+    }
+
+    private int normalizePage(Integer page) {
+        if (page == null) {
+            return DEFAULT_PAGE;
+        }
+        if (page < 0) {
+            throw new BusinessException("页码不能小于 0");
+        }
+        return page;
+    }
+
+    private int normalizeSize(Integer size) {
+        if (size == null) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        if (size <= 0) {
+            throw new BusinessException("每页大小必须大于 0");
+        }
+        return Math.min(size, MAX_PAGE_SIZE);
+    }
+
+    private Specification<RiskEvent> buildRiskSpecification(final RiskStatus status,
+                                                            final RiskScene scene,
+                                                            final Long userId,
+                                                            final String orderNo,
+                                                            final LocalDateTime startAt,
+                                                            final LocalDateTime endAt) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<Predicate>();
+            if (status != null) {
+                predicates.add(criteriaBuilder.equal(root.get("status"), status));
+            }
+            if (scene != null) {
+                predicates.add(criteriaBuilder.equal(root.get("scene"), scene));
+            }
+            if (userId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("userId"), userId));
+            }
+            if (orderNo != null) {
+                Join<RiskEvent, TicketOrder> orderJoin = root.join("order", JoinType.LEFT);
+                predicates.add(criteriaBuilder.like(orderJoin.<String>get("orderNo"), "%" + orderNo + "%"));
+            }
+            if (startAt != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.<LocalDateTime>get("createdAt"), startAt));
+            }
+            if (endAt != null) {
+                predicates.add(criteriaBuilder.lessThan(root.<LocalDateTime>get("createdAt"), endAt));
+            }
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+
+    private double rate(long numerator, long denominator) {
+        return numerator * 1.0D / Math.max(1L, denominator);
+    }
+
+    private Map<String, Long> riskCountByStatus(long pending, long confirmed, long falsePositive, long closed) {
+        Map<String, Long> statusMap = new LinkedHashMap<String, Long>();
+        statusMap.put(RiskStatus.PENDING.name(), pending);
+        statusMap.put(RiskStatus.CONFIRMED.name(), confirmed);
+        statusMap.put(RiskStatus.FALSE_POSITIVE.name(), falsePositive);
+        statusMap.put(RiskStatus.CLOSED.name(), closed);
+        return statusMap;
+    }
+
+    private Map<String, Long> riskCountByScene() {
+        Map<String, Long> sceneMap = new LinkedHashMap<String, Long>();
+        for (RiskScene scene : RiskScene.values()) {
+            sceneMap.put(scene.name(), riskEventRepository.countByScene(scene));
+        }
+        return sceneMap;
+    }
+
+    private double averageHandleMinutes() {
+        List<RiskEvent> riskEvents = riskEventRepository.findAll();
+        long totalMinutes = 0L;
+        long handledCount = 0L;
+        for (RiskEvent riskEvent : riskEvents) {
+            if (riskEvent.getCreatedAt() == null || riskEvent.getHandledAt() == null) {
+                continue;
+            }
+            totalMinutes += Duration.between(riskEvent.getCreatedAt(), riskEvent.getHandledAt()).toMinutes();
+            handledCount++;
+        }
+        if (handledCount == 0L) {
+            return 0.0D;
+        }
+        return totalMinutes * 1.0D / handledCount;
     }
 }
