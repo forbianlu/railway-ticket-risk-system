@@ -9,299 +9,128 @@
 | 支付流水表与支付回调幂等 | `b40b735 add payment records and callback idempotency` | 支付流水、模拟支付回调、`callbackRequestId` 幂等 |
 | 风险处置闭环增强 | `0fc4543 enhance risk handling workflow` | 风险状态、处置备注、处理人、处理时间、处置历史和权限控制 |
 | 风险事件分页筛选与风险运营报表增强 | `1f77ac7 add risk query pagination and summary` | 风险分页筛选、风险运营报表、前端风险统计展示 |
+| 项目展示文档整理 | `3b0227e polish docs and project showcase` | README、API 文档、最终总结和开发日志整理 |
 
-## 2026-05-15 风险处置闭环增强
+## 订单支付状态机与超时关闭
 
-### 本轮任务目标
+### 目标
 
-将风控模块从“生成风险 + 简单标记已处理”升级为完整的风险处置闭环，支持风险状态、处置备注、处理人、处理时间、处置历史、权限控制和看板联动。
+将订单流程从创建即成功调整为真实交易系统中的待支付状态机，并支持手动关闭、超时关闭和退票。
 
-### 开发前状态
+### 主要内容
 
-- 订单支付状态机与超时关闭已提交：`7403c58 add order payment state machine`。
-- 订单分页筛选与运营看板指标增强已提交：`caf77b0 add order filtering and dashboard metrics`。
-- 支付流水表与支付回调幂等已在本轮开始前测试通过并提交：`b40b735 add payment records and callback idempotency`。
-- 工作区仅保留未跟踪规划文件 `docs/project-context-for-gpt.md`。
-- 原风险事件主要依赖 `handled` 布尔值，缺少处置结论、备注、处理人、处理时间和历史记录。
+- 创建订单后进入 `PENDING_PAYMENT`。
+- 创建订单时扣减库存，表示锁定余票。
+- 支付成功后订单进入 `PAID`。
+- 待支付订单可以关闭为 `CLOSED`，关闭后释放库存。
+- 超时待支付订单由批量接口和定时任务关闭。
+- 已支付订单可以退票为 `REFUNDED`，退票后释放库存。
+- 支付成功和退票成功后触发对应风控规则。
 
-### 实际修改文件
+### 验证结果
 
-- 后端领域模型：`RiskStatus`、`RiskEvent`、`RiskEventHandleRecord`
-- 后端仓储：`RiskEventRepository`、`RiskEventHandleRecordRepository`
-- 后端 DTO：`RiskHandleRequest`、`RiskEventResponse`、`RiskEventHandleRecordResponse`
-- 后端服务与接口：`RiskService`、`RiskController`、`DashboardService`
-- 前端：`frontend/index.html`、`frontend/app.js`、`frontend/styles.css`
-- 测试：`RailwayApiIntegrationTests`
-- 文档：`README.md`、`docs/api-design.md`、`docs/database-design.md`、`docs/er-diagram.mmd`、`docs/project-outline.md`、`docs/resume-and-interview.md`、`docs/risk-handling-design.md`
+- 覆盖订单状态流转、非法流转、库存扣减和释放。
+- 保持下单幂等、并发防超卖和查询缓存测试通过。
 
-### 新增功能
+## 订单分页筛选与运营看板指标增强
 
-- 风险事件状态机：`PENDING`、`CONFIRMED`、`FALSE_POSITIVE`、`CLOSED`
-- 风险事件列表支持按状态和场景筛选。
-- 风险处置支持提交处置状态和备注。
-- 风险事件保存最新处理人、处理时间、处理备注和关闭时间。
-- 新增风险处置历史表，记录每次状态流转。
-- 新增查询风险处置历史接口。
-- 看板未处理风险数改为基于 `PENDING` 状态统计。
-- 前端支持选择处置结论、填写备注、查看处置历史。
+### 目标
 
-### 风险状态设计
+增强后台运营查询能力，让订单列表和运营看板更适合管理端使用。
 
-- `PENDING`：系统规则生成后等待人工审核。
-- `CONFIRMED`：风控人员确认存在风险。
-- `FALSE_POSITIVE`：风控人员判断为误报。
-- `CLOSED`：事件已关闭归档。
+### 主要内容
 
-保留 `handled` 字段兼容旧逻辑，当前语义为 `status != PENDING`。
+- `GET /api/orders` 支持分页响应。
+- 支持按用户、订单状态、订单号、创建日期筛选。
+- 看板新增待支付、已支付、已关闭、已退票统计。
+- 看板新增退票率、风险率和未处理风险数。
+- 前端订单列表增加筛选、重置和分页控件。
 
-### 处置历史设计
+### 验证结果
 
-`risk_event_handle_records` 记录：
+- 覆盖订单默认分页、状态筛选、用户筛选、日期筛选、分页元信息和非法参数。
+- 原有订单状态机、幂等、防超卖、缓存和权限测试保持通过。
 
-- 风险事件 ID
-- 处置前状态
-- 处置后状态
-- 处置备注
-- 操作人
-- 操作时间
+## 支付流水表与支付回调幂等
 
-历史表用于审计追踪，风险事件表保存当前最新状态。
+### 目标
 
-### 接口设计
+将订单支付从简单状态变更扩展为包含支付流水和回调幂等的交易链路。
 
-- `GET /api/risks?status=PENDING&scene=ORDER_CREATED`
-- `POST /api/risks/{id}/handle`
-- `GET /api/risks/{id}/handle-records`
+### 主要内容
 
-`POST /api/risks/{id}/handle` 请求体：
+- 新增 `payment_records` 表。
+- 新增支付状态：`PENDING`、`SUCCESS`、`FAILED`。
+- 新增创建支付流水接口。
+- 新增支付回调接口。
+- 使用 `requestId` 保证支付流水创建幂等。
+- 使用 `callbackRequestId` 保证支付回调幂等。
+- 成功回调复用订单支付逻辑，避免重复触发风控。
+- 失败回调只更新支付流水，不关闭订单、不释放库存。
+- 前端新增支付流水管理区域。
 
-```json
-{
-  "status": "CONFIRMED",
-  "remark": "短时间多次购票，确认存在异常购票行为"
-}
-```
+### 验证结果
 
-### 前端变化
+- 覆盖创建支付流水、成功回调、失败回调、重复回调、支付流水分页和状态筛选。
+- 原有订单、风控、看板、缓存和权限测试保持通过。
 
-- 风险列表新增状态筛选和场景筛选。
-- 风险卡片展示状态、处理备注、处理人和处理时间。
-- 可选择 `CONFIRMED`、`FALSE_POSITIVE`、`CLOSED` 作为处置结果。
-- 可输入处置备注。
-- 可查看某个风险事件的处置历史。
+## 风险处置闭环增强
 
-### 测试结果
+### 目标
 
-已执行 Maven 测试，结果通过：
+将风险模块从简单标记处理升级为包含状态、备注、处理人、处理时间和处置历史的运营闭环。
 
-- `Tests run: 20`
-- `Failures: 0`
-- `Errors: 0`
-- `Skipped: 0`
+### 主要内容
 
-前端 JS 语法检查已通过：`node --check frontend\app.js`。
+- 新增 `RiskStatus`：`PENDING`、`CONFIRMED`、`FALSE_POSITIVE`、`CLOSED`。
+- 风险事件保存最新处置备注、处理人、处理时间和关闭时间。
+- 新增 `risk_event_handle_records` 表记录每次处置动作。
+- `POST /api/risks/{id}/handle` 支持处置状态和备注。
+- 新增 `GET /api/risks/{id}/handle-records`。
+- 看板未处理风险数基于 `PENDING` 状态统计。
+- 前端支持风险状态筛选、处置备注和历史查看。
 
-### 当前提交状态
+### 验证结果
 
-上一轮支付流水成果已提交为 `b40b735`。本轮“风险处置闭环增强”尚未提交，建议确认后使用：
+- 覆盖默认风险状态、角色权限、处置备注、处理人、处理时间、处置历史和关闭规则。
+- 原有支付流水、订单状态机、订单分页、看板、缓存和权限测试保持通过。
 
-```text
-enhance risk handling workflow
-```
+## 风险事件分页筛选与风险运营报表增强
 
-### 后续建议
+### 目标
 
-- 为风险事件增加分页查询。
-- 为高风险事件增加分配处理人和处理 SLA。
-- 增加风险事件导出和审核报表。
-- 后续可把处置流程扩展为“初审、复核、归档”的多级审核。
+增强风险查询和风险运营分析能力。
 
-## 2026-05-15 风险事件分页筛选 + 风险运营报表增强
-
-### 本轮任务目标
-
-将风险事件查询从最近 50 条升级为分页查询，并新增风险运营报表，让风控模块具备按状态、场景、用户、订单号、日期筛选和按状态、场景统计分析的能力。
-
-### 开发前状态
-
-- 订单支付状态机与超时关闭已提交：`7403c58 add order payment state machine`。
-- 订单分页筛选与运营看板指标增强已提交：`caf77b0 add order filtering and dashboard metrics`。
-- 支付流水表与支付回调幂等已提交：`b40b735 add payment records and callback idempotency`。
-- 风险处置闭环增强已在本轮开始前测试通过并提交：`0fc4543 enhance risk handling workflow`。
-- 工作区仍保留未跟踪规划文件 `docs/project-context-for-gpt.md`，本轮未纳入功能修改。
-
-### 实际修改文件
-
-- 后端接口：`RiskController`
-- 后端服务：`RiskService`
-- 后端仓储：`RiskEventRepository`
-- 后端 DTO：`RiskEventPageResponse`、`RiskSummaryResponse`
-- 测试：`RailwayApiIntegrationTests`
-- 前端：`frontend/index.html`、`frontend/app.js`、`frontend/styles.css`
-- 文档：`README.md`、`docs/api-design.md`、`docs/project-outline.md`、`docs/resume-and-interview.md`、`docs/risk-handling-design.md`、`docs/project-development-log.md`
-
-### 新增功能
+### 主要内容
 
 - `GET /api/risks` 返回分页对象。
-- 风险事件支持按状态、场景、用户 ID、订单号、创建日期筛选。
+- 支持按状态、场景、用户 ID、订单号、创建日期筛选。
 - 新增 `GET /api/risks/summary` 风险运营报表。
-- 前端风险列表支持筛选、重置、上一页、下一页和分页元信息展示。
-- 前端新增风险运营报表卡片和按状态、按场景统计展示。
+- 报表包含总风险数、各状态数量、比例字段、平均首次处置耗时、按场景统计和按状态统计。
+- 前端风险列表支持筛选、重置、上一页、下一页和分页元信息。
+- 前端新增风险运营统计展示。
 
-### 风险分页查询设计
+### 验证结果
 
-分页参数为 `page` 和 `size`，默认 `page=0`、`size=10`，每页最大 100 条。后端使用 `JpaSpecificationExecutor` 动态组合 `status`、`scene`、`userId`、`orderNo`、`fromDate`、`toDate` 条件，并按 `createdAt`、`id` 倒序排序。
+- 覆盖风险默认分页、状态筛选、场景筛选、用户筛选、订单号筛选、日期筛选和非法参数。
+- 覆盖风险报表数量、比例、状态聚合和场景聚合。
+- 原有风险处置、支付流水、订单状态机、缓存和权限测试保持通过。
 
-分页响应包括：
+## 项目展示文档整理
 
-- `content`
-- `page`
-- `size`
-- `totalElements`
-- `totalPages`
-- `first`
-- `last`
+### 目标
 
-非法状态、非法页码或非法页大小返回 400。
+整理公开项目文档，使 README、API 文档、数据库文档、开发日志和总结文档保持一致。
 
-### 风险运营报表设计
+### 主要内容
 
-`GET /api/risks/summary` 返回：
+- README 重新组织项目简介、核心功能、技术栈、流程图、功能模块、启动方式、接口概览、数据库核心表和设计说明。
+- API 文档修正订单分页响应说明的位置。
+- 新增最终总结文档，集中说明系统定位、功能模块、技术亮点、业务流程、幂等设计、风控设计、权限审计和测试覆盖。
+- 开发日志补充阶段提交索引。
 
-- `totalRiskCount`
-- `pendingRiskCount`
-- `confirmedRiskCount`
-- `falsePositiveRiskCount`
-- `closedRiskCount`
-- `pendingRate`
-- `confirmedRate`
-- `falsePositiveRate`
-- `closedRate`
-- `handlingCompletionRate`
-- `averageHandleMinutes`
-- `riskCountByScene`
-- `riskCountByStatus`
+### 验证结果
 
-比例字段统一使用 `max(1, totalRiskCount)` 防止除以 0。`handlingCompletionRate` 表示非 `PENDING` 风险占比，`averageHandleMinutes` 基于已处置事件的 `handledAt - createdAt` 计算。
-
-### 前端变化
-
-- 风险筛选区新增用户 ID、订单号、开始日期、结束日期。
-- 风险列表新增分页控件和总条数展示。
-- 风险运营报表展示总风险、待处理、确认风险、误报、关闭归档、确认风险占比、误报率、处置完成率。
-- 新增按风险状态和风险场景聚合展示。
-- 保留风险处置、处置备注和处置历史交互。
-
-### 测试结果
-
-已执行 Maven 测试，结果通过：
-
-- `Tests run: 21`
-- `Failures: 0`
-- `Errors: 0`
-- `Skipped: 0`
-
-前端 JS 语法检查已通过：`node --check frontend\app.js`。
-
-### 当前提交状态
-
-上一轮风险处置闭环成果已提交为 `0fc4543`。本轮“风险事件分页筛选 + 风险运营报表增强”尚未提交，建议确认后使用：
-
-```text
-add risk query pagination and summary
-```
-
-### 后续建议
-
-- 增加风险事件导出 CSV。
-- 为高风险事件增加处理 SLA 和超时提醒。
-- 支持按风险等级、处理人继续筛选。
-- 后续可增加风险趋势图和日报统计。
-
-## 2026-05-17 项目收尾体检与 GitHub 展示优化
-
-### 本轮任务目标
-
-对项目做收尾体检，确认上一轮风险分页报表成果已提交；检查 README、docs、图片资源、API 文档、数据库文档、ER 图、简历面试材料、前端 JS 和 Maven 测试；优化 GitHub 展示效果，并新增最终总结文档。
-
-### 开发前状态
-
-- 订单支付状态机与超时关闭已提交：`7403c58 add order payment state machine`。
-- 订单分页筛选与运营看板指标增强已提交：`caf77b0 add order filtering and dashboard metrics`。
-- 支付流水表与支付回调幂等已提交：`b40b735 add payment records and callback idempotency`。
-- 风险处置闭环增强已提交：`0fc4543 enhance risk handling workflow`。
-- 风险事件分页筛选与风险运营报表增强在本轮开始时尚未提交。
-- 工作区存在未跟踪规划文件 `docs/project-context-for-gpt.md`，本轮继续不纳入核心功能提交。
-
-### 是否提交上一轮风险分页报表功能
-
-已在 Maven 测试通过后提交上一轮风险分页报表成果：
-
-```text
-1f77ac7 add risk query pagination and summary
-```
-
-### 本轮检查了哪些内容
-
-- README 中引用的文档和图片是否存在。
-- docs 目录中的 Markdown 相对链接是否存在。
-- docs/assets 下 README 引用的 SVG 和截图是否存在。
-- API 文档是否覆盖订单、支付、风险、看板、缓存、权限和日志接口。
-- 数据库设计和 ER 图是否包含当前主要表。
-- 简历面试文档是否包含状态机、防超卖、幂等、支付回调、风控、缓存、权限和测试亮点。
-- project-development-log 是否包含最近几轮开发记录。
-- 前端 `frontend/app.js` 是否通过语法检查。
-- 后端 Maven 测试是否通过。
-
-### README 做了哪些优化
-
-- 增加项目简介，明确项目面向铁路局、银行科技岗和央国企软件岗。
-- 强调当前是后端主导型交易与风控系统，避免误导为真实支付、Redis、MQ 或 Spring Security 项目。
-- 重新组织核心亮点、技术栈、系统架构与流程、功能模块、快速启动、测试方式、接口概览、数据库核心表、简历写法和面试可讲点。
-- 补充当前测试数量和前端脚本检查命令。
-- 新增最终总结文档入口。
-
-### docs 做了哪些一致性修复
-
-- 修正 `docs/api-design.md` 中订单分页响应说明的位置，使其回到“查询订单”章节。
-- 确认 `docs/database-design.md` 和 `docs/er-diagram.mmd` 已包含 `app_users`、`stations`、`trains`、`seat_inventories`、`ticket_orders`、`payment_records`、`risk_events`、`risk_event_handle_records`、`operation_logs`。
-- 确认 `docs/resume-and-interview.md` 已包含订单状态机、并发防超卖、订单幂等、支付回调幂等、风控规则引擎、风险处置闭环、查询缓存、权限审计和集成测试。
-- 在本文件顶部追加阶段提交索引，串联最近五轮核心开发成果。
-
-### 是否新增 final-project-summary.md
-
-已新增 `docs/final-project-summary.md`，用于项目复习和面试准备。
-
-### 测试结果
-
-Markdown 链接扫描通过，未发现失效相对链接。
-
-前端 JS 语法检查通过：
-
-```text
-node --check frontend\app.js
-```
-
-Maven 测试通过：
-
-```text
-Tests run: 21
-Failures: 0
-Errors: 0
-Skipped: 0
-BUILD SUCCESS
-```
-
-### 当前提交状态
-
-上一轮风险分页报表成果已提交。本轮“项目收尾体检与 GitHub 展示优化”尚未提交，建议确认后使用：
-
-```text
-polish docs and project showcase
-```
-
-### 后续建议
-
-- 提交本轮文档收尾改动后再 push 到 GitHub。
-- GitHub README 首页可配合截图展示管理台核心页面。
-- 简历中保留 3 到 5 个最强亮点，面试时再展开支付幂等、状态机、风控闭环和并发防超卖。
+- Markdown 相对链接扫描通过。
+- 前端脚本语法检查通过。
+- Maven 测试通过：`Tests run: 21, Failures: 0, Errors: 0, Skipped: 0`。

@@ -6,3 +6,5 @@ dist/
 *.iml
 *.log
 .DS_Store
+docs/project-context-for-gpt.md
+docs/codex-feedback-*.md
