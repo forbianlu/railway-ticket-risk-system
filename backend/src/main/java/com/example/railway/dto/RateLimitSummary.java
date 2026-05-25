@@ -1,5 +1,9 @@
 package com.example.railway.dto;
 
+import java.util.Map;
+
+import com.example.railway.config.RateLimitProperties;
+
 public class RateLimitSummary {
 
     private boolean enabled;
@@ -9,6 +13,7 @@ public class RateLimitSummary {
     private boolean localFallback;
     private int localKeyCount;
     private long blockedCount;
+    private Map<String, RateLimitProperties.Rule> rules;
 
     public boolean isEnabled() {
         return enabled;
@@ -64,5 +69,13 @@ public class RateLimitSummary {
 
     public void setBlockedCount(long blockedCount) {
         this.blockedCount = blockedCount;
+    }
+
+    public Map<String, RateLimitProperties.Rule> getRules() {
+        return rules;
+    }
+
+    public void setRules(Map<String, RateLimitProperties.Rule> rules) {
+        this.rules = rules;
     }
 }

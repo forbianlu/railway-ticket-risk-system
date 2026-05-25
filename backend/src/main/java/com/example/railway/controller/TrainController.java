@@ -35,7 +35,7 @@ public class TrainController {
                                             @RequestParam("to") String arrivalCode,
                                             @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate travelDate,
                                             HttpServletRequest request) {
-        rateLimitService.check("rate:train:search:" + requesterKey(request), 120, 60);
+        rateLimitService.check("train-search", "rate:train:search:" + requesterKey(request));
         return trainQueryService.search(departureCode, arrivalCode, travelDate);
     }
 

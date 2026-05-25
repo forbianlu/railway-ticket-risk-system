@@ -38,7 +38,7 @@ public class PaymentController {
     @PostMapping("/callback")
     public PaymentResponse callback(@Valid @RequestBody PaymentCallbackRequest request,
                                     HttpServletRequest httpRequest) {
-        rateLimitService.check("rate:payment:callback:" + request.getPaymentNo() + ":ip:" + httpRequest.getRemoteAddr(), 30, 60);
+        rateLimitService.check("payment-callback", "rate:payment:callback:" + request.getPaymentNo() + ":ip:" + httpRequest.getRemoteAddr());
         return paymentService.handleCallback(request);
     }
 

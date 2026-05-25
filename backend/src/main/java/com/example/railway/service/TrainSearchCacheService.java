@@ -76,8 +76,12 @@ public class TrainSearchCacheService {
     }
 
     private TrainSearchCacheStore activeStore() {
-        if ("redis".equalsIgnoreCase(properties.getMode()) && redisStore != null) {
-            return redisStore;
+        if ("redis".equalsIgnoreCase(properties.getMode())) {
+            if (redisStore != null) {
+                return redisStore;
+            }
+            localFallback = true;
+            return localStore;
         }
         localFallback = false;
         return localStore;

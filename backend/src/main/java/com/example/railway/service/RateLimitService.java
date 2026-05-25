@@ -34,6 +34,11 @@ public class RateLimitService {
         this.redisAvailable = redisTemplate != null;
     }
 
+    public void check(String ruleName, String key) {
+        RateLimitProperties.Rule rule = properties.getRule(ruleName);
+        check(key, rule.getLimit(), rule.getWindowSeconds());
+    }
+
     public void check(String key, int limit, int windowSeconds) {
         if (!properties.isEnabled() || limit <= 0 || windowSeconds <= 0) {
             return;
@@ -75,6 +80,7 @@ public class RateLimitService {
         summary.setLocalFallback(localFallback);
         summary.setLocalKeyCount(localWindows.size());
         summary.setBlockedCount(blockedCount.get());
+        summary.setRules(properties.getRules());
         return summary;
     }
 

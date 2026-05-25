@@ -48,6 +48,7 @@ const elements = {
   cacheFallback: document.querySelector("#cache-fallback"),
   rateLimitMode: document.querySelector("#rate-limit-mode"),
   rateLimitBlocked: document.querySelector("#rate-limit-blocked"),
+  rateLimitRules: document.querySelector("#rate-limit-rules"),
   popularTrains: document.querySelector("#popular-trains"),
   fromStation: document.querySelector("#from-station"),
   toStation: document.querySelector("#to-station"),
@@ -252,10 +253,28 @@ async function loadRateLimitStats() {
     const stats = await request("/rate-limit/summary");
     elements.rateLimitMode.textContent = stats.mode || stats.configuredMode || "-";
     elements.rateLimitBlocked.textContent = stats.blockedCount ?? 0;
+    renderRateLimitRules(stats.rules || {});
   } catch (error) {
     elements.rateLimitMode.textContent = "-";
     elements.rateLimitBlocked.textContent = "需登录";
+    elements.rateLimitRules.innerHTML = emptyItem("需登录后查看限流规则");
   }
+}
+
+function renderRateLimitRules(rules) {
+  const entries = Object.entries(rules);
+  if (entries.length === 0) {
+    elements.rateLimitRules.innerHTML = emptyItem("暂无限流规则配置");
+    return;
+  }
+  elements.rateLimitRules.innerHTML = entries
+    .map(([name, rule]) => `
+      <div class="event-item">
+        <strong>${escapeHtml(name)}</strong>
+        <span>${rule.limit ?? "-"} 次 / ${rule.windowSeconds ?? "-"} 秒</span>
+      </div>
+    `)
+    .join("");
 }
 
 async function loadDashboard() {

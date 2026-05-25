@@ -96,7 +96,7 @@ PAID -> REFUNDED
 - 支付回调：按支付流水号和 IP 限流。
 - 风险处置：按当前操作人限流。
 
-默认使用本地内存限流，可切换到 Redis `INCR + EXPIRE` 模式。超过阈值时返回 429 和 `TOO_MANY_REQUESTS`。
+默认使用本地内存限流，可切换到 Redis `INCR + EXPIRE` 模式。限流阈值集中配置在 `railway.rate-limit.rules`，Controller 只传入规则名和业务 key。超过阈值时返回 429 和 `TOO_MANY_REQUESTS`。
 
 ## 权限审计
 

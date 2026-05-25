@@ -500,12 +500,32 @@ Authorization: Bearer {token}
   "enabled": true,
   "mode": "local",
   "configuredMode": "local",
-  "redisAvailable": true,
+  "redisAvailable": false,
   "localFallback": false,
   "localKeyCount": 4,
-  "blockedCount": 2
+  "blockedCount": 2,
+  "rules": {
+    "train-search": {
+      "limit": 60,
+      "windowSeconds": 60
+    },
+    "order-create": {
+      "limit": 10,
+      "windowSeconds": 60
+    },
+    "payment-callback": {
+      "limit": 30,
+      "windowSeconds": 60
+    },
+    "risk-handle": {
+      "limit": 30,
+      "windowSeconds": 60
+    }
+  }
 }
 ```
+
+`rules` 表示当前各接口限流阈值配置，调整 `application.yml` 后无需修改 Controller 代码。
 
 限流触发时统一返回：
 

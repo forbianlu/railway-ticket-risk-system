@@ -11,7 +11,8 @@
 | 风险事件分页筛选与风险运营报表增强 | `1f77ac7 add risk query pagination and summary` | 风险分页筛选、风险运营报表、前端风险统计展示 |
 | 项目展示文档整理 | `3b0227e polish docs and project showcase` | README、API 文档、最终总结和开发日志整理 |
 | Spring Security + JWT + BCrypt 权限体系升级 | `6e38db3 upgrade auth to spring security jwt` | 标准认证链路、JWT Bearer Token、BCrypt 密码存储和角色授权 |
-| Redis 缓存与接口限流增强 | `add redis cache and rate limiting` | 车次查询 local/Redis 缓存切换、本地 fallback、关键接口限流和 429 响应 |
+| Redis 缓存与接口限流增强 | `e38e0de add redis cache and rate limiting` | 车次查询 local/Redis 缓存切换、本地 fallback、关键接口限流和 429 响应 |
+| Redis 联调说明与限流规则配置化 | `configure redis rate limit rules` | Redis 模式联调步骤、限流 rules 配置化、前端规则展示 |
 
 ## 订单支付状态机与超时关闭
 
@@ -199,3 +200,39 @@
 
 - 在独立 Redis 环境中补充手工联调和部署说明。
 - 后续可增加限流白名单、分接口配置化阈值和更细粒度的缓存监控。
+
+## Redis 联调说明与限流规则配置化
+
+### 目标
+
+完善 Redis 模式配置和联调说明，将限流阈值从 Controller 硬编码迁移到 `application.yml`，并在限流统计接口和前端展示当前规则配置。
+
+### 开发前状态
+
+- `e38e0de add redis cache and rate limiting` 已通过普通 push 更新到远端。
+- 默认缓存和限流模式为 `local`，Maven 测试不依赖 Redis。
+- 当前环境未检测到可用 Redis 服务，`localhost:6379` 连接失败。
+
+### 主要内容
+
+- `railway.rate-limit.rules` 新增 `train-search`、`order-create`、`payment-callback`、`risk-handle` 四类规则。
+- Controller 调用 `RateLimitService` 时只传规则名和业务 key，不再传硬编码阈值。
+- `RateLimitSummary` 返回当前 rules 配置，便于管理端查看限流阈值。
+- 前端缓存与限流区域展示规则名、次数上限和窗口秒数。
+- `docs/cache-and-rate-limit-design.md` 补充 Redis 模式启动、local / Redis 切换、缓存联调、限流联调、fallback 和排查说明。
+
+### 验证结果
+
+- Maven 测试通过：`Tests run: 24, Failures: 0, Errors: 0, Skipped: 0`。
+- 前端脚本语法检查通过。
+- 公开文案敏感词检查通过。
+
+### 当前提交状态
+
+- 本轮改动计划提交为 `configure redis rate limit rules`。
+- 本轮提交仅保留在本地，不自动推送远端。
+
+### 后续建议
+
+- 在真实 Redis 环境中按文档步骤执行缓存 key、限流 key 和 429 行为联调。
+- 如后续部署多实例，可将 Redis 模式作为生产 profile 的默认配置。

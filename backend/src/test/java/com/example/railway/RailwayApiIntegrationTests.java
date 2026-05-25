@@ -31,6 +31,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.example.railway.config.RateLimitProperties;
+import com.example.railway.config.TrainSearchCacheProperties;
 import com.example.railway.domain.OperationLog;
 import com.example.railway.domain.SeatInventory;
 import com.example.railway.domain.Station;
@@ -86,6 +88,12 @@ class RailwayApiIntegrationTests {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private RateLimitProperties rateLimitProperties;
+
+    @Autowired
+    private TrainSearchCacheProperties trainSearchCacheProperties;
 
     @Test
     void shouldSearchTrainInventories() {
@@ -723,6 +731,9 @@ class RailwayApiIntegrationTests {
     @Test
     void shouldRateLimitHighFrequencyApisWithoutPollutingOtherUsers() {
         AuthResponse admin = login("admin", "admin123");
+        RateLimitSummary initialSummary = rateLimitSummary(admin);
+        int trainSearchLimit = initialSummary.getRules().get("train-search").getLimit();
+        int orderCreateLimit = initialSummary.getRules().get("order-create").getLimit();
         String date = LocalDate.now().toString();
         ResponseEntity<String> anonymousTrainSearch = restTemplate.getForEntity(
                 "/api/trains/search?from=BJP&to=SHH&date={date}",
@@ -731,7 +742,7 @@ class RailwayApiIntegrationTests {
         );
 
         ResponseEntity<String> trainLimited = null;
-        for (int i = 0; i < 121; i++) {
+        for (int i = 0; i < trainSearchLimit + 1; i++) {
             trainLimited = restTemplate.exchange(
                     "/api/trains/search?from=BJP&to=SHH&date={date}",
                     HttpMethod.GET,
@@ -742,7 +753,7 @@ class RailwayApiIntegrationTests {
         }
 
         ResponseEntity<String> orderLimited = null;
-        for (int i = 0; i < 11; i++) {
+        for (int i = 0; i < orderCreateLimit + 1; i++) {
             orderLimited = createOrderRaw(
                     94001L,
                     999999L,
@@ -768,6 +779,34 @@ class RailwayApiIntegrationTests {
         assertThat(summary.getMode()).isEqualTo("local");
         assertThat(summary.getConfiguredMode()).isEqualTo("local");
         assertThat(summary.getBlockedCount()).isGreaterThanOrEqualTo(2);
+        assertThat(summary.getRules()).containsKeys("train-search", "order-create", "payment-callback", "risk-handle");
+        assertThat(rateLimitProperties.getRule("train-search").getLimit()).isEqualTo(trainSearchLimit);
+    }
+
+    @Test
+    void shouldUseLocalFallbackWhenRedisCacheModeCannotConnect() {
+        AuthResponse admin = login("admin", "admin123");
+        String originalMode = trainSearchCacheProperties.getMode();
+        try {
+            trainSearchCacheProperties.setMode("redis");
+            ResponseEntity<TrainSearchResponse[]> response = restTemplate.getForEntity(
+                    "/api/trains/search?from=BJP&to=SHH&date={date}",
+                    TrainSearchResponse[].class,
+                    LocalDate.now().toString()
+            );
+            TrainSearchCacheStats stats = trainSearchCacheStats(admin);
+
+            assertThat(response.getStatusCodeValue()).isEqualTo(200);
+            assertThat(stats.getConfiguredMode()).isEqualTo("redis");
+            assertThat(stats.getCacheMode()).isIn("redis", "local");
+            if (!stats.isRedisAvailable()) {
+                assertThat(stats.isLocalFallback()).isTrue();
+                assertThat(stats.getCacheMode()).isEqualTo("local");
+            }
+        } finally {
+            trainSearchCacheProperties.setMode(originalMode);
+            clearTrainSearchCache(admin);
+        }
     }
 
     @Test

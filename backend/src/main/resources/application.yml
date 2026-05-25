@@ -57,3 +57,16 @@ railway:
     enabled: true
     mode: local
     local-fallback-enabled: true
+    rules:
+      train-search:
+        limit: 60
+        window-seconds: 60
+      order-create:
+        limit: 10
+        window-seconds: 60
+      payment-callback:
+        limit: 30
+        window-seconds: 60
+      risk-handle:
+        limit: 30
+        window-seconds: 60

@@ -38,7 +38,7 @@ public class OrderController {
     public OrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request,
                                      HttpServletRequest httpRequest) {
         String requester = request.getUserId() == null ? "ip:" + httpRequest.getRemoteAddr() : "user:" + request.getUserId();
-        rateLimitService.check("rate:order:create:" + requester, 10, 60);
+        rateLimitService.check("order-create", "rate:order:create:" + requester);
         return orderService.createOrder(request);
     }
 

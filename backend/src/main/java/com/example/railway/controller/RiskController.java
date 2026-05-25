@@ -63,7 +63,7 @@ public class RiskController {
                                         @Valid @RequestBody(required = false) RiskHandleRequest request,
                                         @RequestParam(value = "operator", required = false) String operator) {
         String currentOperator = operator == null || operator.trim().isEmpty() ? AuthContext.current().getUsername() : operator;
-        rateLimitService.check("rate:risk:handle:user:" + currentOperator, 30, 60);
+        rateLimitService.check("risk-handle", "rate:risk:handle:user:" + currentOperator);
         return riskService.handleRisk(riskId, request, currentOperator);
     }
 
