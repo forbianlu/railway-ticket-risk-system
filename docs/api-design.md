@@ -60,7 +60,7 @@ Authorization: Bearer {token}
 GET /api/trains/search?from=BJP&to=SHH&date=2026-06-01
 ```
 
-查询结果会按 `from + to + date` 写入本地 TTL 缓存，锁票、支付、关闭待支付订单或退票成功后失效对应线路日期缓存。
+查询结果会按 `from + to + date` 写入车次查询缓存。默认使用本地 TTL 缓存，也可切换为 Redis 缓存；锁票、支付、关闭待支付订单或退票成功后失效对应线路日期缓存。超过限流阈值时返回 429。
 
 ## 创建订单
 
@@ -462,12 +462,16 @@ Authorization: Bearer {token}
 ```json
 {
   "enabled": true,
+  "cacheMode": "local",
+  "configuredMode": "local",
   "ttlSeconds": 30,
   "maxEntries": 256,
   "entryCount": 1,
   "hitCount": 3,
   "missCount": 2,
-  "evictCount": 1
+  "evictCount": 1,
+  "redisAvailable": false,
+  "localFallback": false
 }
 ```
 
@@ -479,6 +483,39 @@ Authorization: Bearer {token}
 ```
 
 该接口仅允许 `ADMIN` 角色访问。
+
+## 查询限流统计
+
+```http
+GET /api/rate-limit/summary
+Authorization: Bearer {token}
+```
+
+该接口仅允许 `ADMIN` 角色访问。
+
+响应：
+
+```json
+{
+  "enabled": true,
+  "mode": "local",
+  "configuredMode": "local",
+  "redisAvailable": true,
+  "localFallback": false,
+  "localKeyCount": 4,
+  "blockedCount": 2
+}
+```
+
+限流触发时统一返回：
+
+```json
+{
+  "success": false,
+  "code": "TOO_MANY_REQUESTS",
+  "message": "请求过于频繁，请稍后再试"
+}
+```
 
 ## 演示账号
 

@@ -40,6 +40,14 @@ const elements = {
   refundRate: document.querySelector("#metric-refund-rate"),
   riskRate: document.querySelector("#metric-risk-rate"),
   openRisks: document.querySelector("#metric-open-risks"),
+  cacheMode: document.querySelector("#cache-mode"),
+  cacheTtl: document.querySelector("#cache-ttl"),
+  cacheHitCount: document.querySelector("#cache-hit-count"),
+  cacheMissCount: document.querySelector("#cache-miss-count"),
+  cacheEvictCount: document.querySelector("#cache-evict-count"),
+  cacheFallback: document.querySelector("#cache-fallback"),
+  rateLimitMode: document.querySelector("#rate-limit-mode"),
+  rateLimitBlocked: document.querySelector("#rate-limit-blocked"),
   popularTrains: document.querySelector("#popular-trains"),
   fromStation: document.querySelector("#from-station"),
   toStation: document.querySelector("#to-station"),
@@ -206,6 +214,7 @@ function renderStationOptions() {
 async function refreshAll() {
   await Promise.all([
     loadDashboard(),
+    loadSystemStats(),
     searchTrains(),
     loadOrders(),
     loadPayments(),
@@ -213,6 +222,40 @@ async function refreshAll() {
     loadRiskSummary(),
     loadLogs(),
   ]);
+}
+
+async function loadSystemStats() {
+  await Promise.all([
+    loadCacheStats(),
+    loadRateLimitStats(),
+  ]);
+}
+
+async function loadCacheStats() {
+  try {
+    const stats = await request("/cache/train-search");
+    elements.cacheMode.textContent = stats.cacheMode || stats.configuredMode || "-";
+    elements.cacheTtl.textContent = stats.ttlSeconds ? `${stats.ttlSeconds}s` : "-";
+    elements.cacheHitCount.textContent = stats.hitCount ?? 0;
+    elements.cacheMissCount.textContent = stats.missCount ?? 0;
+    elements.cacheEvictCount.textContent = stats.evictCount ?? 0;
+    elements.cacheFallback.textContent = stats.localFallback ? "是" : "否";
+  } catch (error) {
+    elements.cacheMode.textContent = "-";
+    elements.cacheTtl.textContent = "-";
+    elements.cacheFallback.textContent = "需登录";
+  }
+}
+
+async function loadRateLimitStats() {
+  try {
+    const stats = await request("/rate-limit/summary");
+    elements.rateLimitMode.textContent = stats.mode || stats.configuredMode || "-";
+    elements.rateLimitBlocked.textContent = stats.blockedCount ?? 0;
+  } catch (error) {
+    elements.rateLimitMode.textContent = "-";
+    elements.rateLimitBlocked.textContent = "需登录";
+  }
 }
 
 async function loadDashboard() {

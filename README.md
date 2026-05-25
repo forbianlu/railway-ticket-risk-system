@@ -19,7 +19,8 @@
 - 风险处置闭环：风险事件支持待处理、确认风险、误报和关闭归档，并记录处置历史。
 - 订单运营查询：订单列表支持按用户、状态、订单号、创建日期分页筛选。
 - 风险运营报表：风险事件支持分页筛选，并统计状态分布、场景分布、误报率和处置完成率。
-- 查询缓存：车次余票查询支持本地 TTL 缓存，库存相关交易动作提交后失效缓存。
+- 查询缓存：车次余票查询支持 local / Redis 缓存模式，库存相关交易动作提交后失效缓存。
+- 接口限流：车次查询、下单、支付回调、风险处置等高频接口支持本地 / Redis 限流。
 - 权限和审计：使用 Spring Security、JWT、BCrypt、角色校验、操作日志和风险处置历史。
 - 集成测试：覆盖交易状态、幂等、并发防超卖、支付回调、风险处置、缓存和权限链路。
 
@@ -27,7 +28,7 @@
 
 - 后端：Java 8, Spring Boot 2.7, Spring Web, Spring Data JPA, Bean Validation
 - 数据库：H2, MySQL profile
-- 缓存：本地 TTL 缓存
+- 缓存：本地 TTL 缓存，Redis 可选模式
 - 权限：Spring Security, JWT Bearer Token, BCrypt, `@RequiredRole`
 - 测试：JUnit, Spring Boot Test
 - 前端：HTML, CSS, JavaScript
@@ -84,7 +85,7 @@
 | 模块 | 说明 |
 | --- | --- |
 | 车站车次 | 维护车站、车次和座位库存基础数据 |
-| 车次查询 | 按线路和日期查询余票，支持本地 TTL 缓存 |
+| 车次查询 | 按线路和日期查询余票，支持 local / Redis TTL 缓存 |
 | 订单管理 | 创建待支付订单、支付确认、关闭、超时关闭、退票和分页筛选 |
 | 库存控制 | 通过事务和 JPA 乐观锁维护库存扣减与释放 |
 | 支付流水 | 创建模拟支付流水，处理成功和失败回调 |
@@ -116,6 +117,7 @@ POST /api/risks/{id}/handle
 GET  /api/risks/{id}/handle-records
 GET  /api/cache/train-search
 DELETE /api/cache/train-search
+GET  /api/rate-limit/summary
 GET  /api/dashboard/summary
 GET  /api/logs
 ```
@@ -241,6 +243,7 @@ INVENTORY_ID=1
 - 风险事件可确认为风险、标记误报或关闭归档，处置历史和操作日志均可追踪。
 - 订单、支付流水、风险事件均支持分页筛选。
 - 车次查询可命中缓存，库存相关交易动作提交后失效缓存。
+- 高频接口超过限流阈值时返回 429，避免单一用户或来源持续占用接口资源。
 - 未登录访问受保护接口返回 401，权限不足返回 403。
 - 登录成功后签发 JWT，前端通过 `Authorization: Bearer {token}` 访问受保护接口。
 - 并发请求抢同一张票时，只能成功创建符合库存数量的订单。
@@ -271,7 +274,11 @@ PAID -> REFUNDED
 
 ### 查询缓存
 
-车次余票查询按出发站、到达站和乘车日期构建缓存 Key。锁票、支付、关闭和退票动作提交后失效对应线路日期缓存，避免余票展示长期不一致。
+车次余票查询按出发站、到达站和乘车日期构建缓存 Key。默认使用本地 TTL 缓存，也可切换为 Redis 缓存；锁票、支付、关闭和退票动作提交后失效对应线路日期缓存，避免余票展示长期不一致。Redis 不可用时，默认演示环境仍使用本地缓存。
+
+### 接口限流
+
+系统对车次查询、下单、支付回调和风险处置进行固定窗口限流。已登录请求优先使用用户维度，匿名查询使用 IP 维度，支付回调使用支付流水号和 IP 组合。超过阈值时统一返回 429 和 `TOO_MANY_REQUESTS` 错误码。
 
 ### 认证授权
 
@@ -285,6 +292,7 @@ PAID -> REFUNDED
 - [ER 图](docs/er-diagram.mmd)
 - [安全认证设计](docs/security-design.md)
 - [订单状态机设计](docs/order-state-design.md)
+- [缓存与限流设计](docs/cache-and-rate-limit-design.md)
 - [支付流水设计](docs/payment-design.md)
 - [风险处置闭环设计](docs/risk-handling-design.md)
 - [订单幂等设计](docs/idempotency-design.md)
@@ -297,7 +305,7 @@ PAID -> REFUNDED
 
 ## 后续规划
 
-- 将本地 TTL 缓存替换为 Redis，支持多实例共享缓存。
+- 完善 Redis 部署示例和缓存监控指标。
 - 使用延时队列优化超时订单关闭。
 - 增加支付回调签名校验。
 - 增加 refresh token、登录失败限制和令牌失效机制。

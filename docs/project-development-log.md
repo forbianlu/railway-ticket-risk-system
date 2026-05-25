@@ -10,6 +10,8 @@
 | 风险处置闭环增强 | `0fc4543 enhance risk handling workflow` | 风险状态、处置备注、处理人、处理时间、处置历史和权限控制 |
 | 风险事件分页筛选与风险运营报表增强 | `1f77ac7 add risk query pagination and summary` | 风险分页筛选、风险运营报表、前端风险统计展示 |
 | 项目展示文档整理 | `3b0227e polish docs and project showcase` | README、API 文档、最终总结和开发日志整理 |
+| Spring Security + JWT + BCrypt 权限体系升级 | `6e38db3 upgrade auth to spring security jwt` | 标准认证链路、JWT Bearer Token、BCrypt 密码存储和角色授权 |
+| Redis 缓存与接口限流增强 | `add redis cache and rate limiting` | 车次查询 local/Redis 缓存切换、本地 fallback、关键接口限流和 429 响应 |
 
 ## 订单支付状态机与超时关闭
 
@@ -156,3 +158,44 @@
 - Maven 测试通过：`Tests run: 22, Failures: 0, Errors: 0, Skipped: 0`。
 - 前端脚本语法检查通过。
 - 公开文案敏感词检查通过。
+
+## Redis 缓存与接口限流增强
+
+### 目标
+
+将车次查询缓存从单一本地 TTL 缓存升级为支持 local / Redis 切换的缓存层，同时为高频查询、下单、支付回调和风险处置接口增加轻量限流保护。
+
+### 开发前状态
+
+- Spring Security + JWT + BCrypt 权限体系升级已完成并推送到远端。
+- 默认环境仍使用 H2 演示数据库和本地运行方式。
+- 车次查询已有本地 TTL 缓存，缺少 Redis 模式和统一限流能力。
+
+### 主要内容
+
+- 新增 `spring-boot-starter-data-redis` 依赖。
+- 新增 `TrainSearchCacheStore` 抽象，提供 `LocalTrainSearchCacheStore` 和 `RedisTrainSearchCacheStore` 两种实现。
+- `railway.cache.train-search.mode` 默认使用 `local`，可配置为 `redis`；Redis 模式异常时回退到本地缓存。
+- 缓存统计新增 `cacheMode`、`configuredMode`、`redisAvailable` 和 `localFallback` 等字段。
+- 新增 `RateLimitService`，支持本地固定窗口限流和 Redis `INCR + EXPIRE` 限流。
+- 对 `GET /api/trains/search`、`POST /api/orders`、`POST /api/payments/callback`、`POST /api/risks/{id}/handle` 增加限流保护。
+- 超过限流阈值时返回 HTTP 429，错误码为 `TOO_MANY_REQUESTS`。
+- 新增 `GET /api/rate-limit/summary`，供管理员查看限流模式和拦截统计。
+- 前端缓存管理区展示缓存模式、TTL、命中、未命中、失效和本地 fallback 状态，并展示限流模式和拦截次数。
+- 新增 `docs/cache-and-rate-limit-design.md`，说明缓存切换、缓存 key、失效场景、限流 key 和 429 处理。
+
+### 验证结果
+
+- Maven 测试通过：`Tests run: 23, Failures: 0, Errors: 0, Skipped: 0`。
+- 前端脚本语法检查通过。
+- 公开文案敏感词检查通过。
+
+### 当前提交状态
+
+- 本轮改动计划提交为 `add redis cache and rate limiting`。
+- 本轮提交仅保留在本地，不自动推送远端。
+
+### 后续建议
+
+- 在独立 Redis 环境中补充手工联调和部署说明。
+- 后续可增加限流白名单、分接口配置化阈值和更细粒度的缓存监控。

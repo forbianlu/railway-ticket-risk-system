@@ -3,12 +3,16 @@ package com.example.railway.dto;
 public class TrainSearchCacheStats {
 
     private boolean enabled;
+    private String cacheMode;
+    private String configuredMode;
     private long ttlSeconds;
     private int maxEntries;
     private int entryCount;
     private long hitCount;
     private long missCount;
     private long evictCount;
+    private boolean redisAvailable;
+    private boolean localFallback;
 
     public boolean isEnabled() {
         return enabled;
@@ -16,6 +20,22 @@ public class TrainSearchCacheStats {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public String getCacheMode() {
+        return cacheMode;
+    }
+
+    public void setCacheMode(String cacheMode) {
+        this.cacheMode = cacheMode;
+    }
+
+    public String getConfiguredMode() {
+        return configuredMode;
+    }
+
+    public void setConfiguredMode(String configuredMode) {
+        this.configuredMode = configuredMode;
     }
 
     public long getTtlSeconds() {
@@ -64,5 +84,21 @@ public class TrainSearchCacheStats {
 
     public void setEvictCount(long evictCount) {
         this.evictCount = evictCount;
+    }
+
+    public boolean isRedisAvailable() {
+        return redisAvailable;
+    }
+
+    public void setRedisAvailable(boolean redisAvailable) {
+        this.redisAvailable = redisAvailable;
+    }
+
+    public boolean isLocalFallback() {
+        return localFallback;
+    }
+
+    public void setLocalFallback(boolean localFallback) {
+        this.localFallback = localFallback;
     }
 }

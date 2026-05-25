@@ -3,6 +3,7 @@ package com.example.railway.controller;
 import java.time.LocalDate;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -18,19 +19,26 @@ import com.example.railway.dto.CreateOrderRequest;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
 import com.example.railway.service.OrderService;
+import com.example.railway.service.RateLimitService;
 
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
 
     private final OrderService orderService;
+    private final RateLimitService rateLimitService;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService,
+                           RateLimitService rateLimitService) {
         this.orderService = orderService;
+        this.rateLimitService = rateLimitService;
     }
 
     @PostMapping
-    public OrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request) {
+    public OrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request,
+                                     HttpServletRequest httpRequest) {
+        String requester = request.getUserId() == null ? "ip:" + httpRequest.getRemoteAddr() : "user:" + request.getUserId();
+        rateLimitService.check("rate:order:create:" + requester, 10, 60);
         return orderService.createOrder(request);
     }
 

@@ -86,6 +86,45 @@
             <strong id="metric-open-risks">0</strong>
           </div>
         </div>
+
+        <div class="section-title compact-title">
+          <h2>缓存与限流</h2>
+          <p>展示车次查询缓存和关键接口限流状态</p>
+        </div>
+        <div class="metric-grid">
+          <div class="metric compact-metric">
+            <span>缓存模式</span>
+            <strong id="cache-mode">-</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>缓存 TTL</span>
+            <strong id="cache-ttl">-</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>缓存命中</span>
+            <strong id="cache-hit-count">0</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>缓存未命中</span>
+            <strong id="cache-miss-count">0</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>缓存失效</span>
+            <strong id="cache-evict-count">0</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>限流模式</span>
+            <strong id="rate-limit-mode">-</strong>
+          </div>
+          <div class="metric compact-metric alert">
+            <span>限流拦截</span>
+            <strong id="rate-limit-blocked">0</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>本地降级</span>
+            <strong id="cache-fallback">-</strong>
+          </div>
+        </div>
       </section>
 
       <section id="search" class="section">

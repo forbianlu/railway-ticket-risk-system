@@ -4,13 +4,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConfigurationProperties(prefix = "railway.cache.train-search")
-public class TrainSearchCacheProperties {
+@ConfigurationProperties(prefix = "railway.rate-limit")
+public class RateLimitProperties {
 
     private boolean enabled = true;
     private String mode = "local";
-    private long ttlSeconds = 30;
-    private int maxEntries = 256;
+    private boolean localFallbackEnabled = true;
 
     public boolean isEnabled() {
         return enabled;
@@ -28,19 +27,11 @@ public class TrainSearchCacheProperties {
         this.mode = mode;
     }
 
-    public long getTtlSeconds() {
-        return ttlSeconds;
+    public boolean isLocalFallbackEnabled() {
+        return localFallbackEnabled;
     }
 
-    public void setTtlSeconds(long ttlSeconds) {
-        this.ttlSeconds = ttlSeconds;
-    }
-
-    public int getMaxEntries() {
-        return maxEntries;
-    }
-
-    public void setMaxEntries(int maxEntries) {
-        this.maxEntries = maxEntries;
+    public void setLocalFallbackEnabled(boolean localFallbackEnabled) {
+        this.localFallbackEnabled = localFallbackEnabled;
     }
 }

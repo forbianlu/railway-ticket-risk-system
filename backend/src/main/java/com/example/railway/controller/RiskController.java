@@ -22,6 +22,7 @@ import com.example.railway.dto.RiskSummaryResponse;
 import com.example.railway.dto.RiskHandleRequest;
 import com.example.railway.security.AuthContext;
 import com.example.railway.security.RequiredRole;
+import com.example.railway.service.RateLimitService;
 import com.example.railway.service.RiskService;
 
 @RestController
@@ -29,9 +30,12 @@ import com.example.railway.service.RiskService;
 public class RiskController {
 
     private final RiskService riskService;
+    private final RateLimitService rateLimitService;
 
-    public RiskController(RiskService riskService) {
+    public RiskController(RiskService riskService,
+                          RateLimitService rateLimitService) {
         this.riskService = riskService;
+        this.rateLimitService = rateLimitService;
     }
 
     @GetMapping
@@ -59,6 +63,7 @@ public class RiskController {
                                         @Valid @RequestBody(required = false) RiskHandleRequest request,
                                         @RequestParam(value = "operator", required = false) String operator) {
         String currentOperator = operator == null || operator.trim().isEmpty() ? AuthContext.current().getUsername() : operator;
+        rateLimitService.check("rate:risk:handle:user:" + currentOperator, 30, 60);
         return riskService.handleRisk(riskId, request, currentOperator);
     }
 

@@ -26,6 +26,14 @@ public final class AuthContext {
         return principal;
     }
 
+    public static AuthPrincipal currentOrNull() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof AuthPrincipal) {
+            return (AuthPrincipal) authentication.getPrincipal();
+        }
+        return CURRENT.get();
+    }
+
     public static void clear() {
         CURRENT.remove();
     }

@@ -46,6 +46,7 @@ import com.example.railway.dto.OrderResponse;
 import com.example.railway.dto.PaymentCallbackRequest;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
+import com.example.railway.dto.RateLimitSummary;
 import com.example.railway.dto.RiskEventHandleRecordResponse;
 import com.example.railway.dto.RiskEventPageResponse;
 import com.example.railway.dto.RiskEventResponse;
@@ -684,6 +685,9 @@ class RailwayApiIntegrationTests {
 
         assertThat(firstSearch).isNotEmpty();
         assertThat(secondSearch).isNotEmpty();
+        assertThat(afterSecondSearch.getCacheMode()).isEqualTo("local");
+        assertThat(afterSecondSearch.getConfiguredMode()).isEqualTo("local");
+        assertThat(afterSecondSearch.getTtlSeconds()).isGreaterThan(0);
         assertThat(afterSecondSearch.getEntryCount()).isGreaterThan(0);
         assertThat(afterSecondSearch.getHitCount()).isGreaterThan(0);
 
@@ -714,6 +718,56 @@ class RailwayApiIntegrationTests {
         OrderResponse closed = closeOrder(pending.getId());
         assertThat(closed.getStatus()).isEqualTo("CLOSED");
         assertThat(trainSearchCacheStats(admin).getEntryCount()).isEqualTo(0);
+    }
+
+    @Test
+    void shouldRateLimitHighFrequencyApisWithoutPollutingOtherUsers() {
+        AuthResponse admin = login("admin", "admin123");
+        String date = LocalDate.now().toString();
+        ResponseEntity<String> anonymousTrainSearch = restTemplate.getForEntity(
+                "/api/trains/search?from=BJP&to=SHH&date={date}",
+                String.class,
+                date
+        );
+
+        ResponseEntity<String> trainLimited = null;
+        for (int i = 0; i < 121; i++) {
+            trainLimited = restTemplate.exchange(
+                    "/api/trains/search?from=BJP&to=SHH&date={date}",
+                    HttpMethod.GET,
+                    authorizedEntity(admin),
+                    String.class,
+                    date
+            );
+        }
+
+        ResponseEntity<String> orderLimited = null;
+        for (int i = 0; i < 11; i++) {
+            orderLimited = createOrderRaw(
+                    94001L,
+                    999999L,
+                    999999L,
+                    "RateLimitUser" + i
+            );
+        }
+        ResponseEntity<String> otherUserOrder = createOrderRaw(
+                94002L,
+                999999L,
+                999999L,
+                "RateLimitOtherUser"
+        );
+
+        RateLimitSummary summary = rateLimitSummary(admin);
+
+        assertThat(anonymousTrainSearch.getStatusCodeValue()).isEqualTo(200);
+        assertThat(trainLimited).isNotNull();
+        assertThat(trainLimited.getStatusCodeValue()).isEqualTo(429);
+        assertThat(orderLimited).isNotNull();
+        assertThat(orderLimited.getStatusCodeValue()).isEqualTo(429);
+        assertThat(otherUserOrder.getStatusCodeValue()).isNotEqualTo(429);
+        assertThat(summary.getMode()).isEqualTo("local");
+        assertThat(summary.getConfiguredMode()).isEqualTo("local");
+        assertThat(summary.getBlockedCount()).isGreaterThanOrEqualTo(2);
     }
 
     @Test
@@ -1023,6 +1077,16 @@ class RailwayApiIntegrationTests {
                 HttpMethod.GET,
                 authorizedEntity(auth),
                 TrainSearchCacheStats.class
+        );
+        return response.getBody();
+    }
+
+    private RateLimitSummary rateLimitSummary(AuthResponse auth) {
+        ResponseEntity<RateLimitSummary> response = restTemplate.exchange(
+                "/api/rate-limit/summary",
+                HttpMethod.GET,
+                authorizedEntity(auth),
+                RateLimitSummary.class
         );
         return response.getBody();
     }

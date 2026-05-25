@@ -24,6 +24,12 @@ public class GlobalExceptionHandler {
         return error("BUSINESS_ERROR", exception.getMessage());
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public Map<String, Object> handleTooManyRequestsException(TooManyRequestsException exception) {
+        return error("TOO_MANY_REQUESTS", exception.getMessage());
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Map<String, Object> handleAuthenticationException(AuthenticationException exception) {

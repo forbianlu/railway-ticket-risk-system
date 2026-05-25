@@ -1,6 +1,7 @@
 package com.example.railway.controller;
 
 import javax.validation.Valid;
+import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,15 +15,19 @@ import com.example.railway.dto.PaymentCallbackRequest;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
 import com.example.railway.service.PaymentService;
+import com.example.railway.service.RateLimitService;
 
 @RestController
 @RequestMapping("/api/payments")
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final RateLimitService rateLimitService;
 
-    public PaymentController(PaymentService paymentService) {
+    public PaymentController(PaymentService paymentService,
+                             RateLimitService rateLimitService) {
         this.paymentService = paymentService;
+        this.rateLimitService = rateLimitService;
     }
 
     @PostMapping
@@ -31,7 +36,9 @@ public class PaymentController {
     }
 
     @PostMapping("/callback")
-    public PaymentResponse callback(@Valid @RequestBody PaymentCallbackRequest request) {
+    public PaymentResponse callback(@Valid @RequestBody PaymentCallbackRequest request,
+                                    HttpServletRequest httpRequest) {
+        rateLimitService.check("rate:payment:callback:" + request.getPaymentNo() + ":ip:" + httpRequest.getRemoteAddr(), 30, 60);
         return paymentService.handleCallback(request);
     }
 
