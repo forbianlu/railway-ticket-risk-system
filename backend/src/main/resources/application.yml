@@ -31,6 +31,11 @@ auth:
   token:
     secret: railway-ticket-risk-demo-secret
 
+security:
+  jwt:
+    secret: railway-ticket-risk-demo-jwt-secret-change-me-please
+    expire-seconds: 28800
+
 railway:
   order:
     close-expired-delay-ms: 60000

@@ -71,7 +71,7 @@
 - `RISK_OFFICER`：可以处置风险事件、查看处置历史和审计日志。
 - `OPERATOR`：可以查看运营数据，但不能处置风险事件，调用处置接口返回 403。
 
-权限仍沿用项目已有的签名令牌、拦截器和 `@RequiredRole` 注解，不引入 Spring Security。
+权限由 Spring Security JWT 过滤器解析当前登录用户，并继续通过 `@RequiredRole` 注解校验接口角色。
 
 ## 操作日志与审计
 

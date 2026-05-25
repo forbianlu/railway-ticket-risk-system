@@ -89,7 +89,7 @@ PAID -> REFUNDED
 
 ## 权限审计
 
-系统使用演示版签名令牌和拦截器实现登录态解析，通过 `@RequiredRole` 控制敏感接口访问。
+系统使用 Spring Security 作为认证过滤链，登录成功后签发 JWT，密码使用 BCrypt 存储。JWT 过滤器解析 `Authorization: Bearer {token}` 并写入 SecurityContext，敏感接口通过 `@RequiredRole` 控制访问。
 
 - `ADMIN`：可查看日志、处理风险事件、清空缓存。
 - `RISK_OFFICER`：可查看日志、处理风险事件。

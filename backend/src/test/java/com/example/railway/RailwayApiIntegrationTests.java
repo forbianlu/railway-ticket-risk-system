@@ -2,7 +2,11 @@ package com.example.railway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -20,10 +24,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.railway.domain.OperationLog;
 import com.example.railway.domain.SeatInventory;
@@ -47,6 +53,7 @@ import com.example.railway.dto.RiskHandleRequest;
 import com.example.railway.dto.RiskSummaryResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
+import com.example.railway.repository.AppUserRepository;
 import com.example.railway.repository.SeatInventoryRepository;
 import com.example.railway.repository.StationRepository;
 import com.example.railway.repository.TicketOrderRepository;
@@ -57,6 +64,9 @@ class RailwayApiIntegrationTests {
 
     @Autowired
     private TestRestTemplate restTemplate;
+
+    @LocalServerPort
+    private int port;
 
     @Autowired
     private StationRepository stationRepository;
@@ -69,6 +79,12 @@ class RailwayApiIntegrationTests {
 
     @Autowired
     private TicketOrderRepository ticketOrderRepository;
+
+    @Autowired
+    private AppUserRepository appUserRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Test
     void shouldSearchTrainInventories() {
@@ -612,6 +628,52 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldAuthenticateWithJwtAndBcryptPasswords() throws Exception {
+        AuthResponse admin = login("admin", "admin123");
+
+        int failedLoginStatus = postLoginStatus("admin", "bad-password");
+        ResponseEntity<String> health = restTemplate.getForEntity("/api/health", String.class);
+        ResponseEntity<AuthResponse> me = restTemplate.exchange(
+                "/api/auth/me",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                AuthResponse.class
+        );
+        ResponseEntity<String> noToken = restTemplate.getForEntity("/api/cache/train-search", String.class);
+        ResponseEntity<String> invalidToken = restTemplate.exchange(
+                "/api/cache/train-search",
+                HttpMethod.GET,
+                authorizedEntity("invalid.token.value"),
+                String.class
+        );
+        ResponseEntity<TrainSearchCacheStats> cacheStats = restTemplate.exchange(
+                "/api/cache/train-search",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                TrainSearchCacheStats.class
+        );
+
+        String passwordHash = appUserRepository.findByUsername("admin")
+                .orElseThrow(() -> new AssertionError("expected admin user"))
+                .getPasswordHash();
+
+        assertThat(admin.getToken()).isNotBlank();
+        assertThat(admin.getToken().split("\\.")).hasSize(3);
+        assertThat(admin.getExpiresAt()).isNotNull();
+        assertThat(failedLoginStatus).isEqualTo(401);
+        assertThat(passwordHash).startsWith("$2");
+        assertThat(passwordEncoder.matches("admin123", passwordHash)).isTrue();
+        assertThat(health.getStatusCodeValue()).isEqualTo(200);
+        assertThat(me.getStatusCodeValue()).isEqualTo(200);
+        assertThat(me.getBody()).isNotNull();
+        assertThat(me.getBody().getUsername()).isEqualTo("admin");
+        assertThat(noToken.getStatusCodeValue()).isEqualTo(401);
+        assertThat(invalidToken.getStatusCodeValue()).isEqualTo(401);
+        assertThat(cacheStats.getStatusCodeValue()).isEqualTo(200);
+        assertThat(cacheStats.getBody()).isNotNull();
+    }
+
+    @Test
     void shouldCacheTrainSearchAndEvictAfterInventoryChange() {
         AuthResponse admin = login("admin", "admin123");
         clearTrainSearchCache(admin);
@@ -876,6 +938,21 @@ class RailwayApiIntegrationTests {
         return restTemplate.postForObject("/api/auth/login", request, AuthResponse.class);
     }
 
+    private int postLoginStatus(String username, String password) throws Exception {
+        URL url = new URL("http://localhost:" + port + "/api/auth/login");
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setDoOutput(true);
+        String body = "{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}";
+        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        connection.setFixedLengthStreamingMode(bytes.length);
+        try (OutputStream outputStream = connection.getOutputStream()) {
+            outputStream.write(bytes);
+        }
+        return connection.getResponseCode();
+    }
+
     private RiskEventResponse handleRisk(Long riskId, AuthResponse auth) {
         return handleRisk(riskId, auth, "CLOSED", "旧版标记已处理兼容调用");
     }
@@ -962,6 +1039,12 @@ class RailwayApiIntegrationTests {
     private HttpEntity<Void> authorizedEntity(AuthResponse auth) {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + auth.getToken());
+        return new HttpEntity<Void>(headers);
+    }
+
+    private HttpEntity<Void> authorizedEntity(String token) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + token);
         return new HttpEntity<Void>(headers);
     }
 

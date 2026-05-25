@@ -134,3 +134,25 @@
 - Markdown 相对链接扫描通过。
 - 前端脚本语法检查通过。
 - Maven 测试通过：`Tests run: 21, Failures: 0, Errors: 0, Skipped: 0`。
+
+## Spring Security + JWT + BCrypt 权限体系升级
+
+### 目标
+
+将登录认证从轻量签名令牌升级为 Spring Security 无状态认证链路，使用 JWT 承载登录态，使用 BCrypt 存储和校验密码，同时保持现有角色权限语义。
+
+### 主要内容
+
+- 新增 `spring-boot-starter-security` 依赖。
+- 新增 `SecurityConfig`，关闭表单登录、HTTP Basic、CSRF 和服务端 Session。
+- 新增 `JwtAuthenticationFilter`，解析 `Authorization: Bearer {token}` 并写入 SecurityContext。
+- `AuthTokenService` 改为生成 HMAC-SHA256 JWT，载荷包含用户 ID、用户名、角色、签发时间和过期时间。
+- `PasswordService` 改为基于 `BCryptPasswordEncoder` 的密码哈希与校验。
+- 保留 `@RequiredRole` 注解，敏感接口继续使用 `ADMIN`、`RISK_OFFICER`、`OPERATOR` 角色控制。
+- 新增 `docs/security-design.md` 说明认证流程、JWT 设计、BCrypt 存储和 401/403 语义。
+
+### 验证结果
+
+- Maven 测试通过：`Tests run: 22, Failures: 0, Errors: 0, Skipped: 0`。
+- 前端脚本语法检查通过。
+- 公开文案敏感词检查通过。

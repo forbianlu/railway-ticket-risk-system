@@ -37,7 +37,7 @@ Content-Type: application/json
 
 ```json
 {
-  "token": "base64Payload.signature",
+  "token": "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InJpc2sifQ.signature",
   "username": "risk",
   "displayName": "风控专员",
   "role": "RISK_OFFICER",
@@ -52,7 +52,7 @@ GET /api/auth/me
 Authorization: Bearer {token}
 ```
 
-受保护接口统一使用 `Authorization: Bearer {token}` 传递登录令牌。缺少令牌返回 401，角色不足返回 403。
+系统使用 Spring Security + JWT + BCrypt 实现认证授权。受保护接口统一使用 `Authorization: Bearer {token}` 传递登录令牌。缺少令牌或令牌无效返回 401，角色不足返回 403。
 
 ## 查询车次
 

@@ -20,7 +20,7 @@
 - 订单运营查询：订单列表支持按用户、状态、订单号、创建日期分页筛选。
 - 风险运营报表：风险事件支持分页筛选，并统计状态分布、场景分布、误报率和处置完成率。
 - 查询缓存：车次余票查询支持本地 TTL 缓存，库存相关交易动作提交后失效缓存。
-- 权限和审计：支持演示账号、签名令牌、角色校验、操作日志和风险处置历史。
+- 权限和审计：使用 Spring Security、JWT、BCrypt、角色校验、操作日志和风险处置历史。
 - 集成测试：覆盖交易状态、幂等、并发防超卖、支付回调、风险处置、缓存和权限链路。
 
 ## 技术栈
@@ -28,7 +28,7 @@
 - 后端：Java 8, Spring Boot 2.7, Spring Web, Spring Data JPA, Bean Validation
 - 数据库：H2, MySQL profile
 - 缓存：本地 TTL 缓存
-- 权限：自定义签名令牌、HandlerInterceptor、`@RequiredRole`
+- 权限：Spring Security, JWT Bearer Token, BCrypt, `@RequiredRole`
 - 测试：JUnit, Spring Boot Test
 - 前端：HTML, CSS, JavaScript
 - 工程化：Maven, Docker Compose, GitHub Actions
@@ -242,6 +242,7 @@ INVENTORY_ID=1
 - 订单、支付流水、风险事件均支持分页筛选。
 - 车次查询可命中缓存，库存相关交易动作提交后失效缓存。
 - 未登录访问受保护接口返回 401，权限不足返回 403。
+- 登录成功后签发 JWT，前端通过 `Authorization: Bearer {token}` 访问受保护接口。
 - 并发请求抢同一张票时，只能成功创建符合库存数量的订单。
 
 ## 核心设计说明
@@ -272,12 +273,17 @@ PAID -> REFUNDED
 
 车次余票查询按出发站、到达站和乘车日期构建缓存 Key。锁票、支付、关闭和退票动作提交后失效对应线路日期缓存，避免余票展示长期不一致。
 
+### 认证授权
+
+系统使用 Spring Security 以无状态方式接入认证链路。登录接口校验 BCrypt 密码后签发 HMAC-SHA256 JWT，JWT 中包含用户 ID、用户名、角色、签发时间和过期时间。后端过滤器解析 Bearer Token 并写入 SecurityContext，敏感接口继续通过 `@RequiredRole` 校验 `ADMIN`、`RISK_OFFICER`、`OPERATOR` 的访问范围。
+
 ## 文档目录
 
 - [项目大纲](docs/project-outline.md)
 - [API 设计](docs/api-design.md)
 - [数据库设计](docs/database-design.md)
 - [ER 图](docs/er-diagram.mmd)
+- [安全认证设计](docs/security-design.md)
 - [订单状态机设计](docs/order-state-design.md)
 - [支付流水设计](docs/payment-design.md)
 - [风险处置闭环设计](docs/risk-handling-design.md)
@@ -294,6 +300,6 @@ PAID -> REFUNDED
 - 将本地 TTL 缓存替换为 Redis，支持多实例共享缓存。
 - 使用延时队列优化超时订单关闭。
 - 增加支付回调签名校验。
-- 将演示版签名令牌替换为标准认证授权方案。
+- 增加 refresh token、登录失败限制和令牌失效机制。
 - 增加风险等级、处理人、处理 SLA 和导出报表。
 - 增加接口压测、异常场景测试和端到端验证。
