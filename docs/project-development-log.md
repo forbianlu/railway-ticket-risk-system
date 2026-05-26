@@ -14,6 +14,7 @@
 | Redis 缓存与接口限流增强 | `e38e0de add redis cache and rate limiting` | 车次查询 local/Redis 缓存切换、本地 fallback、关键接口限流和 429 响应 |
 | Redis 联调说明与限流规则配置化 | `configure redis rate limit rules` | Redis 模式联调步骤、限流 rules 配置化、前端规则展示 |
 | 支付校验与退款流水闭环 | `add refund records and payment verification` | 支付回调签名与金额校验、退款流水、退款回调签名和幂等 |
+| Outbox 事件表与交易事件解耦 | `add outbox event processing` | 事务内事件落库、事件派发、重试失败处理和事件中心 |
 
 ## 订单支付状态机与超时关闭
 
@@ -276,3 +277,47 @@
 
 - 增加退款重试、退款人工补偿和对账报表。
 - 接入真实渠道时补充渠道证书、回调来源校验和渠道错误码映射。
+
+## Outbox 事件表与交易事件解耦
+
+### 目标
+
+在不引入消息队列的前提下，为核心交易动作增加 Outbox 事件记录、派发、重试和失败观测能力，为后续异步化改造预留边界。
+
+### 开发前状态
+
+- `b822aca add refund records and payment verification` 已与远端同步。
+- 系统已有订单、支付、退款、风控、缓存和限流能力。
+- 后置动作主要仍在同步流程中直接执行。
+
+### 主要内容
+
+- 新增 `outbox_events` 表和 `OutboxEventStatus`。
+- 新增 `OutboxEventPublisher`，在业务事务内写入事件。
+- 新增 `OutboxEventDispatcher`，支持定时扫描和手动派发。
+- 新增 `OutboxEventHandler` 和 `OperationLogEventHandler`。
+- 接入 `ORDER_PAID`、`ORDER_REFUNDED`、`ORDER_CLOSED`、`PAYMENT_SUCCEEDED`、`PAYMENT_FAILED`、`REFUND_CREATED`、`REFUND_SUCCEEDED`、`REFUND_FAILED`、`RISK_EVENT_CREATED`、`RISK_EVENT_HANDLED`。
+- 新增 `GET /api/outbox-events` 和 `POST /api/outbox-events/dispatch`，仅允许管理员访问。
+- 前端新增事件中心，支持状态筛选、事件类型筛选、分页和手动派发。
+- 文档新增 `docs/outbox-design.md`。
+
+### 设计说明
+
+本轮保留原有同步风控、缓存失效和关键操作日志逻辑，Outbox 当前承担事务事件记录、轻量派发和失败观测。后续接入消息队列时，可以将 handler 替换为消息生产者。
+
+### 验证结果
+
+- Maven 测试通过：`Tests run: 30, Failures: 0, Errors: 0, Skipped: 0`。
+- 前端脚本语法检查通过。
+- 公开文案敏感词检查通过。
+
+### 当前提交状态
+
+- 本轮改动计划提交为 `add outbox event processing`。
+- 本轮提交仅保留在本地，不自动推送远端。
+
+### 后续建议
+
+- 增加失败事件手动重试接口。
+- 增加事件处理耗时和失败率统计。
+- 将 Outbox 派发器替换为消息队列生产者。

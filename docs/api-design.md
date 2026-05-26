@@ -632,6 +632,71 @@ Authorization: Bearer {token}
 }
 ```
 
+## 查询 Outbox 事件
+
+```http
+GET /api/outbox-events?status=PENDING&eventType=ORDER_PAID&page=0&size=10
+Authorization: Bearer {token}
+```
+
+该接口仅允许 `ADMIN` 角色访问。无登录令牌返回 401，角色不足返回 403。
+
+查询参数：
+
+| 参数 | 是否必填 | 说明 |
+| --- | --- | --- |
+| status | 否 | 事件状态：`PENDING`、`PROCESSING`、`DONE`、`FAILED` |
+| eventType | 否 | 事件类型，如 `ORDER_PAID`、`PAYMENT_SUCCEEDED`、`REFUND_CREATED` |
+| page | 否 | 页码，从 0 开始，默认 0 |
+| size | 否 | 每页大小，默认 10，最大 100 |
+
+响应示例：
+
+```json
+{
+  "content": [
+    {
+      "eventId": "d6a9b4e2-7d3a-4c8a-9e0a-3d9f0f5e1c11",
+      "eventType": "ORDER_PAID",
+      "aggregateType": "ORDER",
+      "aggregateId": "1",
+      "payload": "{\"orderId\":1,\"status\":\"PAID\"}",
+      "status": "PENDING",
+      "retryCount": 0,
+      "maxRetryCount": 3,
+      "lastError": null,
+      "createdAt": "2026-05-18T12:00:00",
+      "processedAt": null
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+## 手动派发 Outbox 事件
+
+```http
+POST /api/outbox-events/dispatch
+Authorization: Bearer {token}
+```
+
+该接口仅允许 `ADMIN` 角色访问，用于手动触发一次待处理事件扫描。
+
+响应示例：
+
+```json
+{
+  "processedCount": 6
+}
+```
+
+派发成功后事件变为 `DONE`。处理失败时记录 `lastError`，`retryCount + 1`；未达到最大重试次数则回到 `PENDING` 等待下次重试，达到最大重试次数后变为 `FAILED`。
+
 ## 演示账号
 
 | 账号 | 密码 | 角色 |

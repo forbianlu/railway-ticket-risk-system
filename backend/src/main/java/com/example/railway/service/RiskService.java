@@ -33,6 +33,8 @@ import com.example.railway.dto.RiskHandleRequest;
 import com.example.railway.dto.RiskSummaryResponse;
 import com.example.railway.repository.RiskEventHandleRecordRepository;
 import com.example.railway.repository.RiskEventRepository;
+import com.example.railway.service.outbox.OutboxEventPublisher;
+import com.example.railway.service.outbox.OutboxEventTypes;
 import com.example.railway.service.risk.RiskContext;
 import com.example.railway.service.risk.RiskHit;
 import com.example.railway.service.risk.RiskRule;
@@ -48,15 +50,18 @@ public class RiskService {
     private final RiskEventHandleRecordRepository handleRecordRepository;
     private final OperationLogService operationLogService;
     private final List<RiskRule> riskRules;
+    private final OutboxEventPublisher outboxEventPublisher;
 
     public RiskService(RiskEventRepository riskEventRepository,
                        RiskEventHandleRecordRepository handleRecordRepository,
                        OperationLogService operationLogService,
-                       List<RiskRule> riskRules) {
+                       List<RiskRule> riskRules,
+                       OutboxEventPublisher outboxEventPublisher) {
         this.riskEventRepository = riskEventRepository;
         this.handleRecordRepository = handleRecordRepository;
         this.operationLogService = operationLogService;
         this.riskRules = riskRules;
+        this.outboxEventPublisher = outboxEventPublisher;
     }
 
     @Transactional
@@ -176,6 +181,7 @@ public class RiskService {
                 String.valueOf(saved.getId()),
                 buildHandleLogDetail(fromStatus, toStatus, remark)
         );
+        publishRiskEvent(OutboxEventTypes.RISK_EVENT_HANDLED, saved);
         return RiskEventResponse.from(saved);
     }
 
@@ -224,6 +230,19 @@ public class RiskService {
                 String.valueOf(saved.getId()),
                 hit.getReason()
         );
+        publishRiskEvent(OutboxEventTypes.RISK_EVENT_CREATED, saved);
+    }
+
+    private void publishRiskEvent(String eventType, RiskEvent riskEvent) {
+        Map<String, Object> payload = new LinkedHashMap<String, Object>();
+        payload.put("riskEventId", riskEvent.getId());
+        payload.put("orderId", riskEvent.getOrder() == null ? null : riskEvent.getOrder().getId());
+        payload.put("userId", riskEvent.getUserId());
+        payload.put("riskType", riskEvent.getRiskType() == null ? null : riskEvent.getRiskType().name());
+        payload.put("riskLevel", riskEvent.getRiskLevel() == null ? null : riskEvent.getRiskLevel().name());
+        payload.put("scene", riskEvent.getScene() == null ? null : riskEvent.getScene().name());
+        payload.put("status", riskEvent.getStatus() == null ? null : riskEvent.getStatus().name());
+        outboxEventPublisher.publish(eventType, "RISK", String.valueOf(riskEvent.getId()), payload);
     }
 
     private RiskStatus parseTargetStatus(RiskHandleRequest request) {

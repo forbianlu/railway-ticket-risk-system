@@ -111,6 +111,14 @@ PAID -> REFUNDED
 
 默认使用本地内存限流，可切换到 Redis `INCR + EXPIRE` 模式。限流阈值集中配置在 `railway.rate-limit.rules`，Controller 只传入规则名和业务 key。超过阈值时返回 429 和 `TOO_MANY_REQUESTS`。
 
+## Outbox 事件
+
+系统新增 `outbox_events` 表，在业务事务内记录订单、支付、退款和风险相关领域事件。事件发布通过 `OutboxEventPublisher` 完成，默认写入 `PENDING` 状态、重试次数和 JSON 载荷。
+
+`OutboxEventDispatcher` 负责扫描待处理事件，将事件标记为 `PROCESSING` 后交给对应 handler。处理成功后标记 `DONE`，处理失败后记录 `lastError` 并增加重试次数；达到最大重试次数后标记为 `FAILED`。
+
+当前阶段保留原同步风控、缓存失效和关键操作日志，Outbox 主要承担事件记录、轻量处理和失败观测。后续接入消息队列时，可以把 handler 替换为消息生产者。
+
 ## 权限审计
 
 系统使用 Spring Security 作为认证过滤链，登录成功后签发 JWT，密码使用 BCrypt 存储。JWT 过滤器解析 `Authorization: Bearer {token}` 并写入 SecurityContext，敏感接口通过 `@RequiredRole` 控制访问。
@@ -133,5 +141,6 @@ PAID -> REFUNDED
 - 并发防超卖。
 - 订单分页筛选和看板指标。
 - 支付流水分页筛选。
+- Outbox 事件落库、派发、失败重试和管理接口权限。
 - 风险生成、处置、历史查询、分页筛选和报表。
 - 登录权限和角色校验。

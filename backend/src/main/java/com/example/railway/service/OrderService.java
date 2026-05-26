@@ -4,7 +4,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import javax.persistence.criteria.Predicate;
@@ -27,6 +29,8 @@ import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
 import com.example.railway.repository.SeatInventoryRepository;
 import com.example.railway.repository.TicketOrderRepository;
+import com.example.railway.service.outbox.OutboxEventPublisher;
+import com.example.railway.service.outbox.OutboxEventTypes;
 
 @Service
 public class OrderService {
@@ -42,19 +46,22 @@ public class OrderService {
     private final OperationLogService operationLogService;
     private final TrainSearchCacheService trainSearchCacheService;
     private final RefundService refundService;
+    private final OutboxEventPublisher outboxEventPublisher;
 
     public OrderService(TicketOrderRepository ticketOrderRepository,
                         SeatInventoryRepository seatInventoryRepository,
                         RiskService riskService,
                         OperationLogService operationLogService,
                         TrainSearchCacheService trainSearchCacheService,
-                        RefundService refundService) {
+                        RefundService refundService,
+                        OutboxEventPublisher outboxEventPublisher) {
         this.ticketOrderRepository = ticketOrderRepository;
         this.seatInventoryRepository = seatInventoryRepository;
         this.riskService = riskService;
         this.operationLogService = operationLogService;
         this.trainSearchCacheService = trainSearchCacheService;
         this.refundService = refundService;
+        this.outboxEventPublisher = outboxEventPublisher;
     }
 
     @Transactional
@@ -135,6 +142,7 @@ public class OrderService {
                 "订单 " + saved.getOrderNo() + " 已支付"
         );
         riskService.evaluateAfterOrderCreated(saved);
+        publishOrderEvent(OutboxEventTypes.ORDER_PAID, saved);
         return OrderResponse.from(saved);
     }
 
@@ -165,6 +173,7 @@ public class OrderService {
         );
         riskService.evaluateAfterRefund(saved);
         refundService.createForRefundedOrder(saved);
+        publishOrderEvent(OutboxEventTypes.ORDER_REFUNDED, saved);
         return OrderResponse.from(saved);
     }
 
@@ -323,7 +332,18 @@ public class OrderService {
                 String.valueOf(saved.getId()),
                 reason + " " + saved.getOrderNo()
         );
+        publishOrderEvent(OutboxEventTypes.ORDER_CLOSED, saved);
         return saved;
+    }
+
+    private void publishOrderEvent(String eventType, TicketOrder order) {
+        Map<String, Object> payload = new LinkedHashMap<String, Object>();
+        payload.put("orderId", order.getId());
+        payload.put("orderNo", order.getOrderNo());
+        payload.put("userId", order.getUserId());
+        payload.put("status", order.getStatus() == null ? null : order.getStatus().name());
+        payload.put("amount", order.getAmount());
+        outboxEventPublisher.publish(eventType, "ORDER", String.valueOf(order.getId()), payload);
     }
 
     private void evictTrainSearchCacheAfterCommit(SeatInventory inventory) {

@@ -3,7 +3,9 @@ package com.example.railway.service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import javax.persistence.criteria.Predicate;
@@ -28,6 +30,8 @@ import com.example.railway.dto.PaymentResponse;
 import com.example.railway.dto.OrderResponse;
 import com.example.railway.repository.PaymentRecordRepository;
 import com.example.railway.repository.TicketOrderRepository;
+import com.example.railway.service.outbox.OutboxEventPublisher;
+import com.example.railway.service.outbox.OutboxEventTypes;
 
 @Service
 public class PaymentService {
@@ -43,19 +47,22 @@ public class PaymentService {
     private final OperationLogService operationLogService;
     private final CallbackSignatureService callbackSignatureService;
     private final PaymentCallbackProperties paymentCallbackProperties;
+    private final OutboxEventPublisher outboxEventPublisher;
 
     public PaymentService(PaymentRecordRepository paymentRecordRepository,
                           TicketOrderRepository ticketOrderRepository,
                           OrderService orderService,
                           OperationLogService operationLogService,
                           CallbackSignatureService callbackSignatureService,
-                          PaymentCallbackProperties paymentCallbackProperties) {
+                          PaymentCallbackProperties paymentCallbackProperties,
+                          OutboxEventPublisher outboxEventPublisher) {
         this.paymentRecordRepository = paymentRecordRepository;
         this.ticketOrderRepository = ticketOrderRepository;
         this.orderService = orderService;
         this.operationLogService = operationLogService;
         this.callbackSignatureService = callbackSignatureService;
         this.paymentCallbackProperties = paymentCallbackProperties;
+        this.outboxEventPublisher = outboxEventPublisher;
     }
 
     @Transactional
@@ -230,6 +237,7 @@ public class PaymentService {
                 saved.getPaymentNo(),
                 "支付回调成功，订单 " + saved.getOrderNo() + " 已确认支付"
         );
+        publishPaymentEvent(OutboxEventTypes.PAYMENT_SUCCEEDED, saved);
         return saved;
     }
 
@@ -247,7 +255,20 @@ public class PaymentService {
                 saved.getPaymentNo(),
                 "支付回调失败，订单 " + saved.getOrderNo() + " 保持待支付"
         );
+        publishPaymentEvent(OutboxEventTypes.PAYMENT_FAILED, saved);
         return saved;
+    }
+
+    private void publishPaymentEvent(String eventType, PaymentRecord record) {
+        Map<String, Object> payload = new LinkedHashMap<String, Object>();
+        payload.put("paymentNo", record.getPaymentNo());
+        payload.put("orderId", record.getOrderId());
+        payload.put("orderNo", record.getOrderNo());
+        payload.put("userId", record.getUserId());
+        payload.put("amount", record.getAmount());
+        payload.put("status", record.getStatus() == null ? null : record.getStatus().name());
+        payload.put("channelPaymentNo", record.getChannelPaymentNo());
+        outboxEventPublisher.publish(eventType, "PAYMENT", record.getPaymentNo(), payload);
     }
 
     private String generatePaymentNo() {

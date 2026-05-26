@@ -36,6 +36,8 @@ import com.example.railway.config.PaymentCallbackProperties;
 import com.example.railway.config.RefundCallbackProperties;
 import com.example.railway.config.TrainSearchCacheProperties;
 import com.example.railway.domain.OperationLog;
+import com.example.railway.domain.OutboxEvent;
+import com.example.railway.domain.OutboxEventStatus;
 import com.example.railway.domain.PaymentRecord;
 import com.example.railway.domain.RefundRecord;
 import com.example.railway.domain.SeatInventory;
@@ -49,6 +51,8 @@ import com.example.railway.dto.DashboardSummary;
 import com.example.railway.dto.LoginRequest;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
+import com.example.railway.dto.OutboxDispatchResponse;
+import com.example.railway.dto.OutboxEventPageResponse;
 import com.example.railway.dto.PaymentCallbackRequest;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
@@ -64,6 +68,7 @@ import com.example.railway.dto.RiskSummaryResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
 import com.example.railway.repository.AppUserRepository;
+import com.example.railway.repository.OutboxEventRepository;
 import com.example.railway.repository.PaymentRecordRepository;
 import com.example.railway.repository.RefundRecordRepository;
 import com.example.railway.repository.SeatInventoryRepository;
@@ -71,6 +76,9 @@ import com.example.railway.repository.StationRepository;
 import com.example.railway.repository.TicketOrderRepository;
 import com.example.railway.repository.TrainRepository;
 import com.example.railway.service.CallbackSignatureService;
+import com.example.railway.service.outbox.OutboxEventDispatcher;
+import com.example.railway.service.outbox.OutboxEventPublisher;
+import com.example.railway.service.outbox.OutboxEventTypes;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class RailwayApiIntegrationTests {
@@ -103,6 +111,9 @@ class RailwayApiIntegrationTests {
     private RefundRecordRepository refundRecordRepository;
 
     @Autowired
+    private OutboxEventRepository outboxEventRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -119,6 +130,12 @@ class RailwayApiIntegrationTests {
 
     @Autowired
     private RefundCallbackProperties refundCallbackProperties;
+
+    @Autowired
+    private OutboxEventPublisher outboxEventPublisher;
+
+    @Autowired
+    private OutboxEventDispatcher outboxEventDispatcher;
 
     @Test
     void shouldSearchTrainInventories() {
@@ -477,6 +494,95 @@ class RailwayApiIntegrationTests {
         assertThat(afterRejected.getStatus().name()).isEqualTo("PENDING");
         assertThat(failed.getStatus()).isEqualTo("FAILED");
         assertThat(successAfterFailed.getStatusCodeValue()).isEqualTo(400);
+    }
+
+    @Test
+    void shouldPublishAndDispatchOutboxEventsForTransactions() {
+        TrainSearchResponse train = firstTrainInventory();
+        long userId = 3190L;
+        long paymentSucceededBefore = countOutboxEvents(OutboxEventTypes.PAYMENT_SUCCEEDED);
+        long orderPaidBefore = countOutboxEvents(OutboxEventTypes.ORDER_PAID);
+        long refundCreatedBefore = countOutboxEvents(OutboxEventTypes.REFUND_CREATED);
+        long orderRefundedBefore = countOutboxEvents(OutboxEventTypes.ORDER_REFUNDED);
+        long refundSucceededBefore = countOutboxEvents(OutboxEventTypes.REFUND_SUCCEEDED);
+        long riskHandledBefore = countOutboxEvents(OutboxEventTypes.RISK_EVENT_HANDLED);
+
+        OrderResponse paid = createPaidOrderThroughPayment(userId, train, "OutboxPaidUser");
+        OrderResponse refunded = refundOrder(paid.getId());
+        RefundResponse refund = fetchRefundPage("/api/refunds?orderId={orderId}", refunded.getId()).getContent().get(0);
+        callbackRefund(refund.getRefundNo(), "outbox-refund-success-" + System.nanoTime(), true);
+
+        RiskEventResponse risk = createPendingRisk(3191L, train, "OutboxRiskUser");
+        AuthResponse admin = login("admin", "admin123");
+        handleRisk(risk.getId(), admin, "CONFIRMED", "outbox handle event");
+
+        assertThat(countOutboxEvents(OutboxEventTypes.PAYMENT_SUCCEEDED)).isGreaterThan(paymentSucceededBefore);
+        assertThat(countOutboxEvents(OutboxEventTypes.ORDER_PAID)).isGreaterThan(orderPaidBefore);
+        assertThat(countOutboxEvents(OutboxEventTypes.REFUND_CREATED)).isGreaterThan(refundCreatedBefore);
+        assertThat(countOutboxEvents(OutboxEventTypes.ORDER_REFUNDED)).isGreaterThan(orderRefundedBefore);
+        assertThat(countOutboxEvents(OutboxEventTypes.REFUND_SUCCEEDED)).isGreaterThan(refundSucceededBefore);
+        assertThat(countOutboxEvents(OutboxEventTypes.RISK_EVENT_HANDLED)).isGreaterThan(riskHandledBefore);
+
+        OutboxEventPageResponse paymentEvents = fetchOutboxPage(
+                admin,
+                "/api/outbox-events?status=PENDING&eventType=PAYMENT_SUCCEEDED&page=0&size=10"
+        );
+        assertThat(paymentEvents.getContent()).isNotEmpty();
+        String eventId = paymentEvents.getContent().get(0).getEventId();
+
+        ResponseEntity<OutboxDispatchResponse> dispatchResponse = restTemplate.exchange(
+                "/api/outbox-events/dispatch",
+                HttpMethod.POST,
+                authorizedEntity(admin),
+                OutboxDispatchResponse.class
+        );
+        assertThat(dispatchResponse.getBody()).isNotNull();
+        assertThat(dispatchResponse.getBody().getProcessedCount()).isGreaterThan(0);
+
+        OutboxEvent dispatched = outboxEventRepository.findByEventId(eventId)
+                .orElseThrow(() -> new AssertionError("expected outbox event"));
+        assertThat(dispatched.getStatus()).isEqualTo(OutboxEventStatus.DONE);
+        assertThat(dispatched.getProcessedAt()).isNotNull();
+    }
+
+    @Test
+    void shouldRetryAndFailOutboxEventWhenHandlerIsMissing() {
+        OutboxEvent event = outboxEventPublisher.publish(
+                "UNSUPPORTED_TEST_EVENT",
+                "TEST",
+                "missing-handler",
+                "{}",
+                1
+        );
+
+        int processedCount = outboxEventDispatcher.dispatchOnce(1);
+        OutboxEvent failed = outboxEventRepository.findByEventId(event.getEventId())
+                .orElseThrow(() -> new AssertionError("expected outbox event"));
+
+        assertThat(processedCount).isEqualTo(1);
+        assertThat(failed.getStatus()).isEqualTo(OutboxEventStatus.FAILED);
+        assertThat(failed.getRetryCount()).isEqualTo(1);
+        assertThat(failed.getLastError()).contains("No outbox handler");
+    }
+
+    @Test
+    void shouldProtectOutboxManagementApisWithAdminRole() {
+        AuthResponse risk = login("risk", "risk123");
+        AuthResponse admin = login("admin", "admin123");
+
+        ResponseEntity<String> noToken = restTemplate.getForEntity("/api/outbox-events", String.class);
+        ResponseEntity<String> riskOfficer = restTemplate.exchange(
+                "/api/outbox-events",
+                HttpMethod.GET,
+                authorizedEntity(risk),
+                String.class
+        );
+        OutboxEventPageResponse adminPage = fetchOutboxPage(admin, "/api/outbox-events?page=0&size=5");
+
+        assertThat(noToken.getStatusCodeValue()).isEqualTo(401);
+        assertThat(riskOfficer.getStatusCodeValue()).isEqualTo(403);
+        assertThat(adminPage.getPage()).isEqualTo(0);
+        assertThat(adminPage.getSize()).isEqualTo(5);
     }
 
     @Test
@@ -1208,6 +1314,24 @@ class RailwayApiIntegrationTests {
         assertThat(response).isNotNull();
         assertThat(response.getContent()).isNotNull();
         return response;
+    }
+
+    private long countOutboxEvents(String eventType) {
+        return outboxEventRepository.findAll().stream()
+                .filter(event -> eventType.equals(event.getEventType()))
+                .count();
+    }
+
+    private OutboxEventPageResponse fetchOutboxPage(AuthResponse auth, String url) {
+        ResponseEntity<OutboxEventPageResponse> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                authorizedEntity(auth),
+                OutboxEventPageResponse.class
+        );
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getContent()).isNotNull();
+        return response.getBody();
     }
 
     private RiskEventResponse createPendingRisk(long userId, TrainSearchResponse train, String passengerPrefix) {

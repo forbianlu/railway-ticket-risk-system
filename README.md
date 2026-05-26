@@ -23,6 +23,7 @@
 - 风险运营报表：风险事件支持分页筛选，并统计状态分布、场景分布、误报率和处置完成率。
 - 查询缓存：车次余票查询支持 local / Redis 缓存模式，库存相关交易动作提交后失效缓存。
 - 接口限流：车次查询、下单、支付回调、风险处置等高频接口支持本地 / Redis 限流，阈值通过配置文件维护。
+- Outbox 事件：核心交易事务内写入 Outbox 事件表，支持轻量派发、重试和失败记录。
 - 权限和审计：使用 Spring Security、JWT、BCrypt、角色校验、操作日志和风险处置历史。
 - 集成测试：覆盖交易状态、幂等、并发防超卖、支付回调、风险处置、缓存和权限链路。
 
@@ -94,6 +95,7 @@
 | 退款流水 | 退票后自动创建退款流水，处理退款成功和失败回调 |
 | 风险识别 | 支付成功和退票后触发风险规则 |
 | 风险处置 | 支持风险状态流转、处置备注、处理人和处置历史 |
+| 事件中心 | 展示 Outbox 交易事件，支持手动派发和失败重试观测 |
 | 运营看板 | 展示订单状态、退票率、风险率、未处理风险和热门车次 |
 | 权限审计 | 登录鉴权、角色校验、操作日志和审计追踪 |
 
@@ -125,6 +127,8 @@ GET  /api/risks/{id}/handle-records
 GET  /api/cache/train-search
 DELETE /api/cache/train-search
 GET  /api/rate-limit/summary
+GET  /api/outbox-events?status=PENDING&page=0&size=10
+POST /api/outbox-events/dispatch
 GET  /api/dashboard/summary
 GET  /api/logs
 ```
@@ -142,6 +146,7 @@ GET  /api/logs
 | `ticket_orders` | 订单号、乘客、金额、状态和支付/退票/关闭时间 |
 | `payment_records` | 支付流水号、渠道流水号、支付状态、回调请求号和支付时间 |
 | `refund_records` | 退款流水号、渠道退款号、退款状态、回调请求号和退款时间 |
+| `outbox_events` | 交易领域事件、处理状态、重试次数和失败原因 |
 | `risk_events` | 风险类型、等级、场景、状态和最新处置信息 |
 | `risk_event_handle_records` | 风险事件处置前后状态、备注、操作人和操作时间 |
 | `operation_logs` | 关键业务动作审计日志 |
@@ -254,6 +259,7 @@ INVENTORY_ID=1
 - 订单、支付流水、风险事件均支持分页筛选。
 - 车次查询可命中缓存，库存相关交易动作提交后失效缓存。
 - 高频接口超过限流阈值时返回 429，避免单一用户或来源持续占用接口资源。
+- 支付、退票、退款和风险处置等交易动作会写入 Outbox 事件，可由派发器处理为后续动作。
 - 未登录访问受保护接口返回 401，权限不足返回 403。
 - 登录成功后签发 JWT，前端通过 `Authorization: Bearer {token}` 访问受保护接口。
 - 并发请求抢同一张票时，只能成功创建符合库存数量的订单。
@@ -296,6 +302,10 @@ PAID -> REFUNDED
 
 系统使用 Spring Security 以无状态方式接入认证链路。登录接口校验 BCrypt 密码后签发 HMAC-SHA256 JWT，JWT 中包含用户 ID、用户名、角色、签发时间和过期时间。后端过滤器解析 Bearer Token 并写入 SecurityContext，敏感接口继续通过 `@RequiredRole` 校验 `ADMIN`、`RISK_OFFICER`、`OPERATOR` 的访问范围。
 
+### Outbox 事件
+
+系统在核心业务事务内写入 `outbox_events`，覆盖订单支付、订单退票、订单关闭、支付回调、退款流水和风险处置等事件。当前阶段保留原有同步风控、缓存失效和关键日志逻辑，Outbox 派发器用于轻量事件处理、状态观测、重试和失败记录，为后续接入消息队列预留边界。
+
 ## 文档目录
 
 - [项目大纲](docs/project-outline.md)
@@ -305,6 +315,7 @@ PAID -> REFUNDED
 - [安全认证设计](docs/security-design.md)
 - [订单状态机设计](docs/order-state-design.md)
 - [缓存与限流设计](docs/cache-and-rate-limit-design.md)
+- [Outbox 事件设计](docs/outbox-design.md)
 - [支付流水设计](docs/payment-design.md)
 - [退款流水设计](docs/refund-design.md)
 - [风险处置闭环设计](docs/risk-handling-design.md)
@@ -321,6 +332,7 @@ PAID -> REFUNDED
 - 在独立 Redis 环境中补充部署联调记录和缓存监控指标。
 - 使用延时队列优化超时订单关闭。
 - 增加退款重试、退款人工补偿和对账报表。
+- 将 Outbox 事件派发迁移到消息队列。
 - 增加 refresh token、登录失败限制和令牌失效机制。
 - 增加风险等级、处理人、处理 SLA 和导出报表。
 - 增加接口压测、异常场景测试和端到端验证。

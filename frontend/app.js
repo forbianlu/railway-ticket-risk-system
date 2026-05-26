@@ -27,6 +27,14 @@ const state = {
     first: true,
     last: true,
   },
+  outboxPage: {
+    page: 0,
+    size: 10,
+    totalPages: 0,
+    totalElements: 0,
+    first: true,
+    last: true,
+  },
   riskPage: {
     page: 0,
     size: 10,
@@ -85,6 +93,12 @@ const elements = {
   refundPageInfo: document.querySelector("#refund-page-info"),
   prevRefunds: document.querySelector("#prev-refunds"),
   nextRefunds: document.querySelector("#next-refunds"),
+  outboxStatus: document.querySelector("#outbox-status"),
+  outboxEventType: document.querySelector("#outbox-event-type"),
+  outboxResults: document.querySelector("#outbox-results"),
+  outboxPageInfo: document.querySelector("#outbox-page-info"),
+  prevOutbox: document.querySelector("#prev-outbox"),
+  nextOutbox: document.querySelector("#next-outbox"),
   riskStatus: document.querySelector("#risk-status"),
   riskScene: document.querySelector("#risk-scene"),
   riskUserId: document.querySelector("#risk-user-id"),
@@ -132,6 +146,10 @@ document.querySelector("#load-refunds").addEventListener("click", loadRefunds);
 document.querySelector("#reset-refunds").addEventListener("click", resetRefundFilters);
 elements.prevRefunds.addEventListener("click", () => changeRefundPage(-1));
 elements.nextRefunds.addEventListener("click", () => changeRefundPage(1));
+document.querySelector("#load-outbox-events").addEventListener("click", loadOutboxEvents);
+document.querySelector("#dispatch-outbox-events").addEventListener("click", dispatchOutboxEvents);
+elements.prevOutbox.addEventListener("click", () => changeOutboxPage(-1));
+elements.nextOutbox.addEventListener("click", () => changeOutboxPage(1));
 document.querySelector("#load-risks").addEventListener("click", loadRisks);
 document.querySelector("#reset-risks").addEventListener("click", resetRiskFilters);
 elements.prevRisks.addEventListener("click", () => changeRiskPage(-1));
@@ -239,6 +257,7 @@ async function refreshAll() {
     loadOrders(),
     loadPayments(),
     loadRefunds(),
+    loadOutboxEvents(),
     loadRisks(),
     loadRiskSummary(),
     loadLogs(),
@@ -802,6 +821,88 @@ async function resetRefundFilters() {
   await loadRefundsPage();
 }
 
+async function loadOutboxEvents() {
+  state.outboxPage.page = 0;
+  await loadOutboxEventsPage();
+}
+
+async function loadOutboxEventsPage() {
+  try {
+    const page = await request(buildOutboxQueryPath());
+    state.outboxPage = {
+      page: page.page,
+      size: page.size,
+      totalPages: page.totalPages,
+      totalElements: page.totalElements,
+      first: page.first,
+      last: page.last,
+    };
+    renderOutboxEvents(page.content || []);
+    renderOutboxPagination();
+  } catch (error) {
+    elements.outboxResults.innerHTML = tableEmpty(8, error.message || "无法获取事件数据");
+    renderOutboxPagination();
+  }
+}
+
+function buildOutboxQueryPath() {
+  const params = new URLSearchParams();
+  appendParam(params, "status", elements.outboxStatus.value);
+  appendParam(params, "eventType", elements.outboxEventType.value);
+  params.set("page", String(state.outboxPage.page));
+  params.set("size", String(state.outboxPage.size));
+  return `/outbox-events?${params.toString()}`;
+}
+
+function renderOutboxEvents(events) {
+  if (events.length === 0) {
+    elements.outboxResults.innerHTML = tableEmpty(8, "暂无 Outbox 事件");
+    return;
+  }
+  elements.outboxResults.innerHTML = events
+    .map(event => `
+      <tr>
+        <td><span class="muted-text">${event.eventId}</span></td>
+        <td>${event.eventType}</td>
+        <td>${event.aggregateType}<br><span class="muted-text">${event.aggregateId}</span></td>
+        <td><span class="status ${outboxStatusClass(event.status)}">${outboxStatusText(event.status)}</span></td>
+        <td>${event.retryCount}/${event.maxRetryCount}</td>
+        <td>${formatDateTime(event.createdAt)}</td>
+        <td>${formatDateTime(event.processedAt) || "-"}</td>
+        <td>${event.lastError ? escapeHtml(event.lastError) : "-"}</td>
+      </tr>
+    `)
+    .join("");
+}
+
+async function dispatchOutboxEvents() {
+  try {
+    const response = await request("/outbox-events/dispatch", { method: "POST" });
+    showToast(`已派发 ${response.processedCount || 0} 个事件`);
+    await loadOutboxEventsPage();
+    await loadLogs();
+  } catch (error) {
+    showToast(error.message || "事件派发失败");
+  }
+}
+
+function renderOutboxPagination() {
+  const totalPages = Math.max(1, state.outboxPage.totalPages || 0);
+  const currentPage = Math.min((state.outboxPage.page || 0) + 1, totalPages);
+  elements.outboxPageInfo.textContent = `第 ${currentPage} / ${totalPages} 页，共 ${state.outboxPage.totalElements || 0} 条`;
+  elements.prevOutbox.disabled = Boolean(state.outboxPage.first);
+  elements.nextOutbox.disabled = Boolean(state.outboxPage.last);
+}
+
+async function changeOutboxPage(offset) {
+  const nextPage = Math.max(0, state.outboxPage.page + offset);
+  if (nextPage === state.outboxPage.page) {
+    return;
+  }
+  state.outboxPage.page = nextPage;
+  await loadOutboxEventsPage();
+}
+
 function renderPaymentPagination() {
   const totalPages = Math.max(1, state.paymentPage.totalPages || 0);
   const currentPage = Math.min((state.paymentPage.page || 0) + 1, totalPages);
@@ -1212,6 +1313,26 @@ function riskSceneText(value) {
     ORDER_REFUNDED: "退票后",
   };
   return map[value] || "-";
+}
+
+function outboxStatusText(value) {
+  const map = {
+    PENDING: "待处理",
+    PROCESSING: "处理中",
+    DONE: "处理完成",
+    FAILED: "处理失败",
+  };
+  return map[value] || value;
+}
+
+function outboxStatusClass(value) {
+  const map = {
+    PENDING: "pending",
+    PROCESSING: "pending",
+    DONE: "",
+    FAILED: "closed",
+  };
+  return map[value] || "";
 }
 
 function roleText(value) {

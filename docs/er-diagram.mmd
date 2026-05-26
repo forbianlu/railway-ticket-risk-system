@@ -9,6 +9,7 @@ erDiagram
     PAYMENT_RECORDS ||--o{ REFUND_RECORDS : returns
     TICKET_ORDERS ||--o{ RISK_EVENTS : triggers
     RISK_EVENTS ||--o{ RISK_EVENT_HANDLE_RECORDS : records
+    TICKET_ORDERS ||--o{ OUTBOX_EVENTS : publishes
 
     APP_USERS {
         bigint id PK
@@ -130,6 +131,23 @@ erDiagram
         timestamp created_at
         timestamp updated_at
         timestamp refunded_at
+    }
+
+    OUTBOX_EVENTS {
+        bigint id PK
+        varchar event_id
+        varchar event_type
+        varchar aggregate_type
+        varchar aggregate_id
+        varchar payload
+        varchar status
+        int retry_count
+        int max_retry_count
+        timestamp next_retry_at
+        varchar last_error
+        timestamp created_at
+        timestamp updated_at
+        timestamp processed_at
     }
 
     OPERATION_LOGS {

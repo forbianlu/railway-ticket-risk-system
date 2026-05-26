@@ -23,6 +23,7 @@
         <a href="#payments">支付流水</a>
         <a href="#refunds">退款流水</a>
         <a href="#risks">风险事件</a>
+        <a href="#outbox">事件中心</a>
         <a href="#logs">审计日志</a>
       </nav>
       <div class="auth-panel">
@@ -437,6 +438,55 @@
               <strong>按场景</strong>
               <div id="risk-scene-summary" class="event-list"></div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="outbox" class="section">
+        <div class="section-title">
+          <h2>事件中心</h2>
+          <p>查看交易 Outbox 事件，支持手动触发一次事件派发</p>
+        </div>
+        <div class="toolbar outbox-toolbar">
+          <label>
+            事件状态
+            <select id="outbox-status">
+              <option value="">全部状态</option>
+              <option value="PENDING">待处理</option>
+              <option value="PROCESSING">处理中</option>
+              <option value="DONE">处理完成</option>
+              <option value="FAILED">处理失败</option>
+            </select>
+          </label>
+          <label>
+            事件类型
+            <input id="outbox-event-type" type="text" placeholder="如 ORDER_PAID">
+          </label>
+          <button id="load-outbox-events" class="secondary-button" type="button">查询事件</button>
+          <button id="dispatch-outbox-events" class="primary-button" type="button">派发一次</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>事件 ID</th>
+                <th>类型</th>
+                <th>聚合</th>
+                <th>状态</th>
+                <th>重试</th>
+                <th>创建时间</th>
+                <th>处理时间</th>
+                <th>错误</th>
+              </tr>
+            </thead>
+            <tbody id="outbox-results"></tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="outbox-page-info">第 1 / 1 页，共 0 条</span>
+          <div class="inline-actions">
+            <button id="prev-outbox" class="secondary-button compact-button" type="button">上一页</button>
+            <button id="next-outbox" class="secondary-button compact-button" type="button">下一页</button>
           </div>
         </div>
       </section>

@@ -175,6 +175,34 @@
 | SUCCESS | 退款渠道确认成功 | 订单保持 REFUNDED |
 | FAILED | 退款渠道确认失败 | 订单保持 REFUNDED，后续可人工处理或重新发起退款 |
 
+## outbox_events
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint | 主键 |
+| event_id | varchar | 事件唯一 ID，UUID 字符串 |
+| event_type | varchar | 事件类型，如 ORDER_PAID、PAYMENT_SUCCEEDED |
+| aggregate_type | varchar | 聚合类型，如 ORDER、PAYMENT、REFUND、RISK |
+| aggregate_id | varchar | 聚合 ID |
+| payload | varchar | 事件载荷，JSON 字符串 |
+| status | varchar | 事件状态：PENDING、PROCESSING、DONE、FAILED |
+| retry_count | int | 当前重试次数 |
+| max_retry_count | int | 最大重试次数 |
+| next_retry_at | timestamp | 下次可重试时间 |
+| last_error | varchar | 最后一次处理错误 |
+| created_at | timestamp | 创建时间 |
+| updated_at | timestamp | 更新时间 |
+| processed_at | timestamp | 处理完成或最终失败时间 |
+
+Outbox 事件状态说明：
+
+| 状态 | 说明 |
+| --- | --- |
+| PENDING | 待派发或等待下次重试 |
+| PROCESSING | 派发器正在处理 |
+| DONE | 处理成功 |
+| FAILED | 达到最大重试次数后仍处理失败 |
+
 ## operation_logs
 
 | 字段 | 类型 | 说明 |

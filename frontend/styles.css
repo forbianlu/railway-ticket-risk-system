@@ -367,6 +367,10 @@ button:disabled {
   grid-template-columns: minmax(150px, 0.8fr) minmax(150px, 0.8fr) minmax(220px, 1.1fr) auto auto;
 }
 
+.outbox-toolbar {
+  grid-template-columns: minmax(150px, 0.8fr) minmax(220px, 1fr) auto auto;
+}
+
 .risk-toolbar {
   grid-template-columns: repeat(2, minmax(130px, 0.8fr)) repeat(4, minmax(150px, 1fr)) auto auto;
 }
@@ -632,6 +636,7 @@ body[data-capture="risks"] .section:not(#risks) {
     .orders-toolbar,
     .payments-toolbar,
     .refunds-toolbar,
+    .outbox-toolbar,
     .risk-toolbar,
   .risk-summary-grid,
   .split {

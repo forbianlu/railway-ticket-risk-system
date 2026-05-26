@@ -3,7 +3,9 @@ package com.example.railway.service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import javax.persistence.criteria.Predicate;
@@ -27,6 +29,8 @@ import com.example.railway.dto.RefundPageResponse;
 import com.example.railway.dto.RefundResponse;
 import com.example.railway.repository.PaymentRecordRepository;
 import com.example.railway.repository.RefundRecordRepository;
+import com.example.railway.service.outbox.OutboxEventPublisher;
+import com.example.railway.service.outbox.OutboxEventTypes;
 
 @Service
 public class RefundService {
@@ -41,17 +45,20 @@ public class RefundService {
     private final OperationLogService operationLogService;
     private final CallbackSignatureService callbackSignatureService;
     private final RefundCallbackProperties refundCallbackProperties;
+    private final OutboxEventPublisher outboxEventPublisher;
 
     public RefundService(RefundRecordRepository refundRecordRepository,
                          PaymentRecordRepository paymentRecordRepository,
                          OperationLogService operationLogService,
                          CallbackSignatureService callbackSignatureService,
-                         RefundCallbackProperties refundCallbackProperties) {
+                         RefundCallbackProperties refundCallbackProperties,
+                         OutboxEventPublisher outboxEventPublisher) {
         this.refundRecordRepository = refundRecordRepository;
         this.paymentRecordRepository = paymentRecordRepository;
         this.operationLogService = operationLogService;
         this.callbackSignatureService = callbackSignatureService;
         this.refundCallbackProperties = refundCallbackProperties;
+        this.outboxEventPublisher = outboxEventPublisher;
     }
 
     @Transactional
@@ -94,6 +101,7 @@ public class RefundService {
                 saved.getRefundNo(),
                 "创建退款流水 " + saved.getRefundNo() + "，关联订单 " + order.getOrderNo()
         );
+        publishRefundEvent(OutboxEventTypes.REFUND_CREATED, saved);
         return RefundResponse.from(saved);
     }
 
@@ -182,6 +190,7 @@ public class RefundService {
                 saved.getRefundNo(),
                 "退款回调成功，订单 " + saved.getOrderNo() + " 已完成资金退款"
         );
+        publishRefundEvent(OutboxEventTypes.REFUND_SUCCEEDED, saved);
         return saved;
     }
 
@@ -199,7 +208,21 @@ public class RefundService {
                 saved.getRefundNo(),
                 "退款回调失败，订单 " + saved.getOrderNo() + " 需要后续处理"
         );
+        publishRefundEvent(OutboxEventTypes.REFUND_FAILED, saved);
         return saved;
+    }
+
+    private void publishRefundEvent(String eventType, RefundRecord record) {
+        Map<String, Object> payload = new LinkedHashMap<String, Object>();
+        payload.put("refundNo", record.getRefundNo());
+        payload.put("paymentNo", record.getPaymentNo());
+        payload.put("orderId", record.getOrderId());
+        payload.put("orderNo", record.getOrderNo());
+        payload.put("userId", record.getUserId());
+        payload.put("amount", record.getAmount());
+        payload.put("status", record.getStatus() == null ? null : record.getStatus().name());
+        payload.put("channelRefundNo", record.getChannelRefundNo());
+        outboxEventPublisher.publish(eventType, "REFUND", record.getRefundNo(), payload);
     }
 
     private void validateCallback(RefundCallbackRequest request, RefundRecord record) {
