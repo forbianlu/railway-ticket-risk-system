@@ -5,6 +5,8 @@ erDiagram
     TRAINS ||--o{ TICKET_ORDERS : creates
     SEAT_INVENTORIES ||--o{ TICKET_ORDERS : locks
     TICKET_ORDERS ||--o{ PAYMENT_RECORDS : pays
+    TICKET_ORDERS ||--o{ REFUND_RECORDS : refunds
+    PAYMENT_RECORDS ||--o{ REFUND_RECORDS : returns
     TICKET_ORDERS ||--o{ RISK_EVENTS : triggers
     RISK_EVENTS ||--o{ RISK_EVENT_HANDLE_RECORDS : records
 
@@ -102,12 +104,32 @@ erDiagram
         decimal amount
         varchar status
         varchar channel
+        varchar channel_payment_no
         varchar request_id
         varchar callback_request_id
         varchar callback_message
         timestamp paid_at
         timestamp created_at
         timestamp updated_at
+    }
+
+    REFUND_RECORDS {
+        bigint id PK
+        varchar refund_no
+        varchar payment_no
+        bigint order_id FK
+        varchar order_no
+        bigint user_id
+        decimal amount
+        varchar status
+        varchar channel
+        varchar channel_refund_no
+        varchar request_id
+        varchar callback_request_id
+        varchar callback_message
+        timestamp created_at
+        timestamp updated_at
+        timestamp refunded_at
     }
 
     OPERATION_LOGS {

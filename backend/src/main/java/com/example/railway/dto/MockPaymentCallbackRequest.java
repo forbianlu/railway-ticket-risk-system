@@ -1,12 +1,10 @@
 package com.example.railway.dto;
 
-import java.math.BigDecimal;
-
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
-public class PaymentCallbackRequest {
+public class MockPaymentCallbackRequest {
 
     @NotBlank
     @Size(max = 40)
@@ -21,17 +19,6 @@ public class PaymentCallbackRequest {
 
     @Size(max = 64)
     private String channelPaymentNo;
-
-    @NotNull
-    private BigDecimal amount;
-
-    @NotBlank
-    @Size(max = 32)
-    private String timestamp;
-
-    @NotBlank
-    @Size(max = 128)
-    private String signature;
 
     @Size(max = 200)
     private String message;
@@ -66,30 +53,6 @@ public class PaymentCallbackRequest {
 
     public void setChannelPaymentNo(String channelPaymentNo) {
         this.channelPaymentNo = channelPaymentNo;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-
-    public String getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(String timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    public String getSignature() {
-        return signature;
-    }
-
-    public void setSignature(String signature) {
-        this.signature = signature;
     }
 
     public String getMessage() {

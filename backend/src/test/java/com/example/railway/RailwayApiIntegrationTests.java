@@ -32,8 +32,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.example.railway.config.RateLimitProperties;
+import com.example.railway.config.PaymentCallbackProperties;
+import com.example.railway.config.RefundCallbackProperties;
 import com.example.railway.config.TrainSearchCacheProperties;
 import com.example.railway.domain.OperationLog;
+import com.example.railway.domain.PaymentRecord;
+import com.example.railway.domain.RefundRecord;
 import com.example.railway.domain.SeatInventory;
 import com.example.railway.domain.Station;
 import com.example.railway.domain.TicketOrder;
@@ -49,6 +53,9 @@ import com.example.railway.dto.PaymentCallbackRequest;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
 import com.example.railway.dto.RateLimitSummary;
+import com.example.railway.dto.RefundCallbackRequest;
+import com.example.railway.dto.RefundPageResponse;
+import com.example.railway.dto.RefundResponse;
 import com.example.railway.dto.RiskEventHandleRecordResponse;
 import com.example.railway.dto.RiskEventPageResponse;
 import com.example.railway.dto.RiskEventResponse;
@@ -57,10 +64,13 @@ import com.example.railway.dto.RiskSummaryResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
 import com.example.railway.repository.AppUserRepository;
+import com.example.railway.repository.PaymentRecordRepository;
+import com.example.railway.repository.RefundRecordRepository;
 import com.example.railway.repository.SeatInventoryRepository;
 import com.example.railway.repository.StationRepository;
 import com.example.railway.repository.TicketOrderRepository;
 import com.example.railway.repository.TrainRepository;
+import com.example.railway.service.CallbackSignatureService;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class RailwayApiIntegrationTests {
@@ -87,6 +97,12 @@ class RailwayApiIntegrationTests {
     private AppUserRepository appUserRepository;
 
     @Autowired
+    private PaymentRecordRepository paymentRecordRepository;
+
+    @Autowired
+    private RefundRecordRepository refundRecordRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -94,6 +110,15 @@ class RailwayApiIntegrationTests {
 
     @Autowired
     private TrainSearchCacheProperties trainSearchCacheProperties;
+
+    @Autowired
+    private CallbackSignatureService callbackSignatureService;
+
+    @Autowired
+    private PaymentCallbackProperties paymentCallbackProperties;
+
+    @Autowired
+    private RefundCallbackProperties refundCallbackProperties;
 
     @Test
     void shouldSearchTrainInventories() {
@@ -309,6 +334,7 @@ class RailwayApiIntegrationTests {
         assertThat(created.getStatus()).isEqualTo("PENDING");
         assertThat(duplicateCreate.getId()).isEqualTo(created.getId());
         assertThat(success.getStatus()).isEqualTo("SUCCESS");
+        assertThat(success.getChannelPaymentNo()).isNotBlank();
         assertThat(success.getPaidAt()).isNotNull();
         assertThat(paidOrder.getStatus().name()).isEqualTo("PAID");
         assertThat(riskCountAfterCallback).isGreaterThan(riskCountBeforeCallback);
@@ -317,6 +343,140 @@ class RailwayApiIntegrationTests {
         assertThat(ticketOrderRepository.findById(pending.getId())
                 .orElseThrow(() -> new AssertionError("expected order"))
                 .getStatus().name()).isEqualTo("PAID");
+    }
+
+    @Test
+    void shouldRejectPaymentCallbackWithInvalidSignatureOrAmount() {
+        TrainSearchResponse train = firstTrainInventory();
+        long userId = 3138L;
+        OrderResponse pending = createOrder(userId, train, "PaymentVerifyUser");
+        PaymentResponse payment = createPayment(pending.getId(), "pay-verify-" + System.nanoTime());
+        long riskCountBefore = countRisksForUser(userId);
+
+        PaymentCallbackRequest badSignature = signedPaymentCallbackRequest(
+                payment.getPaymentNo(),
+                "callback-bad-signature-" + System.nanoTime(),
+                true
+        );
+        badSignature.setSignature("bad-signature");
+        ResponseEntity<String> badSignatureResponse = restTemplate.postForEntity(
+                "/api/payments/callback",
+                badSignature,
+                String.class
+        );
+
+        PaymentCallbackRequest missingSignature = signedPaymentCallbackRequest(
+                payment.getPaymentNo(),
+                "callback-missing-signature-" + System.nanoTime(),
+                true
+        );
+        missingSignature.setSignature(null);
+        ResponseEntity<String> missingSignatureResponse = restTemplate.postForEntity(
+                "/api/payments/callback",
+                missingSignature,
+                String.class
+        );
+
+        PaymentCallbackRequest wrongAmount = signedPaymentCallbackRequest(
+                payment.getPaymentNo(),
+                "callback-wrong-amount-" + System.nanoTime(),
+                true
+        );
+        wrongAmount.setAmount(wrongAmount.getAmount().add(BigDecimal.ONE));
+        wrongAmount.setSignature(signPaymentCallback(wrongAmount));
+        ResponseEntity<String> wrongAmountResponse = restTemplate.postForEntity(
+                "/api/payments/callback",
+                wrongAmount,
+                String.class
+        );
+
+        TicketOrder afterRejectedCallbacks = ticketOrderRepository.findById(pending.getId())
+                .orElseThrow(() -> new AssertionError("expected order"));
+
+        assertThat(badSignatureResponse.getStatusCodeValue()).isEqualTo(400);
+        assertThat(missingSignatureResponse.getStatusCodeValue()).isEqualTo(400);
+        assertThat(wrongAmountResponse.getStatusCodeValue()).isEqualTo(400);
+        assertThat(afterRejectedCallbacks.getStatus().name()).isEqualTo("PENDING_PAYMENT");
+        assertThat(countRisksForUser(userId)).isEqualTo(riskCountBefore);
+    }
+
+    @Test
+    void shouldCreateRefundRecordAndHandleRefundCallbacksIdempotently() {
+        TrainSearchResponse train = firstTrainInventory();
+        OrderResponse paid = createPaidOrderThroughPayment(3140L, train, "RefundFlowUser");
+
+        OrderResponse refunded = refundOrder(paid.getId());
+        RefundPageResponse refundPage = fetchRefundPage("/api/refunds?orderId={orderId}", paid.getId());
+        RefundResponse refund = refundPage.getContent().get(0);
+        RefundPageResponse refundNoPage = fetchRefundPage("/api/refunds?refundNo={refundNo}", refund.getRefundNo());
+        RefundPageResponse pendingPage = fetchRefundPage("/api/refunds?status=PENDING");
+
+        RefundResponse success = callbackRefund(refund.getRefundNo(), "refund-callback-success-" + System.nanoTime(), true);
+        RefundResponse duplicate = callbackRefund(refund.getRefundNo(), success.getCallbackRequestId(), true);
+        List<OperationLog> refundSuccessLogs = Arrays.asList(latestLogs(login("admin", "admin123")));
+
+        assertThat(refunded.getStatus()).isEqualTo("REFUNDED");
+        assertThat(refund.getStatus()).isEqualTo("PENDING");
+        assertThat(refund.getPaymentNo()).isNotBlank();
+        assertThat(refundNoPage.getContent()).extracting(RefundResponse::getRefundNo).contains(refund.getRefundNo());
+        assertThat(pendingPage.getContent()).extracting(RefundResponse::getRefundNo).contains(refund.getRefundNo());
+        assertThat(success.getStatus()).isEqualTo("SUCCESS");
+        assertThat(success.getChannelRefundNo()).isNotBlank();
+        assertThat(success.getRefundedAt()).isNotNull();
+        assertThat(duplicate.getId()).isEqualTo(success.getId());
+        assertThat(refundSuccessLogs).filteredOn(log -> "REFUND_SUCCESS".equals(log.getAction())
+                && success.getRefundNo().equals(log.getTargetId())).hasSize(1);
+    }
+
+    @Test
+    void shouldRejectInvalidRefundCallbacksAndKeepFailedRefundFinal() {
+        TrainSearchResponse train = firstTrainInventory();
+        OrderResponse paidForInvalid = createPaidOrderThroughPayment(3141L, train, "RefundInvalidUser");
+        refundOrder(paidForInvalid.getId());
+        RefundResponse pendingRefund = fetchRefundPage("/api/refunds?orderId={orderId}", paidForInvalid.getId()).getContent().get(0);
+
+        RefundCallbackRequest badSignature = signedRefundCallbackRequest(
+                pendingRefund.getRefundNo(),
+                "refund-callback-bad-signature-" + System.nanoTime(),
+                true
+        );
+        badSignature.setSignature("bad-signature");
+        ResponseEntity<String> badSignatureResponse = restTemplate.postForEntity(
+                "/api/refunds/callback",
+                badSignature,
+                String.class
+        );
+
+        RefundCallbackRequest wrongAmount = signedRefundCallbackRequest(
+                pendingRefund.getRefundNo(),
+                "refund-callback-wrong-amount-" + System.nanoTime(),
+                true
+        );
+        wrongAmount.setAmount(wrongAmount.getAmount().add(BigDecimal.ONE));
+        wrongAmount.setSignature(signRefundCallback(wrongAmount));
+        ResponseEntity<String> wrongAmountResponse = restTemplate.postForEntity(
+                "/api/refunds/callback",
+                wrongAmount,
+                String.class
+        );
+        RefundRecord afterRejected = refundRecordRepository.findByRefundNo(pendingRefund.getRefundNo())
+                .orElseThrow(() -> new AssertionError("expected refund"));
+
+        OrderResponse paidForFailed = createPaidOrderThroughPayment(3142L, train, "RefundFailedUser");
+        refundOrder(paidForFailed.getId());
+        RefundResponse failedRefund = fetchRefundPage("/api/refunds?orderId={orderId}", paidForFailed.getId()).getContent().get(0);
+        RefundResponse failed = callbackRefund(failedRefund.getRefundNo(), "refund-callback-failed-" + System.nanoTime(), false);
+        ResponseEntity<String> successAfterFailed = callbackRefundRaw(
+                failedRefund.getRefundNo(),
+                "refund-callback-success-after-failed-" + System.nanoTime(),
+                true
+        );
+
+        assertThat(badSignatureResponse.getStatusCodeValue()).isEqualTo(400);
+        assertThat(wrongAmountResponse.getStatusCodeValue()).isEqualTo(400);
+        assertThat(afterRejected.getStatus().name()).isEqualTo("PENDING");
+        assertThat(failed.getStatus()).isEqualTo("FAILED");
+        assertThat(successAfterFailed.getStatusCodeValue()).isEqualTo(400);
     }
 
     @Test
@@ -894,6 +1054,16 @@ class RailwayApiIntegrationTests {
         return payOrder(createOrder(userId, train, passengerName).getId());
     }
 
+    private OrderResponse createPaidOrderThroughPayment(long userId, TrainSearchResponse train, String passengerName) {
+        OrderResponse pending = createOrder(userId, train, passengerName);
+        PaymentResponse payment = createPayment(pending.getId(), "pay-order-" + pending.getId() + "-" + System.nanoTime());
+        callbackPayment(payment.getPaymentNo(), "callback-order-" + pending.getId() + "-" + System.nanoTime(), true);
+        return fetchOrderPage("/api/orders?orderNo={orderNo}", pending.getOrderNo()).getContent().stream()
+                .filter(order -> pending.getId().equals(order.getId()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected order"));
+    }
+
     private OrderResponse createOrder(long userId, TrainSearchResponse train, String passengerName, String requestId) {
         CreateOrderRequest request = new CreateOrderRequest();
         request.setUserId(userId);
@@ -951,25 +1121,90 @@ class RailwayApiIntegrationTests {
     }
 
     private PaymentResponse callbackPayment(String paymentNo, String callbackRequestId, boolean success) {
-        PaymentCallbackRequest request = new PaymentCallbackRequest();
-        request.setPaymentNo(paymentNo);
-        request.setCallbackRequestId(callbackRequestId);
-        request.setSuccess(success);
-        request.setMessage(success ? "mock payment success" : "mock payment failed");
+        PaymentCallbackRequest request = signedPaymentCallbackRequest(paymentNo, callbackRequestId, success);
         return restTemplate.postForObject("/api/payments/callback", request, PaymentResponse.class);
     }
 
     private ResponseEntity<String> callbackPaymentRaw(String paymentNo, String callbackRequestId, boolean success) {
+        PaymentCallbackRequest request = signedPaymentCallbackRequest(paymentNo, callbackRequestId, success);
+        return restTemplate.postForEntity("/api/payments/callback", request, String.class);
+    }
+
+    private PaymentCallbackRequest signedPaymentCallbackRequest(String paymentNo, String callbackRequestId, boolean success) {
+        PaymentRecord record = paymentRecordRepository.findByPaymentNo(paymentNo)
+                .orElseThrow(() -> new AssertionError("expected payment"));
         PaymentCallbackRequest request = new PaymentCallbackRequest();
         request.setPaymentNo(paymentNo);
         request.setCallbackRequestId(callbackRequestId);
         request.setSuccess(success);
+        request.setChannelPaymentNo(success ? "CH_PAY_" + callbackRequestId : null);
+        request.setAmount(record.getAmount());
+        request.setTimestamp(callbackSignatureService.currentTimestamp());
         request.setMessage(success ? "mock payment success" : "mock payment failed");
-        return restTemplate.postForEntity("/api/payments/callback", request, String.class);
+        request.setSignature(signPaymentCallback(request));
+        return request;
+    }
+
+    private String signPaymentCallback(PaymentCallbackRequest request) {
+        return callbackSignatureService.sign(
+                callbackSignatureService.paymentPlainText(
+                        request.getPaymentNo(),
+                        request.getCallbackRequestId(),
+                        request.getAmount(),
+                        request.getSuccess(),
+                        request.getTimestamp()
+                ),
+                paymentCallbackProperties.getCallbackSecret()
+        );
     }
 
     private PaymentPageResponse fetchPaymentPage(String url, Object... uriVariables) {
         PaymentPageResponse response = restTemplate.getForObject(url, PaymentPageResponse.class, uriVariables);
+        assertThat(response).isNotNull();
+        assertThat(response.getContent()).isNotNull();
+        return response;
+    }
+
+    private RefundResponse callbackRefund(String refundNo, String callbackRequestId, boolean success) {
+        RefundCallbackRequest request = signedRefundCallbackRequest(refundNo, callbackRequestId, success);
+        return restTemplate.postForObject("/api/refunds/callback", request, RefundResponse.class);
+    }
+
+    private ResponseEntity<String> callbackRefundRaw(String refundNo, String callbackRequestId, boolean success) {
+        RefundCallbackRequest request = signedRefundCallbackRequest(refundNo, callbackRequestId, success);
+        return restTemplate.postForEntity("/api/refunds/callback", request, String.class);
+    }
+
+    private RefundCallbackRequest signedRefundCallbackRequest(String refundNo, String callbackRequestId, boolean success) {
+        RefundRecord record = refundRecordRepository.findByRefundNo(refundNo)
+                .orElseThrow(() -> new AssertionError("expected refund"));
+        RefundCallbackRequest request = new RefundCallbackRequest();
+        request.setRefundNo(refundNo);
+        request.setCallbackRequestId(callbackRequestId);
+        request.setSuccess(success);
+        request.setChannelRefundNo(success ? "CH_RF_" + callbackRequestId : null);
+        request.setAmount(record.getAmount());
+        request.setTimestamp(callbackSignatureService.currentTimestamp());
+        request.setMessage(success ? "mock refund success" : "mock refund failed");
+        request.setSignature(signRefundCallback(request));
+        return request;
+    }
+
+    private String signRefundCallback(RefundCallbackRequest request) {
+        return callbackSignatureService.sign(
+                callbackSignatureService.refundPlainText(
+                        request.getRefundNo(),
+                        request.getCallbackRequestId(),
+                        request.getAmount(),
+                        request.getSuccess(),
+                        request.getTimestamp()
+                ),
+                refundCallbackProperties.getCallbackSecret()
+        );
+    }
+
+    private RefundPageResponse fetchRefundPage(String url, Object... uriVariables) {
+        RefundPageResponse response = restTemplate.getForObject(url, RefundPageResponse.class, uriVariables);
         assertThat(response).isNotNull();
         assertThat(response.getContent()).isNotNull();
         return response;

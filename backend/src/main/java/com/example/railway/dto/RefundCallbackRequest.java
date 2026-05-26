@@ -6,24 +6,27 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
-public class PaymentCallbackRequest {
+public class RefundCallbackRequest {
 
     @NotBlank
     @Size(max = 40)
-    private String paymentNo;
+    private String refundNo;
 
     @NotBlank
     @Size(max = 64)
     private String callbackRequestId;
 
-    @NotNull
-    private Boolean success;
-
     @Size(max = 64)
-    private String channelPaymentNo;
+    private String channelRefundNo;
 
     @NotNull
     private BigDecimal amount;
+
+    @NotNull
+    private Boolean success;
+
+    @Size(max = 200)
+    private String message;
 
     @NotBlank
     @Size(max = 32)
@@ -33,15 +36,12 @@ public class PaymentCallbackRequest {
     @Size(max = 128)
     private String signature;
 
-    @Size(max = 200)
-    private String message;
-
-    public String getPaymentNo() {
-        return paymentNo;
+    public String getRefundNo() {
+        return refundNo;
     }
 
-    public void setPaymentNo(String paymentNo) {
-        this.paymentNo = paymentNo;
+    public void setRefundNo(String refundNo) {
+        this.refundNo = refundNo;
     }
 
     public String getCallbackRequestId() {
@@ -52,20 +52,12 @@ public class PaymentCallbackRequest {
         this.callbackRequestId = callbackRequestId;
     }
 
-    public Boolean getSuccess() {
-        return success;
+    public String getChannelRefundNo() {
+        return channelRefundNo;
     }
 
-    public void setSuccess(Boolean success) {
-        this.success = success;
-    }
-
-    public String getChannelPaymentNo() {
-        return channelPaymentNo;
-    }
-
-    public void setChannelPaymentNo(String channelPaymentNo) {
-        this.channelPaymentNo = channelPaymentNo;
+    public void setChannelRefundNo(String channelRefundNo) {
+        this.channelRefundNo = channelRefundNo;
     }
 
     public BigDecimal getAmount() {
@@ -74,6 +66,22 @@ public class PaymentCallbackRequest {
 
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
+    }
+
+    public Boolean getSuccess() {
+        return success;
+    }
+
+    public void setSuccess(Boolean success) {
+        this.success = success;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 
     public String getTimestamp() {
@@ -90,13 +98,5 @@ public class PaymentCallbackRequest {
 
     public void setSignature(String signature) {
         this.signature = signature;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 }

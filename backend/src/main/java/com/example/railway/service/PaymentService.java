@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.railway.common.BusinessException;
+import com.example.railway.config.PaymentCallbackProperties;
 import com.example.railway.domain.OrderStatus;
 import com.example.railway.domain.PaymentRecord;
 import com.example.railway.domain.PaymentStatus;
@@ -40,15 +41,21 @@ public class PaymentService {
     private final TicketOrderRepository ticketOrderRepository;
     private final OrderService orderService;
     private final OperationLogService operationLogService;
+    private final CallbackSignatureService callbackSignatureService;
+    private final PaymentCallbackProperties paymentCallbackProperties;
 
     public PaymentService(PaymentRecordRepository paymentRecordRepository,
                           TicketOrderRepository ticketOrderRepository,
                           OrderService orderService,
-                          OperationLogService operationLogService) {
+                          OperationLogService operationLogService,
+                          CallbackSignatureService callbackSignatureService,
+                          PaymentCallbackProperties paymentCallbackProperties) {
         this.paymentRecordRepository = paymentRecordRepository;
         this.ticketOrderRepository = ticketOrderRepository;
         this.orderService = orderService;
         this.operationLogService = operationLogService;
+        this.callbackSignatureService = callbackSignatureService;
+        this.paymentCallbackProperties = paymentCallbackProperties;
     }
 
     @Transactional
@@ -108,6 +115,7 @@ public class PaymentService {
 
         PaymentRecord record = paymentRecordRepository.findByPaymentNo(normalizeText(request.getPaymentNo()))
                 .orElseThrow(() -> new BusinessException("支付流水不存在"));
+        validateCallback(request, record);
         if (PaymentStatus.SUCCESS.equals(record.getStatus())) {
             return PaymentResponse.from(record);
         }
@@ -116,7 +124,7 @@ public class PaymentService {
         }
 
         if (Boolean.TRUE.equals(request.getSuccess())) {
-            return PaymentResponse.from(markPaymentSuccess(record, callbackRequestId, request.getMessage()));
+            return PaymentResponse.from(markPaymentSuccess(record, callbackRequestId, request.getChannelPaymentNo(), request.getMessage()));
         }
         return PaymentResponse.from(markPaymentFailed(record, callbackRequestId, request.getMessage()));
     }
@@ -143,10 +151,70 @@ public class PaymentService {
         return PaymentPageResponse.from(paymentPage);
     }
 
-    private PaymentRecord markPaymentSuccess(PaymentRecord record, String callbackRequestId, String message) {
+    public PaymentCallbackRequest buildMockCallback(String paymentNo,
+                                                    String callbackRequestId,
+                                                    Boolean success,
+                                                    String channelPaymentNo,
+                                                    String message) {
+        PaymentRecord record = paymentRecordRepository.findByPaymentNo(normalizeText(paymentNo))
+                .orElseThrow(() -> new BusinessException("支付流水不存在"));
+        PaymentCallbackRequest request = new PaymentCallbackRequest();
+        request.setPaymentNo(record.getPaymentNo());
+        request.setCallbackRequestId(callbackRequestId);
+        request.setSuccess(success);
+        request.setChannelPaymentNo(channelPaymentNo);
+        request.setAmount(record.getAmount());
+        request.setMessage(message);
+        request.setTimestamp(callbackSignatureService.currentTimestamp());
+        request.setSignature(callbackSignatureService.sign(
+                callbackSignatureService.paymentPlainText(
+                        request.getPaymentNo(),
+                        request.getCallbackRequestId(),
+                        request.getAmount(),
+                        request.getSuccess(),
+                        request.getTimestamp()
+                ),
+                paymentCallbackProperties.getCallbackSecret()
+        ));
+        return request;
+    }
+
+    private void validateCallback(PaymentCallbackRequest request, PaymentRecord record) {
+        String plainText = callbackSignatureService.paymentPlainText(
+                request.getPaymentNo(),
+                request.getCallbackRequestId(),
+                request.getAmount(),
+                request.getSuccess(),
+                request.getTimestamp()
+        );
+        callbackSignatureService.verify(
+                plainText,
+                request.getSignature(),
+                request.getTimestamp(),
+                paymentCallbackProperties.getCallbackSecret(),
+                paymentCallbackProperties.isSignatureEnabled(),
+                paymentCallbackProperties.getTimestampToleranceSeconds()
+        );
+        if (request.getAmount() == null || record.getAmount().compareTo(request.getAmount()) != 0) {
+            operationLogService.record(
+                    "PAYMENT_CALLBACK",
+                    "PAYMENT_AMOUNT_MISMATCH",
+                    "PAYMENT",
+                    record.getPaymentNo(),
+                    "支付回调金额不一致，订单 " + record.getOrderNo()
+            );
+            throw new BusinessException("支付回调金额不一致");
+        }
+        if (Boolean.TRUE.equals(request.getSuccess()) && normalizeText(request.getChannelPaymentNo()) == null) {
+            throw new BusinessException("支付成功回调缺少渠道流水号");
+        }
+    }
+
+    private PaymentRecord markPaymentSuccess(PaymentRecord record, String callbackRequestId, String channelPaymentNo, String message) {
         LocalDateTime now = LocalDateTime.now();
         record.setStatus(PaymentStatus.SUCCESS);
         record.setCallbackRequestId(callbackRequestId);
+        record.setChannelPaymentNo(normalizeText(channelPaymentNo));
         record.setCallbackMessage(normalizeCallbackMessage(message, "mock payment success"));
         record.setPaidAt(now);
         record.setUpdatedAt(now);

@@ -15,6 +15,7 @@ public class PaymentResponse {
     private BigDecimal amount;
     private String status;
     private String channel;
+    private String channelPaymentNo;
     private String requestId;
     private String callbackRequestId;
     private String callbackMessage;
@@ -32,6 +33,7 @@ public class PaymentResponse {
         response.setAmount(record.getAmount());
         response.setStatus(record.getStatus().name());
         response.setChannel(record.getChannel());
+        response.setChannelPaymentNo(record.getChannelPaymentNo());
         response.setRequestId(record.getRequestId());
         response.setCallbackRequestId(record.getCallbackRequestId());
         response.setCallbackMessage(record.getCallbackMessage());
@@ -103,6 +105,14 @@ public class PaymentResponse {
 
     public void setChannel(String channel) {
         this.channel = channel;
+    }
+
+    public String getChannelPaymentNo() {
+        return channelPaymentNo;
+    }
+
+    public void setChannelPaymentNo(String channelPaymentNo) {
+        this.channelPaymentNo = channelPaymentNo;
     }
 
     public String getRequestId() {

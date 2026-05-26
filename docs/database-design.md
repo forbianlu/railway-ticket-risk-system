@@ -130,6 +130,7 @@
 | amount | decimal | 支付金额 |
 | status | varchar | 支付状态：PENDING、SUCCESS、FAILED |
 | channel | varchar | 支付渠道，当前为 MOCK |
+| channel_payment_no | varchar | 外部支付渠道流水号，用于对账 |
 | request_id | varchar | 创建支付流水请求号，用于创建幂等 |
 | callback_request_id | varchar | 支付回调请求号，用于回调幂等 |
 | callback_message | varchar | 回调消息 |
@@ -144,6 +145,35 @@
 | PENDING | 已创建支付流水，等待回调 | 订单仍为 PENDING_PAYMENT |
 | SUCCESS | 支付成功 | 订单变为 PAID，触发支付后风控 |
 | FAILED | 支付失败 | 订单保持 PENDING_PAYMENT，可重新创建流水或等待关闭 |
+
+## refund_records
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | bigint | 主键 |
+| refund_no | varchar | 系统内部退款流水号，唯一 |
+| payment_no | varchar | 关联支付流水号，可为空 |
+| order_id | bigint | 关联订单 ID |
+| order_no | varchar | 关联订单号，便于展示 |
+| user_id | bigint | 用户 ID |
+| amount | decimal | 退款金额 |
+| status | varchar | 退款状态：PENDING、SUCCESS、FAILED |
+| channel | varchar | 退款渠道，当前为 MOCK |
+| channel_refund_no | varchar | 外部渠道退款流水号 |
+| request_id | varchar | 创建退款流水幂等号 |
+| callback_request_id | varchar | 退款回调请求号，用于回调幂等 |
+| callback_message | varchar | 回调消息 |
+| created_at | timestamp | 创建时间 |
+| updated_at | timestamp | 更新时间 |
+| refunded_at | timestamp | 退款成功时间 |
+
+退款流水状态说明：
+
+| 状态 | 说明 | 对订单影响 |
+| --- | --- | --- |
+| PENDING | 退票后创建退款流水，等待退款回调 | 订单已为 REFUNDED |
+| SUCCESS | 退款渠道确认成功 | 订单保持 REFUNDED |
+| FAILED | 退款渠道确认失败 | 订单保持 REFUNDED，后续可人工处理或重新发起退款 |
 
 ## operation_logs
 

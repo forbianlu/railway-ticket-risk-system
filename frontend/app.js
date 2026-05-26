@@ -19,6 +19,14 @@ const state = {
     first: true,
     last: true,
   },
+  refundPage: {
+    page: 0,
+    size: 10,
+    totalPages: 0,
+    totalElements: 0,
+    first: true,
+    last: true,
+  },
   riskPage: {
     page: 0,
     size: 10,
@@ -70,6 +78,13 @@ const elements = {
   paymentPageInfo: document.querySelector("#payment-page-info"),
   prevPayments: document.querySelector("#prev-payments"),
   nextPayments: document.querySelector("#next-payments"),
+  refundOrderId: document.querySelector("#refund-order-id"),
+  refundStatus: document.querySelector("#refund-status"),
+  refundNoFilter: document.querySelector("#refund-no-filter"),
+  refundResults: document.querySelector("#refund-results"),
+  refundPageInfo: document.querySelector("#refund-page-info"),
+  prevRefunds: document.querySelector("#prev-refunds"),
+  nextRefunds: document.querySelector("#next-refunds"),
   riskStatus: document.querySelector("#risk-status"),
   riskScene: document.querySelector("#risk-scene"),
   riskUserId: document.querySelector("#risk-user-id"),
@@ -113,6 +128,10 @@ document.querySelector("#create-payment").addEventListener("click", createPaymen
 document.querySelector("#load-payments").addEventListener("click", loadPayments);
 elements.prevPayments.addEventListener("click", () => changePaymentPage(-1));
 elements.nextPayments.addEventListener("click", () => changePaymentPage(1));
+document.querySelector("#load-refunds").addEventListener("click", loadRefunds);
+document.querySelector("#reset-refunds").addEventListener("click", resetRefundFilters);
+elements.prevRefunds.addEventListener("click", () => changeRefundPage(-1));
+elements.nextRefunds.addEventListener("click", () => changeRefundPage(1));
 document.querySelector("#load-risks").addEventListener("click", loadRisks);
 document.querySelector("#reset-risks").addEventListener("click", resetRiskFilters);
 elements.prevRisks.addEventListener("click", () => changeRiskPage(-1));
@@ -219,6 +238,7 @@ async function refreshAll() {
     searchTrains(),
     loadOrders(),
     loadPayments(),
+    loadRefunds(),
     loadRisks(),
     loadRiskSummary(),
     loadLogs(),
@@ -295,6 +315,9 @@ async function loadDashboard() {
 }
 
 function renderPopularTrains(items) {
+  if (!elements.popularTrains) {
+    return;
+  }
   if (items.length === 0) {
     elements.popularTrains.innerHTML = emptyItem("暂无订单聚合数据");
     return;
@@ -525,7 +548,8 @@ async function closeOrder(orderId) {
 async function refundOrder(orderId) {
   try {
     await request(`/orders/${orderId}/refund`, { method: "POST" });
-    showToast("退票成功，库存已释放");
+    elements.refundOrderId.value = orderId;
+    showToast("退票成功，库存已释放，退款流水已创建");
     await refreshAll();
   } catch (error) {
     showToast(error.message || "退票失败");
@@ -637,12 +661,13 @@ function renderPaymentActions(payment) {
 
 async function callbackPayment(paymentNo, success) {
   try {
-    const payment = await request("/payments/callback", {
+    const payment = await request("/payments/callback/mock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         paymentNo,
         callbackRequestId: generateCallbackRequestId(paymentNo, success),
+        channelPaymentNo: success ? generateChannelPaymentNo(paymentNo) : "",
         success,
         message: success ? "mock payment success" : "mock payment failed",
       }),
@@ -653,6 +678,128 @@ async function callbackPayment(paymentNo, success) {
   } catch (error) {
     showToast(error.message || "支付回调失败");
   }
+}
+
+async function loadRefunds() {
+  state.refundPage.page = 0;
+  await loadRefundsPage();
+}
+
+async function loadRefundsPage() {
+  try {
+    const page = await request(buildRefundQueryPath());
+    state.refundPage = {
+      page: page.page,
+      size: page.size,
+      totalPages: page.totalPages,
+      totalElements: page.totalElements,
+      first: page.first,
+      last: page.last,
+    };
+    renderRefunds(page.content || []);
+    renderRefundPagination();
+  } catch (error) {
+    elements.refundResults.innerHTML = tableEmpty(10, "无法获取退款流水");
+    renderRefundPagination();
+  }
+}
+
+function buildRefundQueryPath() {
+  const params = new URLSearchParams();
+  appendParam(params, "orderId", elements.refundOrderId.value);
+  appendParam(params, "status", elements.refundStatus.value);
+  appendParam(params, "refundNo", elements.refundNoFilter.value);
+  params.set("page", String(state.refundPage.page));
+  params.set("size", String(state.refundPage.size));
+  return `/refunds?${params.toString()}`;
+}
+
+function renderRefunds(refunds) {
+  if (refunds.length === 0) {
+    elements.refundResults.innerHTML = tableEmpty(10, "暂无退款流水");
+    return;
+  }
+  elements.refundResults.innerHTML = refunds
+    .map(refund => `
+      <tr>
+        <td>${refund.refundNo}</td>
+        <td>${refund.orderNo}<br><span class="muted-text">#${refund.orderId}</span></td>
+        <td>${refund.paymentNo || "-"}</td>
+        <td>${refund.userId}</td>
+        <td>¥${refund.amount}</td>
+        <td><span class="status ${refundStatusClass(refund.status)}">${refundStatusText(refund.status)}</span></td>
+        <td>${refund.channelRefundNo || "-"}</td>
+        <td>${formatDateTime(refund.createdAt)}</td>
+        <td>${formatDateTime(refund.refundedAt) || "-"}</td>
+        <td>${renderRefundActions(refund)}</td>
+      </tr>
+    `)
+    .join("");
+
+  document.querySelectorAll("[data-refund-success]").forEach(button => {
+    button.addEventListener("click", () => callbackRefund(button.dataset.refundSuccess, true));
+  });
+  document.querySelectorAll("[data-refund-fail]").forEach(button => {
+    button.addEventListener("click", () => callbackRefund(button.dataset.refundFail, false));
+  });
+}
+
+function renderRefundActions(refund) {
+  if (refund.status !== "PENDING") {
+    return "-";
+  }
+  return `
+    <div class="inline-actions">
+      <button class="secondary-button compact-button" type="button" data-refund-success="${refund.refundNo}">成功回调</button>
+      <button class="danger-button compact-button" type="button" data-refund-fail="${refund.refundNo}">失败回调</button>
+    </div>
+  `;
+}
+
+async function callbackRefund(refundNo, success) {
+  try {
+    const refund = await request("/refunds/callback/mock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        refundNo,
+        callbackRequestId: generateRefundCallbackRequestId(refundNo, success),
+        channelRefundNo: success ? generateChannelRefundNo(refundNo) : "",
+        success,
+        message: success ? "mock refund success" : "mock refund failed",
+      }),
+    });
+    showToast(success ? "退款成功回调已处理" : "退款失败回调已处理");
+    elements.refundOrderId.value = refund.orderId;
+    await refreshAll();
+  } catch (error) {
+    showToast(error.message || "退款回调失败");
+  }
+}
+
+function renderRefundPagination() {
+  const totalPages = Math.max(1, state.refundPage.totalPages || 0);
+  const currentPage = Math.min((state.refundPage.page || 0) + 1, totalPages);
+  elements.refundPageInfo.textContent = `第 ${currentPage} / ${totalPages} 页，共 ${state.refundPage.totalElements || 0} 条`;
+  elements.prevRefunds.disabled = Boolean(state.refundPage.first);
+  elements.nextRefunds.disabled = Boolean(state.refundPage.last);
+}
+
+async function changeRefundPage(offset) {
+  const nextPage = Math.max(0, state.refundPage.page + offset);
+  if (nextPage === state.refundPage.page) {
+    return;
+  }
+  state.refundPage.page = nextPage;
+  await loadRefundsPage();
+}
+
+async function resetRefundFilters() {
+  elements.refundOrderId.value = "";
+  elements.refundStatus.value = "";
+  elements.refundNoFilter.value = "";
+  state.refundPage.page = 0;
+  await loadRefundsPage();
 }
 
 function renderPaymentPagination() {
@@ -1003,6 +1150,24 @@ function paymentStatusClass(value) {
   return map[value] || "";
 }
 
+function refundStatusText(value) {
+  const map = {
+    PENDING: "退款处理中",
+    SUCCESS: "退款成功",
+    FAILED: "退款失败",
+  };
+  return map[value] || value;
+}
+
+function refundStatusClass(value) {
+  const map = {
+    PENDING: "pending",
+    SUCCESS: "",
+    FAILED: "closed",
+  };
+  return map[value] || "";
+}
+
 function riskTypeText(value) {
   const map = {
     RAPID_PURCHASE: "短时多次购票",
@@ -1080,6 +1245,18 @@ function generatePaymentRequestId(orderId) {
 
 function generateCallbackRequestId(paymentNo, success) {
   return `CALLBACK-${success ? "SUCCESS" : "FAILED"}-${paymentNo}-${generateRequestId()}`;
+}
+
+function generateRefundCallbackRequestId(refundNo, success) {
+  return `REFUND-CALLBACK-${success ? "SUCCESS" : "FAILED"}-${refundNo}-${generateRequestId()}`;
+}
+
+function generateChannelPaymentNo(paymentNo) {
+  return `CH-${paymentNo}-${Date.now()}`;
+}
+
+function generateChannelRefundNo(refundNo) {
+  return `CH-${refundNo}-${Date.now()}`;
 }
 
 function showToast(message) {

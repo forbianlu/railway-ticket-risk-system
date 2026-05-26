@@ -14,7 +14,9 @@
 - 防超卖控制：座位库存使用 JPA 乐观锁版本号，降低并发扣减时的超卖风险。
 - 下单幂等：下单接口支持 `requestId`，同一用户重复请求不会重复扣库存。
 - 支付流水：支持创建模拟支付流水，记录支付号、支付渠道、支付状态和回调信息。
-- 回调幂等：支付回调使用 `callbackRequestId`，重复回调不会重复改订单或重复触发风控。
+- 回调校验：支付和退款回调支持 HMAC-SHA256 签名、时间戳容忍窗口和金额一致性校验。
+- 回调幂等：支付和退款回调使用 `callbackRequestId`，重复回调不会重复改状态或重复触发关键业务动作。
+- 退款流水：退票后自动创建退款流水，支持退款成功、失败和回调幂等。
 - 风控规则引擎：使用 `RiskRule` 和 `RiskScene` 按场景调度风险规则。
 - 风险处置闭环：风险事件支持待处理、确认风险、误报和关闭归档，并记录处置历史。
 - 订单运营查询：订单列表支持按用户、状态、订单号、创建日期分页筛选。
@@ -88,7 +90,8 @@
 | 车次查询 | 按线路和日期查询余票，支持 local / Redis TTL 缓存 |
 | 订单管理 | 创建待支付订单、支付确认、关闭、超时关闭、退票和分页筛选 |
 | 库存控制 | 通过事务和 JPA 乐观锁维护库存扣减与释放 |
-| 支付流水 | 创建模拟支付流水，处理成功和失败回调 |
+| 支付流水 | 创建模拟支付流水，校验签名和金额，处理成功和失败回调 |
+| 退款流水 | 退票后自动创建退款流水，处理退款成功和失败回调 |
 | 风险识别 | 支付成功和退票后触发风险规则 |
 | 风险处置 | 支持风险状态流转、处置备注、处理人和处置历史 |
 | 运营看板 | 展示订单状态、退票率、风险率、未处理风险和热门车次 |
@@ -110,7 +113,11 @@ POST /api/orders/{id}/refund
 GET  /api/orders?userId=1001&status=PAID&page=0&size=10
 POST /api/payments
 POST /api/payments/callback
+POST /api/payments/callback/mock
 GET  /api/payments?status=SUCCESS&page=0&size=10
+GET  /api/refunds?status=PENDING&page=0&size=10
+POST /api/refunds/callback
+POST /api/refunds/callback/mock
 GET  /api/risks?status=PENDING&scene=ORDER_CREATED&page=0&size=10
 GET  /api/risks/summary
 POST /api/risks/{id}/handle
@@ -133,7 +140,8 @@ GET  /api/logs
 | `trains` | 车次基础数据 |
 | `seat_inventories` | 车次日期库存、座位类型、余票、票价和乐观锁版本 |
 | `ticket_orders` | 订单号、乘客、金额、状态和支付/退票/关闭时间 |
-| `payment_records` | 支付流水号、支付状态、渠道、回调请求号和支付时间 |
+| `payment_records` | 支付流水号、渠道流水号、支付状态、回调请求号和支付时间 |
+| `refund_records` | 退款流水号、渠道退款号、退款状态、回调请求号和退款时间 |
 | `risk_events` | 风险类型、等级、场景、状态和最新处置信息 |
 | `risk_event_handle_records` | 风险事件处置前后状态、备注、操作人和操作时间 |
 | `operation_logs` | 关键业务动作审计日志 |
@@ -235,9 +243,11 @@ INVENTORY_ID=1
 
 - 创建待支付订单后余票锁定。
 - 支付成功后订单进入 `PAID`，并触发支付后风控规则。
-- 支付流水创建后为 `PENDING`，成功回调后变为 `SUCCESS`。
+- 支付流水创建后为 `PENDING`，签名和金额校验通过的成功回调会将其变为 `SUCCESS`。
 - 相同 `callbackRequestId` 重复回调不会重复触发风控。
 - 支付失败回调后流水变为 `FAILED`，订单保持待支付。
+- 退票后自动创建 `PENDING` 退款流水，退款成功回调后变为 `SUCCESS`。
+- 退款回调签名或金额不一致时会被拒绝，不重复释放库存或重复触发退票风控。
 - 待支付订单可手动关闭或超时批量关闭，关闭后释放库存。
 - 已支付订单可退票，退票后释放库存并触发退票后风控规则。
 - 风险事件可确认为风险、标记误报或关闭归档，处置历史和操作日志均可追踪。
@@ -264,9 +274,11 @@ PAID -> REFUNDED
 
 创建待支付订单时扣减库存，关闭和退票时释放库存。库存表使用 JPA 乐观锁版本号处理并发扣减冲突，避免多个请求同时扣减同一份库存时产生超卖。
 
-### 幂等处理
+### 幂等与回调校验
 
-下单接口使用 `userId + requestId` 保证重复提交不重复扣库存。支付流水创建使用 `requestId` 避免重复生成待支付流水。支付回调使用 `callbackRequestId` 防止重复回调造成重复订单状态变更、重复风控和重复日志。
+下单接口使用 `userId + requestId` 保证重复提交不重复扣库存。支付流水创建使用 `requestId` 避免重复生成待支付流水。支付和退款回调使用 `callbackRequestId` 防止重复回调造成重复状态变更、重复风控和重复日志。
+
+支付回调和退款回调均使用固定字段拼接后进行 HMAC-SHA256 签名校验，并校验回调金额与系统流水金额一致。`paymentNo` 和 `refundNo` 是系统内部流水号，`channelPaymentNo` 和 `channelRefundNo` 用于记录外部渠道返回的对账流水号。
 
 ### 风控处置闭环
 
@@ -294,6 +306,7 @@ PAID -> REFUNDED
 - [订单状态机设计](docs/order-state-design.md)
 - [缓存与限流设计](docs/cache-and-rate-limit-design.md)
 - [支付流水设计](docs/payment-design.md)
+- [退款流水设计](docs/refund-design.md)
 - [风险处置闭环设计](docs/risk-handling-design.md)
 - [订单幂等设计](docs/idempotency-design.md)
 - [缓存设计](docs/cache-design.md)
@@ -307,7 +320,7 @@ PAID -> REFUNDED
 
 - 在独立 Redis 环境中补充部署联调记录和缓存监控指标。
 - 使用延时队列优化超时订单关闭。
-- 增加支付回调签名校验。
+- 增加退款重试、退款人工补偿和对账报表。
 - 增加 refresh token、登录失败限制和令牌失效机制。
 - 增加风险等级、处理人、处理 SLA 和导出报表。
 - 增加接口压测、异常场景测试和端到端验证。

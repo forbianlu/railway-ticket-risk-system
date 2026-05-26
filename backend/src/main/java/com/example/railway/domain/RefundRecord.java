@@ -14,18 +14,21 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "payment_records", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_payment_no", columnNames = "payment_no"),
-        @UniqueConstraint(name = "uk_payment_request", columnNames = "request_id"),
-        @UniqueConstraint(name = "uk_payment_callback_request", columnNames = "callback_request_id")
+@Table(name = "refund_records", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_refund_no", columnNames = "refund_no"),
+        @UniqueConstraint(name = "uk_refund_request", columnNames = "request_id"),
+        @UniqueConstraint(name = "uk_refund_callback_request", columnNames = "callback_request_id")
 })
-public class PaymentRecord {
+public class RefundRecord {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "payment_no", nullable = false, length = 40)
+    @Column(name = "refund_no", nullable = false, length = 40)
+    private String refundNo;
+
+    @Column(name = "payment_no", length = 40)
     private String paymentNo;
 
     @Column(name = "order_id", nullable = false)
@@ -42,13 +45,13 @@ public class PaymentRecord {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
-    private PaymentStatus status;
+    private RefundStatus status;
 
     @Column(nullable = false, length = 32)
     private String channel;
 
-    @Column(name = "channel_payment_no", length = 64)
-    private String channelPaymentNo;
+    @Column(name = "channel_refund_no", length = 64)
+    private String channelRefundNo;
 
     @Column(name = "request_id", length = 64)
     private String requestId;
@@ -59,16 +62,24 @@ public class PaymentRecord {
     @Column(length = 200)
     private String callbackMessage;
 
-    private LocalDateTime paidAt;
-
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    private LocalDateTime refundedAt;
+
     public Long getId() {
         return id;
+    }
+
+    public String getRefundNo() {
+        return refundNo;
+    }
+
+    public void setRefundNo(String refundNo) {
+        this.refundNo = refundNo;
     }
 
     public String getPaymentNo() {
@@ -111,11 +122,11 @@ public class PaymentRecord {
         this.amount = amount;
     }
 
-    public PaymentStatus getStatus() {
+    public RefundStatus getStatus() {
         return status;
     }
 
-    public void setStatus(PaymentStatus status) {
+    public void setStatus(RefundStatus status) {
         this.status = status;
     }
 
@@ -127,12 +138,12 @@ public class PaymentRecord {
         this.channel = channel;
     }
 
-    public String getChannelPaymentNo() {
-        return channelPaymentNo;
+    public String getChannelRefundNo() {
+        return channelRefundNo;
     }
 
-    public void setChannelPaymentNo(String channelPaymentNo) {
-        this.channelPaymentNo = channelPaymentNo;
+    public void setChannelRefundNo(String channelRefundNo) {
+        this.channelRefundNo = channelRefundNo;
     }
 
     public String getRequestId() {
@@ -159,14 +170,6 @@ public class PaymentRecord {
         this.callbackMessage = callbackMessage;
     }
 
-    public LocalDateTime getPaidAt() {
-        return paidAt;
-    }
-
-    public void setPaidAt(LocalDateTime paidAt) {
-        this.paidAt = paidAt;
-    }
-
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -181,5 +184,13 @@ public class PaymentRecord {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public LocalDateTime getRefundedAt() {
+        return refundedAt;
+    }
+
+    public void setRefundedAt(LocalDateTime refundedAt) {
+        this.refundedAt = refundedAt;
     }
 }

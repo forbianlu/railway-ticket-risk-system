@@ -70,3 +70,11 @@ railway:
       risk-handle:
         limit: 30
         window-seconds: 60
+  payment:
+    callback-secret: demo-payment-callback-secret
+    signature-enabled: true
+    timestamp-tolerance-seconds: 300
+  refund:
+    callback-secret: demo-refund-callback-secret
+    signature-enabled: true
+    timestamp-tolerance-seconds: 300

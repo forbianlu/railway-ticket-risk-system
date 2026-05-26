@@ -41,17 +41,20 @@ public class OrderService {
     private final RiskService riskService;
     private final OperationLogService operationLogService;
     private final TrainSearchCacheService trainSearchCacheService;
+    private final RefundService refundService;
 
     public OrderService(TicketOrderRepository ticketOrderRepository,
                         SeatInventoryRepository seatInventoryRepository,
                         RiskService riskService,
                         OperationLogService operationLogService,
-                        TrainSearchCacheService trainSearchCacheService) {
+                        TrainSearchCacheService trainSearchCacheService,
+                        RefundService refundService) {
         this.ticketOrderRepository = ticketOrderRepository;
         this.seatInventoryRepository = seatInventoryRepository;
         this.riskService = riskService;
         this.operationLogService = operationLogService;
         this.trainSearchCacheService = trainSearchCacheService;
+        this.refundService = refundService;
     }
 
     @Transactional
@@ -161,6 +164,7 @@ public class OrderService {
                 "订单 " + saved.getOrderNo() + " 已退票"
         );
         riskService.evaluateAfterRefund(saved);
+        refundService.createForRefundedOrder(saved);
         return OrderResponse.from(saved);
     }
 

@@ -13,6 +13,7 @@
 | Spring Security + JWT + BCrypt 权限体系升级 | `6e38db3 upgrade auth to spring security jwt` | 标准认证链路、JWT Bearer Token、BCrypt 密码存储和角色授权 |
 | Redis 缓存与接口限流增强 | `e38e0de add redis cache and rate limiting` | 车次查询 local/Redis 缓存切换、本地 fallback、关键接口限流和 429 响应 |
 | Redis 联调说明与限流规则配置化 | `configure redis rate limit rules` | Redis 模式联调步骤、限流 rules 配置化、前端规则展示 |
+| 支付校验与退款流水闭环 | `add refund records and payment verification` | 支付回调签名与金额校验、退款流水、退款回调签名和幂等 |
 
 ## 订单支付状态机与超时关闭
 
@@ -236,3 +237,42 @@
 
 - 在真实 Redis 环境中按文档步骤执行缓存 key、限流 key 和 429 行为联调。
 - 如后续部署多实例，可将 Redis 模式作为生产 profile 的默认配置。
+
+## 支付校验与退款流水闭环
+
+### 目标
+
+在已有支付流水和回调幂等基础上，增强支付回调安全校验，并补齐退票后的退款流水，使资金进入和资金退回都能被追踪。
+
+### 开发前状态
+
+- `bc20f5b configure redis rate limit rules` 已同步到远端。
+- 系统已有支付流水、支付回调幂等、订单退票和退票后风控。
+- 支付回调尚未校验签名和金额，退票后尚未生成退款流水。
+
+### 主要内容
+
+- 支付回调新增 `amount`、`timestamp`、`signature` 和 `channelPaymentNo`。
+- 支付回调使用 HMAC-SHA256 签名校验、时间戳容忍窗口和金额一致性校验。
+- 新增 `refund_records` 表和 `RefundStatus`：`PENDING`、`SUCCESS`、`FAILED`。
+- 订单退票成功后自动创建 `PENDING` 退款流水。
+- 新增退款流水分页查询和退款回调接口。
+- 退款回调支持签名校验、金额一致性校验和 `callbackRequestId` 幂等。
+- 前端新增退款流水列表、筛选、分页和模拟退款成功/失败回调。
+- 文档补充支付签名、退款流水、退款回调和数据库关系说明。
+
+### 验证结果
+
+- Maven 测试通过：`Tests run: 27, Failures: 0, Errors: 0, Skipped: 0`。
+- 前端脚本语法检查通过。
+- 公开文案敏感词检查通过。
+
+### 当前提交状态
+
+- 本轮改动计划提交为 `add refund records and payment verification`。
+- 本轮提交仅保留在本地，不自动推送远端。
+
+### 后续建议
+
+- 增加退款重试、退款人工补偿和对账报表。
+- 接入真实渠道时补充渠道证书、回调来源校验和渠道错误码映射。

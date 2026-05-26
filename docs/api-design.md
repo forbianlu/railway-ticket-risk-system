@@ -204,6 +204,7 @@ Content-Type: application/json
   "amount": 553.00,
   "status": "PENDING",
   "channel": "MOCK",
+  "channelPaymentNo": null,
   "requestId": "pay-req-001",
   "callbackRequestId": null,
   "paidAt": null,
@@ -220,15 +221,28 @@ Content-Type: application/json
 {
   "paymentNo": "PAY202605150930001234",
   "callbackRequestId": "callback-001",
+  "channelPaymentNo": "CH_PAY_001",
+  "amount": 553.00,
   "success": true,
-  "message": "mock payment success"
+  "message": "mock payment success",
+  "timestamp": "1770000000000",
+  "signature": "9f0f..."
 }
 ```
+
+签名原文固定为：
+
+```text
+paymentNo={paymentNo}&callbackRequestId={callbackRequestId}&amount={amount}&success={success}&timestamp={timestamp}
+```
+
+后端使用 `railway.payment.callback-secret` 计算 HMAC-SHA256 签名。`signature-enabled=true` 时缺少签名、签名不匹配或时间戳超过 `timestamp-tolerance-seconds` 都会返回 400。回调金额必须与系统支付流水金额一致，金额比较使用数值语义，避免小数位差异影响判断。
 
 成功回调语义：
 
 - `PENDING` 支付流水变为 `SUCCESS`。
 - 订单从 `PENDING_PAYMENT` 变为 `PAID`。
+- 保存外部渠道流水号 `channelPaymentNo`。
 - 写入支付成功时间。
 - 触发支付后风控规则。
 - 写入操作日志。
@@ -276,6 +290,87 @@ GET /api/payments?orderId=1&status=SUCCESS&paymentNo=PAY2026&page=0&size=10
   "last": true
 }
 ```
+
+## 查询退款流水
+
+```http
+GET /api/refunds?orderId=1&status=PENDING&refundNo=RF2026&page=0&size=10
+```
+
+查询参数：
+
+| 参数 | 是否必填 | 说明 |
+| --- | --- | --- |
+| orderId | 否 | 按订单 ID 筛选 |
+| status | 否 | 退款状态：`PENDING`、`SUCCESS`、`FAILED` |
+| refundNo | 否 | 退款流水号模糊查询 |
+| page | 否 | 页码，从 0 开始，默认 0 |
+| size | 否 | 每页大小，默认 10，最大 100 |
+
+退票成功后系统自动创建 `PENDING` 退款流水。同一订单已存在 `PENDING` 或 `SUCCESS` 退款流水时不会重复创建。
+
+响应示例：
+
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "refundNo": "RF202605181200001234",
+      "paymentNo": "PAY202605181159001234",
+      "orderId": 1,
+      "orderNo": "RT202605180001234",
+      "userId": 1001,
+      "amount": 553.00,
+      "status": "PENDING",
+      "channel": "MOCK",
+      "channelRefundNo": null,
+      "callbackRequestId": null,
+      "createdAt": "2026-05-18T12:00:00",
+      "refundedAt": null
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+## 退款回调
+
+```http
+POST /api/refunds/callback
+Content-Type: application/json
+
+{
+  "refundNo": "RF202605181200001234",
+  "callbackRequestId": "refund-callback-001",
+  "channelRefundNo": "CH_RF_001",
+  "amount": 553.00,
+  "success": true,
+  "message": "mock refund success",
+  "timestamp": "1770000000000",
+  "signature": "9f0f..."
+}
+```
+
+签名原文固定为：
+
+```text
+refundNo={refundNo}&callbackRequestId={callbackRequestId}&amount={amount}&success={success}&timestamp={timestamp}
+```
+
+后端使用 `railway.refund.callback-secret` 计算 HMAC-SHA256 签名。退款金额必须与系统退款流水金额一致。成功回调会将退款流水从 `PENDING` 变为 `SUCCESS`，保存 `channelRefundNo` 和 `refundedAt`；失败回调会将退款流水变为 `FAILED`。
+
+退款回调幂等规则：
+
+- 相同 `callbackRequestId` 重复回调直接返回第一次处理结果。
+- 已经 `SUCCESS` 的退款流水重复成功回调直接返回原流水。
+- 已经 `FAILED` 的退款流水不允许再改为 `SUCCESS`。
+- 退款回调不会重复释放库存，也不会重复触发退票风控；库存释放和退票风控发生在订单退票成功时。
 
 ## 查询风险事件
 

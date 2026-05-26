@@ -21,6 +21,7 @@
         <a href="#search">车次查询</a>
         <a href="#orders">订单管理</a>
         <a href="#payments">支付流水</a>
+        <a href="#refunds">退款流水</a>
         <a href="#risks">风险事件</a>
         <a href="#logs">审计日志</a>
       </nav>
@@ -277,6 +278,60 @@
           <div class="inline-actions">
             <button id="prev-payments" class="secondary-button compact-button" type="button">上一页</button>
             <button id="next-payments" class="secondary-button compact-button" type="button">下一页</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="refunds" class="section">
+        <div class="section-title">
+          <h2>退款流水</h2>
+          <p>退票后生成退款流水，通过成功或失败回调验证退款链路和幂等处理</p>
+        </div>
+        <div class="toolbar refunds-toolbar">
+          <label>
+            订单 ID
+            <input id="refund-order-id" type="number" min="1" placeholder="关联订单 ID">
+          </label>
+          <label>
+            退款状态
+            <select id="refund-status">
+              <option value="">全部状态</option>
+              <option value="PENDING">退款处理中</option>
+              <option value="SUCCESS">退款成功</option>
+              <option value="FAILED">退款失败</option>
+            </select>
+          </label>
+          <label>
+            退款流水号
+            <input id="refund-no-filter" type="text" placeholder="支持模糊查询">
+          </label>
+          <button id="load-refunds" class="secondary-button" type="button">查询退款</button>
+          <button id="reset-refunds" class="ghost-button" type="button">重置</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>退款流水号</th>
+                <th>订单</th>
+                <th>支付流水</th>
+                <th>用户</th>
+                <th>金额</th>
+                <th>状态</th>
+                <th>渠道退款号</th>
+                <th>创建时间</th>
+                <th>退款时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="refund-results"></tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="refund-page-info">第 1 / 1 页，共 0 条</span>
+          <div class="inline-actions">
+            <button id="prev-refunds" class="secondary-button compact-button" type="button">上一页</button>
+            <button id="next-refunds" class="secondary-button compact-button" type="button">下一页</button>
           </div>
         </div>
       </section>

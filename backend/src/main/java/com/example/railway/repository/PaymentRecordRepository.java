@@ -14,6 +14,8 @@ public interface PaymentRecordRepository extends JpaRepository<PaymentRecord, Lo
 
     Optional<PaymentRecord> findByOrderIdAndStatus(Long orderId, PaymentStatus status);
 
+    Optional<PaymentRecord> findFirstByOrderIdAndStatusOrderByCreatedAtDesc(Long orderId, PaymentStatus status);
+
     Optional<PaymentRecord> findByRequestId(String requestId);
 
     Optional<PaymentRecord> findByCallbackRequestId(String callbackRequestId);

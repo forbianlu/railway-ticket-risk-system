@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.railway.dto.CreatePaymentRequest;
+import com.example.railway.dto.MockPaymentCallbackRequest;
 import com.example.railway.dto.PaymentCallbackRequest;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
@@ -40,6 +41,20 @@ public class PaymentController {
                                     HttpServletRequest httpRequest) {
         rateLimitService.check("payment-callback", "rate:payment:callback:" + request.getPaymentNo() + ":ip:" + httpRequest.getRemoteAddr());
         return paymentService.handleCallback(request);
+    }
+
+    @PostMapping("/callback/mock")
+    public PaymentResponse mockCallback(@Valid @RequestBody MockPaymentCallbackRequest request,
+                                        HttpServletRequest httpRequest) {
+        rateLimitService.check("payment-callback", "rate:payment:callback:" + request.getPaymentNo() + ":ip:" + httpRequest.getRemoteAddr());
+        PaymentCallbackRequest signedRequest = paymentService.buildMockCallback(
+                request.getPaymentNo(),
+                request.getCallbackRequestId(),
+                request.getSuccess(),
+                request.getChannelPaymentNo(),
+                request.getMessage()
+        );
+        return paymentService.handleCallback(signedRequest);
     }
 
     @GetMapping
