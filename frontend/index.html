@@ -445,7 +445,37 @@
       <section id="outbox" class="section">
         <div class="section-title">
           <h2>事件中心</h2>
-          <p>查看交易 Outbox 事件，支持手动触发一次事件派发</p>
+          <p>查看交易 Outbox 事件、处理状态和失败重试情况</p>
+        </div>
+        <div class="metric-grid outbox-summary-grid">
+          <div class="metric compact-metric">
+            <span>总事件</span>
+            <strong id="outbox-summary-total">0</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>待处理</span>
+            <strong id="outbox-summary-pending">0</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>处理中</span>
+            <strong id="outbox-summary-processing">0</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>已完成</span>
+            <strong id="outbox-summary-done">0</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>已失败</span>
+            <strong id="outbox-summary-failed">0</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>失败率</span>
+            <strong id="outbox-summary-failure-rate">0%</strong>
+          </div>
+          <div class="metric compact-metric">
+            <span>积压数量</span>
+            <strong id="outbox-summary-backlog">0</strong>
+          </div>
         </div>
         <div class="toolbar outbox-toolbar">
           <label>
@@ -464,6 +494,17 @@
           </label>
           <button id="load-outbox-events" class="secondary-button" type="button">查询事件</button>
           <button id="dispatch-outbox-events" class="primary-button" type="button">派发一次</button>
+          <button id="retry-failed-outbox-events" class="secondary-button" type="button">批量重试失败</button>
+        </div>
+        <div class="outbox-breakdown">
+          <div>
+            <h3>按类型统计</h3>
+            <div id="outbox-type-summary" class="summary-list"></div>
+          </div>
+          <div>
+            <h3>按状态统计</h3>
+            <div id="outbox-status-summary" class="summary-list"></div>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
@@ -477,6 +518,7 @@
                 <th>创建时间</th>
                 <th>处理时间</th>
                 <th>错误</th>
+                <th>操作</th>
               </tr>
             </thead>
             <tbody id="outbox-results"></tbody>

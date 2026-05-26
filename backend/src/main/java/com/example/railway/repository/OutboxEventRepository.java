@@ -20,4 +20,8 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long>,
             LocalDateTime nextRetryAt,
             Pageable pageable
     );
+
+    List<OutboxEvent> findByStatus(OutboxEventStatus status);
+
+    List<OutboxEvent> findByStatusAndUpdatedAtBefore(OutboxEventStatus status, LocalDateTime updatedAt);
 }

@@ -368,7 +368,45 @@ button:disabled {
 }
 
 .outbox-toolbar {
-  grid-template-columns: minmax(150px, 0.8fr) minmax(220px, 1fr) auto auto;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(220px, 1fr) auto auto auto;
+}
+
+.outbox-summary-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.outbox-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.outbox-breakdown h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.summary-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.summary-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: var(--surface-muted);
+  font-size: 12px;
+}
+
+.summary-list strong {
+  color: var(--ink);
 }
 
 .risk-toolbar {
@@ -639,6 +677,7 @@ body[data-capture="risks"] .section:not(#risks) {
     .outbox-toolbar,
     .risk-toolbar,
   .risk-summary-grid,
+  .outbox-breakdown,
   .split {
     grid-template-columns: 1fr;
   }

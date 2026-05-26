@@ -17,6 +17,7 @@ public class OutboxEventDispatcher {
 
     private static final int DEFAULT_BATCH_SIZE = 20;
     private static final long RETRY_DELAY_SECONDS = 30L;
+    private static final long PROCESSING_TIMEOUT_MINUTES = 5L;
 
     private final OutboxEventRepository outboxEventRepository;
     private final List<OutboxEventHandler> handlers;
@@ -39,10 +40,12 @@ public class OutboxEventDispatcher {
 
     @Transactional
     public int dispatchOnce(int batchSize) {
+        LocalDateTime now = LocalDateTime.now();
+        recoverStaleProcessingEvents(now);
         List<OutboxEvent> events = outboxEventRepository
                 .findByStatusAndNextRetryAtLessThanEqualOrderByCreatedAtAscIdAsc(
                         OutboxEventStatus.PENDING,
-                        LocalDateTime.now(),
+                        now,
                         PageRequest.of(0, Math.max(1, batchSize))
                 );
         int processed = 0;
@@ -51,6 +54,22 @@ public class OutboxEventDispatcher {
             processed++;
         }
         return processed;
+    }
+
+    private void recoverStaleProcessingEvents(LocalDateTime now) {
+        List<OutboxEvent> staleEvents = outboxEventRepository.findByStatusAndUpdatedAtBefore(
+                OutboxEventStatus.PROCESSING,
+                now.minusMinutes(PROCESSING_TIMEOUT_MINUTES)
+        );
+        for (OutboxEvent event : staleEvents) {
+            event.setStatus(OutboxEventStatus.PENDING);
+            event.setNextRetryAt(now);
+            event.setUpdatedAt(now);
+            event.setLastError("Recovered stale PROCESSING event");
+        }
+        if (!staleEvents.isEmpty()) {
+            outboxEventRepository.saveAll(staleEvents);
+        }
     }
 
     private void process(OutboxEvent event) {

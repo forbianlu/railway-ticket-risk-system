@@ -697,6 +697,70 @@ Authorization: Bearer {token}
 
 派发成功后事件变为 `DONE`。处理失败时记录 `lastError`，`retryCount + 1`；未达到最大重试次数则回到 `PENDING` 等待下次重试，达到最大重试次数后变为 `FAILED`。
 
+## Outbox 事件统计
+
+```http
+GET /api/outbox-events/summary
+Authorization: Bearer {token}
+```
+
+该接口仅允许 `ADMIN` 角色访问，用于查看 Outbox 事件状态分布、失败率和积压情况。
+
+响应示例：
+
+```json
+{
+  "totalCount": 120,
+  "pendingCount": 8,
+  "processingCount": 1,
+  "doneCount": 108,
+  "failedCount": 3,
+  "retryingCount": 2,
+  "maxRetryReachedCount": 3,
+  "backlogCount": 9,
+  "failureRate": 0.025,
+  "averageProcessSeconds": 1.2,
+  "eventCountByType": {
+    "ORDER_PAID": 42,
+    "REFUND_CREATED": 10
+  },
+  "eventCountByStatus": {
+    "PENDING": 8,
+    "DONE": 108,
+    "FAILED": 3
+  },
+  "failedCountByType": {
+    "PAYMENT_SUCCEEDED": 2
+  }
+}
+```
+
+`backlogCount = PENDING + PROCESSING`，`failureRate = failedCount / max(1, totalCount)`。
+
+## 重试失败 Outbox 事件
+
+```http
+POST /api/outbox-events/{id}/retry
+Authorization: Bearer {token}
+```
+
+该接口仅允许 `ADMIN` 角色访问。只有 `FAILED` 事件可以重试；接口只负责将事件重新置为 `PENDING`，实际处理仍由派发器完成。重试时保留历史 `retryCount` 和 `lastError`，将 `nextRetryAt` 设置为当前时间并清空 `processedAt`。
+
+批量重试：
+
+```http
+POST /api/outbox-events/retry-failed
+Authorization: Bearer {token}
+```
+
+响应示例：
+
+```json
+{
+  "enqueuedCount": 3
+}
+```
+
 ## 演示账号
 
 | 账号 | 密码 | 角色 |

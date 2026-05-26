@@ -23,7 +23,7 @@
 - 风险运营报表：风险事件支持分页筛选，并统计状态分布、场景分布、误报率和处置完成率。
 - 查询缓存：车次余票查询支持 local / Redis 缓存模式，库存相关交易动作提交后失效缓存。
 - 接口限流：车次查询、下单、支付回调、风险处置等高频接口支持本地 / Redis 限流，阈值通过配置文件维护。
-- Outbox 事件：核心交易事务内写入 Outbox 事件表，支持轻量派发、重试和失败记录。
+- Outbox 事件：核心交易事务内写入 Outbox 事件表，支持派发、失败重试、积压统计和失败率监控。
 - 权限和审计：使用 Spring Security、JWT、BCrypt、角色校验、操作日志和风险处置历史。
 - 集成测试：覆盖交易状态、幂等、并发防超卖、支付回调、风险处置、缓存和权限链路。
 
@@ -95,7 +95,7 @@
 | 退款流水 | 退票后自动创建退款流水，处理退款成功和失败回调 |
 | 风险识别 | 支付成功和退票后触发风险规则 |
 | 风险处置 | 支持风险状态流转、处置备注、处理人和处置历史 |
-| 事件中心 | 展示 Outbox 交易事件，支持手动派发和失败重试观测 |
+| 事件中心 | 展示 Outbox 交易事件、状态统计、失败原因、单条重试、批量重试和手动派发 |
 | 运营看板 | 展示订单状态、退票率、风险率、未处理风险和热门车次 |
 | 权限审计 | 登录鉴权、角色校验、操作日志和审计追踪 |
 
@@ -128,7 +128,10 @@ GET  /api/cache/train-search
 DELETE /api/cache/train-search
 GET  /api/rate-limit/summary
 GET  /api/outbox-events?status=PENDING&page=0&size=10
+GET  /api/outbox-events/summary
 POST /api/outbox-events/dispatch
+POST /api/outbox-events/{id}/retry
+POST /api/outbox-events/retry-failed
 GET  /api/dashboard/summary
 GET  /api/logs
 ```
@@ -304,7 +307,7 @@ PAID -> REFUNDED
 
 ### Outbox 事件
 
-系统在核心业务事务内写入 `outbox_events`，覆盖订单支付、订单退票、订单关闭、支付回调、退款流水和风险处置等事件。当前阶段保留原有同步风控、缓存失效和关键日志逻辑，Outbox 派发器用于轻量事件处理、状态观测、重试和失败记录，为后续接入消息队列预留边界。
+系统在核心业务事务内写入 `outbox_events`，覆盖订单支付、订单退票、订单关闭、支付回调、退款流水和风险处置等事件。当前阶段保留原有同步风控、缓存失效和关键日志逻辑，Outbox 派发器用于轻量事件处理、状态观测、失败重试、积压统计和失败率监控，为后续接入消息队列预留边界。事件中心支持管理员查看失败原因、单条重新入队和批量重新入队。
 
 ## 文档目录
 

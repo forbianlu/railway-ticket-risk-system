@@ -99,6 +99,15 @@ const elements = {
   outboxPageInfo: document.querySelector("#outbox-page-info"),
   prevOutbox: document.querySelector("#prev-outbox"),
   nextOutbox: document.querySelector("#next-outbox"),
+  outboxSummaryTotal: document.querySelector("#outbox-summary-total"),
+  outboxSummaryPending: document.querySelector("#outbox-summary-pending"),
+  outboxSummaryProcessing: document.querySelector("#outbox-summary-processing"),
+  outboxSummaryDone: document.querySelector("#outbox-summary-done"),
+  outboxSummaryFailed: document.querySelector("#outbox-summary-failed"),
+  outboxSummaryFailureRate: document.querySelector("#outbox-summary-failure-rate"),
+  outboxSummaryBacklog: document.querySelector("#outbox-summary-backlog"),
+  outboxTypeSummary: document.querySelector("#outbox-type-summary"),
+  outboxStatusSummary: document.querySelector("#outbox-status-summary"),
   riskStatus: document.querySelector("#risk-status"),
   riskScene: document.querySelector("#risk-scene"),
   riskUserId: document.querySelector("#risk-user-id"),
@@ -148,6 +157,7 @@ elements.prevRefunds.addEventListener("click", () => changeRefundPage(-1));
 elements.nextRefunds.addEventListener("click", () => changeRefundPage(1));
 document.querySelector("#load-outbox-events").addEventListener("click", loadOutboxEvents);
 document.querySelector("#dispatch-outbox-events").addEventListener("click", dispatchOutboxEvents);
+document.querySelector("#retry-failed-outbox-events").addEventListener("click", retryFailedOutboxEvents);
 elements.prevOutbox.addEventListener("click", () => changeOutboxPage(-1));
 elements.nextOutbox.addEventListener("click", () => changeOutboxPage(1));
 document.querySelector("#load-risks").addEventListener("click", loadRisks);
@@ -257,6 +267,7 @@ async function refreshAll() {
     loadOrders(),
     loadPayments(),
     loadRefunds(),
+    loadOutboxSummary(),
     loadOutboxEvents(),
     loadRisks(),
     loadRiskSummary(),
@@ -823,7 +834,17 @@ async function resetRefundFilters() {
 
 async function loadOutboxEvents() {
   state.outboxPage.page = 0;
+  await loadOutboxSummary();
   await loadOutboxEventsPage();
+}
+
+async function loadOutboxSummary() {
+  try {
+    const summary = await request("/outbox-events/summary");
+    renderOutboxSummary(summary);
+  } catch (error) {
+    renderOutboxSummary(null);
+  }
 }
 
 async function loadOutboxEventsPage() {
@@ -840,7 +861,7 @@ async function loadOutboxEventsPage() {
     renderOutboxEvents(page.content || []);
     renderOutboxPagination();
   } catch (error) {
-    elements.outboxResults.innerHTML = tableEmpty(8, error.message || "无法获取事件数据");
+    elements.outboxResults.innerHTML = tableEmpty(9, error.message || "无法获取事件数据");
     renderOutboxPagination();
   }
 }
@@ -856,7 +877,7 @@ function buildOutboxQueryPath() {
 
 function renderOutboxEvents(events) {
   if (events.length === 0) {
-    elements.outboxResults.innerHTML = tableEmpty(8, "暂无 Outbox 事件");
+    elements.outboxResults.innerHTML = tableEmpty(9, "暂无 Outbox 事件");
     return;
   }
   elements.outboxResults.innerHTML = events
@@ -870,9 +891,13 @@ function renderOutboxEvents(events) {
         <td>${formatDateTime(event.createdAt)}</td>
         <td>${formatDateTime(event.processedAt) || "-"}</td>
         <td>${event.lastError ? escapeHtml(event.lastError) : "-"}</td>
+        <td>${event.status === "FAILED" ? `<button class="secondary-button compact-button" data-outbox-retry="${event.id}" type="button">重试</button>` : "-"}</td>
       </tr>
     `)
     .join("");
+  elements.outboxResults.querySelectorAll("[data-outbox-retry]").forEach(button => {
+    button.addEventListener("click", () => retryOutboxEvent(button.dataset.outboxRetry));
+  });
 }
 
 async function dispatchOutboxEvents() {
@@ -880,10 +905,67 @@ async function dispatchOutboxEvents() {
     const response = await request("/outbox-events/dispatch", { method: "POST" });
     showToast(`已派发 ${response.processedCount || 0} 个事件`);
     await loadOutboxEventsPage();
+    await loadOutboxSummary();
     await loadLogs();
   } catch (error) {
     showToast(error.message || "事件派发失败");
   }
+}
+
+async function retryOutboxEvent(id) {
+  try {
+    await request(`/outbox-events/${id}/retry`, { method: "POST" });
+    showToast("事件已重新入队");
+    await loadOutboxEventsPage();
+    await loadOutboxSummary();
+  } catch (error) {
+    showToast(error.message || "事件重试失败");
+  }
+}
+
+async function retryFailedOutboxEvents() {
+  try {
+    const response = await request("/outbox-events/retry-failed", { method: "POST" });
+    showToast(`已重新入队 ${response.enqueuedCount || 0} 个失败事件`);
+    await loadOutboxEventsPage();
+    await loadOutboxSummary();
+  } catch (error) {
+    showToast(error.message || "批量重试失败");
+  }
+}
+
+function renderOutboxSummary(summary) {
+  const empty = {
+    totalCount: 0,
+    pendingCount: 0,
+    processingCount: 0,
+    doneCount: 0,
+    failedCount: 0,
+    failureRate: 0,
+    backlogCount: 0,
+    eventCountByType: {},
+    eventCountByStatus: {},
+  };
+  const data = summary || empty;
+  elements.outboxSummaryTotal.textContent = data.totalCount || 0;
+  elements.outboxSummaryPending.textContent = data.pendingCount || 0;
+  elements.outboxSummaryProcessing.textContent = data.processingCount || 0;
+  elements.outboxSummaryDone.textContent = data.doneCount || 0;
+  elements.outboxSummaryFailed.textContent = data.failedCount || 0;
+  elements.outboxSummaryFailureRate.textContent = formatPercent(data.failureRate || 0);
+  elements.outboxSummaryBacklog.textContent = data.backlogCount || 0;
+  elements.outboxTypeSummary.innerHTML = renderSummaryMap(data.eventCountByType || {});
+  elements.outboxStatusSummary.innerHTML = renderSummaryMap(data.eventCountByStatus || {}, outboxStatusText);
+}
+
+function renderSummaryMap(map, labelFormatter = value => value) {
+  const entries = Object.entries(map);
+  if (entries.length === 0) {
+    return `<span class="muted-text">暂无数据</span>`;
+  }
+  return entries
+    .map(([key, value]) => `<span><strong>${escapeHtml(labelFormatter(key))}</strong>${value}</span>`)
+    .join("");
 }
 
 function renderOutboxPagination() {

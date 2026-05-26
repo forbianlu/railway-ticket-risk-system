@@ -56,7 +56,7 @@
 - 并发控制：库存表使用乐观锁版本号，降低并发扣减时的超卖风险。
 - 缓存一致性：锁票、支付、关闭和退票事务提交后失效对应线路日期缓存。
 - 幂等提交：同一 `userId + requestId` 重复请求直接返回原订单。
-- 交易事件：支付、关闭、退票、退款和风险处置写入 Outbox 事件，支持派发、重试和失败记录。
+- 交易事件：支付、关闭、退票、退款和风险处置写入 Outbox 事件，支持派发、失败重试、统计监控和失败记录。
 
 订单状态机：
 
@@ -125,6 +125,8 @@
 - 事件派发：定时任务或手动接口扫描待处理事件。
 - 重试机制：处理失败后记录错误并按重试次数延后处理。
 - 失败观测：达到最大重试次数后标记为 `FAILED`。
+- 手动运维：管理员可以对单条失败事件或全部失败事件重新入队。
+- 统计监控：展示事件状态分布、事件类型分布、失败率和积压数量。
 - 当前策略：保留原同步风控、缓存失效和关键日志逻辑，Outbox 用于渐进式解耦。
 
 ### 4.7 登录与角色权限
@@ -181,6 +183,9 @@
 - `GET /api/rate-limit/summary`
 - `GET /api/outbox-events`
 - `POST /api/outbox-events/dispatch`
+- `GET /api/outbox-events/summary`
+- `POST /api/outbox-events/{id}/retry`
+- `POST /api/outbox-events/retry-failed`
 - `GET /api/dashboard/summary`
 
 详见 `docs/api-design.md`。
@@ -204,7 +209,7 @@
 - 登录与角色权限。
 - 车次查询 local / Redis TTL 缓存。
 - 高频接口限流。
-- Outbox 事件表和轻量派发器。
+- Outbox 事件表、轻量派发器、失败重试和统计监控。
 - 并发购票防超卖集成测试。
 - 订单幂等提交。
 - 操作日志。

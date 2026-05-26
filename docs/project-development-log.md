@@ -15,6 +15,7 @@
 | Redis 联调说明与限流规则配置化 | `configure redis rate limit rules` | Redis 模式联调步骤、限流 rules 配置化、前端规则展示 |
 | 支付校验与退款流水闭环 | `add refund records and payment verification` | 支付回调签名与金额校验、退款流水、退款回调签名和幂等 |
 | Outbox 事件表与交易事件解耦 | `add outbox event processing` | 事务内事件落库、事件派发、重试失败处理和事件中心 |
+| Outbox 失败重试与统计监控增强 | `enhance outbox retry and metrics` | 失败事件单条/批量重试、事件统计、失败率和积压监控 |
 
 ## 订单支付状态机与超时关闭
 
@@ -321,3 +322,41 @@
 - 增加失败事件手动重试接口。
 - 增加事件处理耗时和失败率统计。
 - 将 Outbox 派发器替换为消息队列生产者。
+
+## Outbox 失败重试与统计监控增强
+
+### 目标
+
+在现有 Outbox 事件表和派发器基础上，增强事件运行管理能力，支持管理员重新入队失败事件，并通过统计接口和前端事件中心观察事件积压、失败率和状态分布。
+
+### 开发前状态
+
+- `ab12494 add outbox event processing` 已与远端同步。
+- 系统已有 `outbox_events` 表、事件发布器、派发器、handler 机制、事件分页查询和手动派发接口。
+- 失败事件只能等待自动重试或保留为 `FAILED`，缺少人工重新入队入口和运行统计。
+
+### 主要内容
+
+- 新增 `GET /api/outbox-events/summary`，统计事件总数、状态分布、类型分布、失败类型分布、失败率、积压数量和平均处理耗时。
+- 新增 `POST /api/outbox-events/{id}/retry`，仅允许管理员将单条 `FAILED` 事件重新置为 `PENDING`。
+- 新增 `POST /api/outbox-events/retry-failed`，支持批量重新入队当前全部失败事件。
+- 手动重试保留历史 `retryCount` 和 `lastError`，设置 `nextRetryAt = now`，清空 `processedAt`，事件实际处理仍由派发器完成。
+- 派发器增加 `PROCESSING` 超时恢复策略，超过 5 分钟未更新的处理中的事件会重新进入 `PENDING`。
+- 前端事件中心新增统计卡片、按类型/状态统计、失败事件单条重试按钮和批量重试按钮。
+- 文档补充 Outbox 重试、统计口径、积压数量、失败率和事件中心说明。
+
+### 验证结果
+
+- 覆盖失败事件单条重试、非失败事件拒绝重试、无令牌和角色不足、批量重试、summary 统计和原有 Outbox 派发链路。
+- Maven 测试、前端脚本检查和公开文案敏感词检查在本轮提交前执行。
+
+### 当前提交状态
+
+- 本轮改动计划提交为 `enhance outbox retry and metrics`。
+- 本轮提交仅保留在本地，不自动推送远端。
+
+### 后续建议
+
+- 增加处理器级别的失败告警。
+- 增加事件处理耗时趋势。
+- 将 Outbox handler 逐步替换为消息队列生产者。

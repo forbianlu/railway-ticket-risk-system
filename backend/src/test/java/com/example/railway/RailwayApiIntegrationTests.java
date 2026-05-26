@@ -53,6 +53,9 @@ import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
 import com.example.railway.dto.OutboxDispatchResponse;
 import com.example.railway.dto.OutboxEventPageResponse;
+import com.example.railway.dto.OutboxEventResponse;
+import com.example.railway.dto.OutboxEventSummaryResponse;
+import com.example.railway.dto.OutboxRetryResponse;
 import com.example.railway.dto.PaymentCallbackRequest;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
@@ -563,6 +566,108 @@ class RailwayApiIntegrationTests {
         assertThat(failed.getStatus()).isEqualTo(OutboxEventStatus.FAILED);
         assertThat(failed.getRetryCount()).isEqualTo(1);
         assertThat(failed.getLastError()).contains("No outbox handler");
+    }
+
+    @Test
+    void shouldRequeueFailedOutboxEventManually() {
+        AuthResponse admin = login("admin", "admin123");
+        OutboxEvent event = outboxEventPublisher.publish(
+                "UNSUPPORTED_RETRY_EVENT",
+                "TEST",
+                "retry-one",
+                "{}",
+                1
+        );
+        markOutboxEventFailed(event);
+
+        ResponseEntity<OutboxEventResponse> retryResponse = restTemplate.exchange(
+                "/api/outbox-events/{id}/retry",
+                HttpMethod.POST,
+                authorizedEntity(admin),
+                OutboxEventResponse.class,
+                event.getId()
+        );
+
+        assertThat(retryResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(retryResponse.getBody()).isNotNull();
+        assertThat(retryResponse.getBody().getStatus()).isEqualTo("PENDING");
+        assertThat(retryResponse.getBody().getRetryCount()).isEqualTo(1);
+        OutboxEvent retried = outboxEventRepository.findById(event.getId())
+                .orElseThrow(() -> new AssertionError("expected outbox event"));
+        assertThat(retried.getNextRetryAt()).isNotNull();
+        assertThat(retried.getProcessedAt()).isNull();
+    }
+
+    @Test
+    void shouldRejectRetryForNonFailedOutboxEventAndProtectRetryApi() throws Exception {
+        AuthResponse admin = login("admin", "admin123");
+        AuthResponse risk = login("risk", "risk123");
+        OutboxEvent pending = outboxEventPublisher.publish(
+                OutboxEventTypes.ORDER_PAID,
+                "ORDER",
+                "retry-protected",
+                "{}",
+                1
+        );
+
+        ResponseEntity<String> nonFailed = restTemplate.exchange(
+                "/api/outbox-events/{id}/retry",
+                HttpMethod.POST,
+                authorizedEntity(admin),
+                String.class,
+                pending.getId()
+        );
+        int noTokenStatus = postWithoutTokenStatus("/api/outbox-events/" + pending.getId() + "/retry");
+        ResponseEntity<String> riskOfficer = restTemplate.exchange(
+                "/api/outbox-events/{id}/retry",
+                HttpMethod.POST,
+                authorizedEntity(risk),
+                String.class,
+                pending.getId()
+        );
+
+        assertThat(nonFailed.getStatusCodeValue()).isEqualTo(400);
+        assertThat(noTokenStatus).isEqualTo(401);
+        assertThat(riskOfficer.getStatusCodeValue()).isEqualTo(403);
+    }
+
+    @Test
+    void shouldBatchRetryFailedOutboxEventsAndReturnSummary() {
+        AuthResponse admin = login("admin", "admin123");
+        OutboxEvent first = outboxEventPublisher.publish("UNSUPPORTED_BATCH_EVENT_A", "TEST", "batch-a", "{}", 1);
+        OutboxEvent second = outboxEventPublisher.publish("UNSUPPORTED_BATCH_EVENT_B", "TEST", "batch-b", "{}", 1);
+        markOutboxEventFailed(first);
+        markOutboxEventFailed(second);
+        long failedBeforeRetry = outboxEventRepository.findAll().stream()
+                .filter(event -> event.getStatus() == OutboxEventStatus.FAILED)
+                .count();
+
+        ResponseEntity<OutboxEventSummaryResponse> summaryResponse = restTemplate.exchange(
+                "/api/outbox-events/summary",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                OutboxEventSummaryResponse.class
+        );
+        ResponseEntity<OutboxRetryResponse> retryResponse = restTemplate.exchange(
+                "/api/outbox-events/retry-failed",
+                HttpMethod.POST,
+                authorizedEntity(admin),
+                OutboxRetryResponse.class
+        );
+
+        assertThat(summaryResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(summaryResponse.getBody()).isNotNull();
+        assertThat(summaryResponse.getBody().getTotalCount()).isGreaterThan(0);
+        assertThat(summaryResponse.getBody().getFailedCount()).isGreaterThanOrEqualTo(2);
+        assertThat(summaryResponse.getBody().getFailureRate()).isBetween(0.0, 1.0);
+        assertThat(summaryResponse.getBody().getEventCountByType()).containsKey("UNSUPPORTED_BATCH_EVENT_A");
+        assertThat(summaryResponse.getBody().getEventCountByStatus()).containsKey("FAILED");
+        assertThat(retryResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(retryResponse.getBody()).isNotNull();
+        assertThat(retryResponse.getBody().getEnqueuedCount()).isEqualTo((int) failedBeforeRetry);
+        assertThat(outboxEventRepository.findAll().stream()
+                .filter(event -> event.getStatus() == OutboxEventStatus.FAILED)
+                .count()).isZero();
     }
 
     @Test
@@ -1322,6 +1427,15 @@ class RailwayApiIntegrationTests {
                 .count();
     }
 
+    private void markOutboxEventFailed(OutboxEvent event) {
+        event.setStatus(OutboxEventStatus.FAILED);
+        event.setRetryCount(event.getMaxRetryCount());
+        event.setLastError("test failure");
+        event.setUpdatedAt(LocalDateTime.now());
+        event.setProcessedAt(event.getUpdatedAt());
+        outboxEventRepository.save(event);
+    }
+
     private OutboxEventPageResponse fetchOutboxPage(AuthResponse auth, String url) {
         ResponseEntity<OutboxEventPageResponse> response = restTemplate.exchange(
                 url,
@@ -1403,6 +1517,18 @@ class RailwayApiIntegrationTests {
             outputStream.write(bytes);
         }
         return connection.getResponseCode();
+    }
+
+    private int postWithoutTokenStatus(String path) throws Exception {
+        URL url = new URL("http://localhost:" + port + path);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        try {
+            return connection.getResponseCode();
+        } finally {
+            connection.disconnect();
+        }
     }
 
     private RiskEventResponse handleRisk(Long riskId, AuthResponse auth) {
