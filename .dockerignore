@@ -1,0 +1,9 @@
+.git
+backend/target
+target
+docs/project-context-for-gpt.md
+docs/codex-feedback-*.md
+*.log
+.idea
+.vscode
+node_modules

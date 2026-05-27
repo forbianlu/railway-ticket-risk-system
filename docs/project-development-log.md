@@ -16,6 +16,7 @@
 | 支付校验与退款流水闭环 | `add refund records and payment verification` | 支付回调签名与金额校验、退款流水、退款回调签名和幂等 |
 | Outbox 事件表与交易事件解耦 | `add outbox event processing` | 事务内事件落库、事件派发、重试失败处理和事件中心 |
 | Outbox 失败重试与统计监控增强 | `enhance outbox retry and metrics` | 失败事件单条/批量重试、事件统计、失败率和积压监控 |
+| OpenAPI 与 Docker 工程化增强 | `add openapi and docker deployment` | Swagger UI、OpenAPI JSON、Dockerfile、Docker Compose 和部署指南 |
 
 ## 订单支付状态机与超时关闭
 
@@ -360,3 +361,52 @@
 - 增加处理器级别的失败告警。
 - 增加事件处理耗时趋势。
 - 将 Outbox handler 逐步替换为消息队列生产者。
+
+## OpenAPI 与 Docker 工程化增强
+
+### 目标
+
+增强系统工程化展示能力，提供 OpenAPI / Swagger UI 接口文档，并通过 Docker Compose 支持本地启动后端、MySQL 和 Redis。
+
+### 开发前状态
+
+- `0d8c776 enhance outbox retry and metrics` 已与远端同步。
+- 系统默认通过 H2、本地缓存和本地限流运行，Docker Compose 编排尚未形成可执行入口。
+- API 文档主要由 Markdown 维护，缺少可交互的 Swagger UI。
+
+### 主要内容
+
+- 引入 `springdoc-openapi-ui`，暴露 `/v3/api-docs` 和 `/swagger-ui/index.html`。
+- 新增 `OpenApiConfig`，配置 API 标题、版本、描述和 Bearer Token 安全方案。
+- 为主要 Controller 增加 OpenAPI Tag 和接口 summary。
+- Spring Security 放行 Swagger UI、OpenAPI JSON、webjars 和 H2 控制台相关路径。
+- 新增 `Dockerfile`，使用 Maven 多阶段构建后端镜像。
+- 新增 `.dockerignore`，避免复制 `.git`、构建产物和本地反馈文件。
+- 新增 `docker-compose.yml`，编排后端、MySQL 8 和 Redis 7。
+- `application.yml` 增加 `docker` profile，默认仍使用 H2/local，Docker profile 使用 MySQL/Redis。
+- 新增 `docs/deployment-guide.md`，说明 H2 启动、Swagger 使用、Docker Compose、环境变量和排查方式。
+- README 和设计文档同步补充 OpenAPI、Swagger、Docker Compose 和 profile 说明。
+
+### 设计说明
+
+默认 Maven test 继续使用 H2、本地缓存和本地限流，不依赖 Docker、MySQL 或 Redis。Docker Compose 使用演示环境变量启动 MySQL 与 Redis，适合本地工程化联调。
+
+### 验证结果
+
+- 新增 OpenAPI 匿名访问测试，确认 `/v3/api-docs` 可访问。
+- 保留受保护接口未登录返回 401 的测试。
+- Maven 测试通过：`Tests run: 34, Failures: 0, Errors: 0, Skipped: 0`。
+- 前端脚本语法检查通过。
+- 公开文案敏感词检查通过。
+- 当前环境未安装 Docker CLI，未执行 `docker compose config`；Docker Compose 配置已写入文档，后续可在安装 Docker 的环境执行联调。
+
+### 当前提交状态
+
+- 本轮改动计划提交为 `add openapi and docker deployment`。
+- 本轮提交仅保留在本地，不自动推送远端。
+
+### 后续建议
+
+- 增加镜像版本标签和容器健康检查看板。
+- 增加独立部署环境的启动验证记录。
+- 在 CI 中增加可选的 Dockerfile build 校验。

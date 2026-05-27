@@ -22,7 +22,7 @@
 - 增加 refresh token、登录失败限制和令牌失效机制。
 - 增加接口压测和并发购票验证脚本。
 - 配置更完整的 GitHub Actions 自动测试流程。
-- 增加 Docker Compose 部署说明。
+- 增加 Docker Compose 健康检查、镜像标签和独立部署环境验证。
 - 将 Outbox 派发器切换为消息队列生产者。
 
 ## 阶段四：运营能力增强

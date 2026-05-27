@@ -11,6 +11,10 @@ import com.example.railway.domain.OperationLog;
 import com.example.railway.security.RequiredRole;
 import com.example.railway.service.OperationLogService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "审计日志", description = "关键业务操作日志查询")
 @RestController
 @RequestMapping("/api/logs")
 public class OperationLogController {
@@ -21,6 +25,7 @@ public class OperationLogController {
         this.operationLogService = operationLogService;
     }
 
+    @Operation(summary = "查询最近操作日志")
     @RequiredRole({UserRole.ADMIN, UserRole.RISK_OFFICER})
     @GetMapping
     public List<OperationLog> latestLogs() {

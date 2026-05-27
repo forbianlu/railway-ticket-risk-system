@@ -691,6 +691,16 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldExposeOpenApiDocsAnonymouslyAndKeepProtectedApisSecured() {
+        ResponseEntity<String> apiDocs = restTemplate.getForEntity("/v3/api-docs", String.class);
+        ResponseEntity<String> cacheStatsWithoutToken = restTemplate.getForEntity("/api/cache/train-search", String.class);
+
+        assertThat(apiDocs.getStatusCodeValue()).isEqualTo(200);
+        assertThat(apiDocs.getBody()).contains("铁路客运票务与风控运营管理系统 API");
+        assertThat(cacheStatsWithoutToken.getStatusCodeValue()).isEqualTo(401);
+    }
+
+    @Test
     void shouldHandleFailedPaymentAndRejectInvalidPaymentCreation() {
         TrainSearchResponse train = firstTrainInventory();
         long userId = 3131L;

@@ -17,6 +17,10 @@ import com.example.railway.security.AuthPrincipal;
 import com.example.railway.service.RateLimitService;
 import com.example.railway.service.TrainQueryService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "车次查询", description = "车站、车次和余票查询")
 @RestController
 @RequestMapping("/api/trains")
 public class TrainController {
@@ -30,6 +34,7 @@ public class TrainController {
         this.rateLimitService = rateLimitService;
     }
 
+    @Operation(summary = "按出发站、到达站和日期查询车次余票")
     @GetMapping("/search")
     public List<TrainSearchResponse> search(@RequestParam("from") String departureCode,
                                             @RequestParam("to") String arrivalCode,

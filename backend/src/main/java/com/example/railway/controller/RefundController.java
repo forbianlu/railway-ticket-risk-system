@@ -15,6 +15,10 @@ import com.example.railway.dto.RefundPageResponse;
 import com.example.railway.dto.RefundResponse;
 import com.example.railway.service.RefundService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "退款流水", description = "退款流水查询和退款回调")
 @RestController
 @RequestMapping("/api/refunds")
 public class RefundController {
@@ -25,6 +29,7 @@ public class RefundController {
         this.refundService = refundService;
     }
 
+    @Operation(summary = "分页筛选退款流水")
     @GetMapping
     public RefundPageResponse listRefunds(@RequestParam(value = "orderId", required = false) Long orderId,
                                           @RequestParam(value = "refundNo", required = false) String refundNo,
@@ -34,11 +39,13 @@ public class RefundController {
         return refundService.listRefunds(orderId, refundNo, status, page, size);
     }
 
+    @Operation(summary = "处理退款渠道回调")
     @PostMapping("/callback")
     public RefundResponse callback(@Valid @RequestBody RefundCallbackRequest request) {
         return refundService.handleCallback(request);
     }
 
+    @Operation(summary = "构造并处理模拟退款回调")
     @PostMapping("/callback/mock")
     public RefundResponse mockCallback(@Valid @RequestBody MockRefundCallbackRequest request) {
         RefundCallbackRequest signedRequest = refundService.buildMockCallback(

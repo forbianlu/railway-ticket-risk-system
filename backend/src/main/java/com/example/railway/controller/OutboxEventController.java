@@ -17,6 +17,10 @@ import com.example.railway.security.RequiredRole;
 import com.example.railway.service.outbox.OutboxEventDispatcher;
 import com.example.railway.service.outbox.OutboxEventQueryService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "Outbox 事件", description = "交易事件查询、派发、重试和统计监控")
 @RequiredRole(UserRole.ADMIN)
 @RestController
 @RequestMapping("/api/outbox-events")
@@ -31,6 +35,7 @@ public class OutboxEventController {
         this.outboxEventDispatcher = outboxEventDispatcher;
     }
 
+    @Operation(summary = "分页筛选 Outbox 事件")
     @GetMapping
     public OutboxEventPageResponse listEvents(@RequestParam(value = "status", required = false) String status,
                                               @RequestParam(value = "eventType", required = false) String eventType,
@@ -39,21 +44,25 @@ public class OutboxEventController {
         return outboxEventQueryService.listEvents(status, eventType, page, size);
     }
 
+    @Operation(summary = "查询 Outbox 事件统计")
     @GetMapping("/summary")
     public OutboxEventSummaryResponse summary() {
         return outboxEventQueryService.summary();
     }
 
+    @Operation(summary = "手动派发一次待处理事件")
     @PostMapping("/dispatch")
     public OutboxDispatchResponse dispatch() {
         return new OutboxDispatchResponse(outboxEventDispatcher.dispatchOnce());
     }
 
+    @Operation(summary = "重新入队单条失败事件")
     @PostMapping("/{id}/retry")
     public OutboxEventResponse retry(@PathVariable Long id) {
         return outboxEventQueryService.retryFailedEvent(id);
     }
 
+    @Operation(summary = "批量重新入队失败事件")
     @PostMapping("/retry-failed")
     public OutboxRetryResponse retryFailed() {
         return new OutboxRetryResponse(outboxEventQueryService.retryFailedEvents());

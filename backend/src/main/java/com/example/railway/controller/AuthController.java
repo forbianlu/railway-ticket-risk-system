@@ -13,6 +13,10 @@ import com.example.railway.dto.LoginRequest;
 import com.example.railway.security.RequiredRole;
 import com.example.railway.service.AuthService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "认证", description = "登录、JWT 签发和当前用户查询")
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -23,11 +27,13 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @Operation(summary = "登录并获取 JWT")
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
     }
 
+    @Operation(summary = "查询当前登录用户")
     @RequiredRole
     @GetMapping("/me")
     public AuthResponse me() {

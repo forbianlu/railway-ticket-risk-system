@@ -15,6 +15,19 @@ GET /api/health
 }
 ```
 
+## OpenAPI 文档
+
+```http
+GET /v3/api-docs
+GET /swagger-ui/index.html
+```
+
+OpenAPI JSON 和 Swagger UI 允许匿名访问。业务接口仍按原权限规则执行；在 Swagger UI 中调用受保护接口时，先调用 `POST /api/auth/login` 获取 JWT，然后点击 Authorize，填写：
+
+```text
+Bearer {token}
+```
+
 ## 查询车站
 
 ```http

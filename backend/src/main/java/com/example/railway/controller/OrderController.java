@@ -21,6 +21,10 @@ import com.example.railway.dto.OrderResponse;
 import com.example.railway.service.OrderService;
 import com.example.railway.service.RateLimitService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "订单管理", description = "订单创建、支付、关闭、退票和分页筛选")
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
@@ -34,6 +38,7 @@ public class OrderController {
         this.rateLimitService = rateLimitService;
     }
 
+    @Operation(summary = "创建待支付订单并锁定库存")
     @PostMapping
     public OrderResponse createOrder(@Valid @RequestBody CreateOrderRequest request,
                                      HttpServletRequest httpRequest) {
@@ -42,26 +47,31 @@ public class OrderController {
         return orderService.createOrder(request);
     }
 
+    @Operation(summary = "退票并释放库存")
     @PostMapping("/{id}/refund")
     public OrderResponse refund(@PathVariable("id") Long orderId) {
         return orderService.refund(orderId);
     }
 
+    @Operation(summary = "快捷模拟支付订单")
     @PostMapping("/{id}/pay")
     public OrderResponse pay(@PathVariable("id") Long orderId) {
         return orderService.pay(orderId);
     }
 
+    @Operation(summary = "关闭待支付订单")
     @PostMapping("/{id}/close")
     public OrderResponse close(@PathVariable("id") Long orderId) {
         return orderService.closeUnpaidOrder(orderId);
     }
 
+    @Operation(summary = "批量关闭超时待支付订单")
     @PostMapping("/close-expired")
     public List<OrderResponse> closeExpiredOrders() {
         return orderService.closeExpiredOrders();
     }
 
+    @Operation(summary = "分页筛选订单列表")
     @GetMapping
     public OrderPageResponse listOrders(@RequestParam(value = "userId", required = false) Long userId,
                                         @RequestParam(value = "status", required = false) String status,

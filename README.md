@@ -29,13 +29,13 @@
 
 ## 技术栈
 
-- 后端：Java 8, Spring Boot 2.7, Spring Web, Spring Data JPA, Bean Validation
+- 后端：Java 8, Spring Boot 2.7, Spring Web, Spring Data JPA, Bean Validation, OpenAPI
 - 数据库：H2, MySQL profile
 - 缓存：本地 TTL 缓存，Redis 可选模式
 - 权限：Spring Security, JWT Bearer Token, BCrypt, `@RequiredRole`
 - 测试：JUnit, Spring Boot Test
 - 前端：HTML, CSS, JavaScript
-- 工程化：Maven, Docker Compose, GitHub Actions
+- 工程化：Maven, Swagger UI, Docker, Docker Compose, GitHub Actions
 
 ## 系统架构与流程
 
@@ -103,6 +103,7 @@
 
 ```text
 GET  /api/health
+GET  /v3/api-docs
 POST /api/auth/login
 GET  /api/auth/me
 GET  /api/stations
@@ -164,7 +165,8 @@ railway-ticket-risk-system
 ├── frontend             # 原生前端管理台
 ├── docs                 # 设计文档、ER 图、流程图和截图
 ├── scripts              # 辅助验证脚本
-├── docker-compose.yml   # MySQL + 后端编排
+├── Dockerfile           # 后端容器镜像构建
+├── docker-compose.yml   # 后端 + MySQL + Redis 编排
 └── README.md
 ```
 
@@ -180,6 +182,8 @@ mvn spring-boot:run
 启动后访问：
 
 - API 健康检查：`http://localhost:8080/api/health`
+- Swagger UI：`http://localhost:8080/swagger-ui/index.html`
+- OpenAPI JSON：`http://localhost:8080/v3/api-docs`
 - H2 控制台：`http://localhost:8080/h2-console`
 
 H2 JDBC URL：
@@ -188,11 +192,26 @@ H2 JDBC URL：
 jdbc:h2:mem:railway
 ```
 
-使用 MySQL profile：
+默认模式使用 H2、本地缓存和本地限流，不依赖 Docker、MySQL 或 Redis。
+
+### Docker Compose 启动
 
 ```bash
-cd backend
-mvn spring-boot:run -Dspring-boot.run.profiles=mysql
+docker compose up --build
+```
+
+该命令会启动：
+
+- 后端服务：`http://localhost:8080`
+- MySQL 8：`localhost:3306`
+- Redis 7：`localhost:6379`
+
+Docker Compose 使用 `docker` profile，后端连接 MySQL 并将车次查询缓存和限流切换为 Redis 模式。`docker-compose.yml` 中的账号和密钥均为本地演示配置，生产环境应通过安全的环境变量或密钥管理系统替换。
+
+停止服务：
+
+```bash
+docker compose down
 ```
 
 ### 前端启动
@@ -228,6 +247,8 @@ mvn test
 ```bash
 node --check frontend\app.js
 ```
+
+Docker 配置不参与默认测试，CI 继续只执行 Maven test，默认 H2/local 模式不依赖 MySQL 或 Redis。
 
 并发购票验证脚本：
 
@@ -265,6 +286,7 @@ INVENTORY_ID=1
 - 支付、退票、退款和风险处置等交易动作会写入 Outbox 事件，可由派发器处理为后续动作。
 - 未登录访问受保护接口返回 401，权限不足返回 403。
 - 登录成功后签发 JWT，前端通过 `Authorization: Bearer {token}` 访问受保护接口。
+- Swagger UI 可匿名访问；调用受保护接口时先通过登录接口获取 token，再在 Swagger 的 Authorize 中填写 Bearer Token。
 - 并发请求抢同一张票时，只能成功创建符合库存数量的订单。
 
 ## 核心设计说明
@@ -326,13 +348,14 @@ PAID -> REFUNDED
 - [缓存设计](docs/cache-design.md)
 - [并发防超卖设计](docs/concurrency-design.md)
 - [技术设计笔记](docs/technical-design-notes.md)
+- [部署指南](docs/deployment-guide.md)
 - [项目最终总结](docs/final-project-summary.md)
 - [开发日志](docs/project-development-log.md)
 - [GitHub 上传步骤](docs/github-upload.md)
 
 ## 后续规划
 
-- 在独立 Redis 环境中补充部署联调记录和缓存监控指标。
+- 增加独立部署环境的缓存监控指标和运行告警。
 - 使用延时队列优化超时订单关闭。
 - 增加退款重试、退款人工补偿和对账报表。
 - 将 Outbox 事件派发迁移到消息队列。

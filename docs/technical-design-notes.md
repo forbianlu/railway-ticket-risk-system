@@ -129,6 +129,17 @@ PAID -> REFUNDED
 
 操作日志记录关键业务动作，风险处置历史记录人工处置动作，两者共同支撑审计追踪。
 
+## OpenAPI 与 Docker
+
+系统通过 springdoc-openapi 暴露 `/v3/api-docs` 和 Swagger UI。Swagger 页面允许匿名访问，但业务接口仍按 JWT 和 `@RequiredRole` 校验执行。OpenAPI 配置声明 Bearer Token 安全方案，便于在 Swagger UI 中调试受保护接口。
+
+工程化运行分为两种模式：
+
+- 默认模式：H2、本地缓存、本地限流，用于本地快速启动和 CI 测试。
+- `docker` profile：MySQL、Redis 缓存、Redis 限流，用于 Docker Compose 本地联调。
+
+Docker Compose 编排后端、MySQL 和 Redis，演示配置通过环境变量注入 JWT、支付回调和退款回调密钥。
+
 ## 测试覆盖
 
 集成测试覆盖：
@@ -141,6 +152,6 @@ PAID -> REFUNDED
 - 并发防超卖。
 - 订单分页筛选和看板指标。
 - 支付流水分页筛选。
-- Outbox 事件落库、派发、失败重试、统计监控和管理接口权限。
+- OpenAPI 匿名访问、受保护接口 JWT 校验、Outbox 事件落库、派发、失败重试、统计监控和管理接口权限。
 - 风险生成、处置、历史查询、分页筛选和报表。
 - 登录权限和角色校验。

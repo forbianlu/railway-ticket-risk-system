@@ -25,6 +25,10 @@ import com.example.railway.security.RequiredRole;
 import com.example.railway.service.RateLimitService;
 import com.example.railway.service.RiskService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "风险管理", description = "风险事件查询、统计、处置和处置历史")
 @RestController
 @RequestMapping("/api/risks")
 public class RiskController {
@@ -38,6 +42,7 @@ public class RiskController {
         this.rateLimitService = rateLimitService;
     }
 
+    @Operation(summary = "分页筛选风险事件")
     @GetMapping
     public RiskEventPageResponse listRisks(@RequestParam(value = "status", required = false) String status,
                                            @RequestParam(value = "scene", required = false) String scene,
@@ -52,11 +57,13 @@ public class RiskController {
         return riskService.listRisks(status, scene, userId, orderNo, fromDate, toDate, page, size);
     }
 
+    @Operation(summary = "查询风险运营统计")
     @GetMapping("/summary")
     public RiskSummaryResponse summary() {
         return riskService.summary();
     }
 
+    @Operation(summary = "处置风险事件")
     @RequiredRole({UserRole.RISK_OFFICER, UserRole.ADMIN})
     @PostMapping("/{id}/handle")
     public RiskEventResponse handleRisk(@PathVariable("id") Long riskId,
@@ -67,6 +74,7 @@ public class RiskController {
         return riskService.handleRisk(riskId, request, currentOperator);
     }
 
+    @Operation(summary = "查询风险处置历史")
     @GetMapping("/{id}/handle-records")
     public List<RiskEventHandleRecordResponse> handleRecords(@PathVariable("id") Long riskId) {
         return riskService.handleRecords(riskId);

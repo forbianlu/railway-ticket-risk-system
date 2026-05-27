@@ -18,6 +18,8 @@
 - 热门线路查询可以命中 local / Redis 缓存，库存变更后缓存自动失效。
 - 高频接口具备限流保护，超过阈值返回 429。
 - 核心交易动作写入 Outbox 事件表，为异步处理和后续消息队列接入预留边界。
+- 系统提供 OpenAPI / Swagger UI，便于查看和调试接口。
+- 系统提供 Docker Compose，用于本地启动后端、MySQL 和 Redis。
 - 并发购票时库存不会超卖。
 - 系统能识别异常交易行为。
 - 运营后台可以查看订单、支付流水、风险事件和统计指标。
@@ -137,6 +139,13 @@
 - 角色控制：使用 `@RequiredRole` 标注敏感接口，风控处置和审计日志只允许管理员或风控专员访问。
 - 前端联动：根据当前角色控制风险处理按钮和日志错误提示。
 
+### 4.8 工程化运行
+
+- OpenAPI：`/v3/api-docs` 输出接口定义，`/swagger-ui/index.html` 提供交互式接口页面。
+- Dockerfile：构建后端运行镜像。
+- Docker Compose：编排后端、MySQL 和 Redis。
+- Profile：默认 H2/local 模式用于本地开发和 CI，`docker` profile 使用 MySQL 和 Redis。
+
 ## 5. 数据库设计
 
 核心表：
@@ -187,6 +196,7 @@
 - `POST /api/outbox-events/{id}/retry`
 - `POST /api/outbox-events/retry-failed`
 - `GET /api/dashboard/summary`
+- `GET /v3/api-docs`
 
 详见 `docs/api-design.md`。
 
@@ -210,6 +220,7 @@
 - 车次查询 local / Redis TTL 缓存。
 - 高频接口限流。
 - Outbox 事件表、轻量派发器、失败重试和统计监控。
+- OpenAPI / Swagger UI。
 - 并发购票防超卖集成测试。
 - 订单幂等提交。
 - 操作日志。

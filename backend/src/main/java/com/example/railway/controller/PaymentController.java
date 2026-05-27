@@ -18,6 +18,10 @@ import com.example.railway.dto.PaymentResponse;
 import com.example.railway.service.PaymentService;
 import com.example.railway.service.RateLimitService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
+@Tag(name = "支付流水", description = "支付流水创建、支付回调和支付流水查询")
 @RestController
 @RequestMapping("/api/payments")
 public class PaymentController {
@@ -31,11 +35,13 @@ public class PaymentController {
         this.rateLimitService = rateLimitService;
     }
 
+    @Operation(summary = "创建支付流水")
     @PostMapping
     public PaymentResponse createPayment(@Valid @RequestBody CreatePaymentRequest request) {
         return paymentService.createPayment(request);
     }
 
+    @Operation(summary = "处理支付渠道回调")
     @PostMapping("/callback")
     public PaymentResponse callback(@Valid @RequestBody PaymentCallbackRequest request,
                                     HttpServletRequest httpRequest) {
@@ -43,6 +49,7 @@ public class PaymentController {
         return paymentService.handleCallback(request);
     }
 
+    @Operation(summary = "构造并处理模拟支付回调")
     @PostMapping("/callback/mock")
     public PaymentResponse mockCallback(@Valid @RequestBody MockPaymentCallbackRequest request,
                                         HttpServletRequest httpRequest) {
@@ -57,6 +64,7 @@ public class PaymentController {
         return paymentService.handleCallback(signedRequest);
     }
 
+    @Operation(summary = "分页筛选支付流水")
     @GetMapping
     public PaymentPageResponse listPayments(@RequestParam(value = "orderId", required = false) Long orderId,
                                             @RequestParam(value = "status", required = false) String status,
