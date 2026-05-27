@@ -203,7 +203,7 @@ docker compose up --build
 该命令会启动：
 
 - 后端服务：`http://localhost:8080`
-- MySQL 8：`localhost:3306`
+- MySQL 8：宿主机 `localhost:3307`，容器内部仍为 `3306`
 - Redis 7：`localhost:6379`
 
 Docker Compose 使用 `docker` profile，后端连接 MySQL 并将车次查询缓存和限流切换为 Redis 模式。`docker-compose.yml` 中的账号和密钥均为本地演示配置，生产环境应通过安全的环境变量或密钥管理系统替换。

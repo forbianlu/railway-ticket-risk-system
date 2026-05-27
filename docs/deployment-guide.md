@@ -43,7 +43,7 @@ docker compose up --build
 | 服务 | 容器 | 端口 |
 | --- | --- | --- |
 | 后端 | `railway-backend` | `8080:8080` |
-| MySQL | `railway-mysql` | `3306:3306` |
+| MySQL | `railway-mysql` | `3307:3306`，宿主机端口为 `3307`，容器内部端口仍为 `3306` |
 | Redis | `railway-redis` | `6379:6379` |
 
 停止服务：
