@@ -169,11 +169,13 @@ elements.loginForm.addEventListener("submit", event => {
   login();
 });
 elements.logoutButton.addEventListener("click", logout);
+window.addEventListener("hashchange", updateActiveNav);
 
 init();
 
 async function init() {
   applyCaptureMode();
+  setupNavigation();
   renderAuthState();
   elements.travelDate.value = new Date().toISOString().slice(0, 10);
   await checkHealth();
@@ -352,11 +354,17 @@ function renderPopularTrains(items) {
     elements.popularTrains.innerHTML = emptyItem("暂无订单聚合数据");
     return;
   }
+  const maxCount = Math.max(...items.map(item => Number(item.orderCount || 0)), 1);
   elements.popularTrains.innerHTML = items
     .map(item => `
-      <div class="event-item">
-        <strong>${item.trainNo}</strong>
-        <span>订单数量：${item.orderCount}</span>
+      <div class="event-item progress-row">
+        <div class="event-header">
+          <strong>${item.trainNo}</strong>
+          <span class="status">${item.orderCount} 单</span>
+        </div>
+        <div class="bar-track" aria-hidden="true">
+          <span style="width: ${Math.max(8, (Number(item.orderCount || 0) / maxCount) * 100)}%"></span>
+        </div>
       </div>
     `)
     .join("");
@@ -386,12 +394,12 @@ function renderTrains(trains) {
   elements.trainResults.innerHTML = trains
     .map(train => `
       <tr>
-        <td>${train.trainNo}</td>
-        <td>${train.departureStation} -> ${train.arrivalStation}</td>
+        <td><strong class="train-no">${train.trainNo}</strong></td>
+        <td><span class="route">${train.departureStation} -> ${train.arrivalStation}</span></td>
         <td>${formatTime(train.departureTime)} - ${formatTime(train.arrivalTime)}</td>
         <td>${seatTypeText(train.seatType)}</td>
-        <td>${train.remainingSeats}</td>
-        <td>¥${train.price}</td>
+        <td><span class="${Number(train.remainingSeats || 0) <= 5 ? "inventory-low" : "inventory-ok"}">${train.remainingSeats}</span></td>
+        <td><span class="money">¥${train.price}</span></td>
         <td><button class="secondary-button" type="button" data-buy="${train.trainId}" data-inventory="${train.inventoryId}">购票</button></td>
       </tr>
     `)
@@ -467,12 +475,12 @@ function renderOrders(orders) {
   elements.orderResults.innerHTML = orders
     .map(order => `
       <tr>
-        <td>${order.orderNo}</td>
+        <td><strong>${order.orderNo}</strong></td>
         <td>${order.userId}</td>
-        <td>${order.trainNo}</td>
+        <td><span class="train-no">${order.trainNo}</span></td>
         <td>${order.passengerName}</td>
         <td>${order.travelDate}</td>
-        <td>¥${order.amount}</td>
+        <td><span class="money">¥${order.amount}</span></td>
         <td><span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span></td>
         <td>${renderOrderActions(order)}</td>
       </tr>
@@ -656,10 +664,10 @@ function renderPayments(payments) {
   elements.paymentResults.innerHTML = payments
     .map(payment => `
       <tr>
-        <td>${payment.paymentNo}</td>
+        <td><strong>${payment.paymentNo}</strong></td>
         <td>${payment.orderNo}<br><span class="muted-text">#${payment.orderId}</span></td>
         <td>${payment.userId}</td>
-        <td>¥${payment.amount}</td>
+        <td><span class="money">¥${payment.amount}</span></td>
         <td><span class="status ${paymentStatusClass(payment.status)}">${paymentStatusText(payment.status)}</span></td>
         <td>${payment.channel}</td>
         <td>${formatDateTime(payment.createdAt)}</td>
@@ -752,11 +760,11 @@ function renderRefunds(refunds) {
   elements.refundResults.innerHTML = refunds
     .map(refund => `
       <tr>
-        <td>${refund.refundNo}</td>
+        <td><strong>${refund.refundNo}</strong></td>
         <td>${refund.orderNo}<br><span class="muted-text">#${refund.orderId}</span></td>
         <td>${refund.paymentNo || "-"}</td>
         <td>${refund.userId}</td>
-        <td>¥${refund.amount}</td>
+        <td><span class="money">¥${refund.amount}</span></td>
         <td><span class="status ${refundStatusClass(refund.status)}">${refundStatusText(refund.status)}</span></td>
         <td>${refund.channelRefundNo || "-"}</td>
         <td>${formatDateTime(refund.createdAt)}</td>
@@ -1485,4 +1493,20 @@ function applyCaptureMode() {
   if (["dashboard", "orders", "risks"].includes(capture)) {
     document.body.dataset.capture = capture;
   }
+}
+
+function setupNavigation() {
+  document.querySelectorAll(".nav a").forEach(link => {
+    link.addEventListener("click", () => {
+      window.setTimeout(updateActiveNav, 0);
+    });
+  });
+  updateActiveNav();
+}
+
+function updateActiveNav() {
+  const currentHash = window.location.hash || "#dashboard";
+  document.querySelectorAll(".nav a").forEach(link => {
+    link.classList.toggle("active", link.getAttribute("href") === currentHash);
+  });
 }
