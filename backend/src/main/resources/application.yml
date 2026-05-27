@@ -45,6 +45,8 @@ security:
     expire-seconds: ${JWT_EXPIRE_SECONDS:28800}
 
 railway:
+  demo-data:
+    enabled: true
   order:
     close-expired-delay-ms: 60000
   cache:

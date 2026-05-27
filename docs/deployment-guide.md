@@ -75,6 +75,25 @@ SPRING_PROFILES_ACTIVE=docker
 
 默认 Maven 测试仍使用 H2 和本地缓存/限流，不依赖 Docker、MySQL 或 Redis。
 
+## 演示数据
+
+系统默认启用演示数据初始化：
+
+```yaml
+railway:
+  demo-data:
+    enabled: true
+```
+
+首次启动会生成车站、车次、未来 14 天库存、多状态订单、支付流水、退款流水、风险事件、处置历史、操作日志和 Outbox 事件。初始化使用固定业务编号，重复启动不会重复插入同一批演示记录。
+
+H2 模式在每次应用重启后重新生成演示数据。Docker MySQL 模式会保留数据卷，如需重置演示数据，可执行：
+
+```powershell
+docker compose down -v
+docker compose up --build
+```
+
 ## MySQL 配置
 
 `docker-compose.yml` 默认创建数据库：

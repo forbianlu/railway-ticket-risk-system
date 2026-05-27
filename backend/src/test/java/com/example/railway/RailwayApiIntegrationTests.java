@@ -31,15 +31,20 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.example.railway.bootstrap.DemoDataInitializer;
 import com.example.railway.config.RateLimitProperties;
 import com.example.railway.config.PaymentCallbackProperties;
 import com.example.railway.config.RefundCallbackProperties;
 import com.example.railway.config.TrainSearchCacheProperties;
 import com.example.railway.domain.OperationLog;
+import com.example.railway.domain.OrderStatus;
 import com.example.railway.domain.OutboxEvent;
 import com.example.railway.domain.OutboxEventStatus;
 import com.example.railway.domain.PaymentRecord;
+import com.example.railway.domain.PaymentStatus;
 import com.example.railway.domain.RefundRecord;
+import com.example.railway.domain.RefundStatus;
+import com.example.railway.domain.RiskStatus;
 import com.example.railway.domain.SeatInventory;
 import com.example.railway.domain.Station;
 import com.example.railway.domain.TicketOrder;
@@ -71,9 +76,11 @@ import com.example.railway.dto.RiskSummaryResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
 import com.example.railway.repository.AppUserRepository;
+import com.example.railway.repository.OperationLogRepository;
 import com.example.railway.repository.OutboxEventRepository;
 import com.example.railway.repository.PaymentRecordRepository;
 import com.example.railway.repository.RefundRecordRepository;
+import com.example.railway.repository.RiskEventRepository;
 import com.example.railway.repository.SeatInventoryRepository;
 import com.example.railway.repository.StationRepository;
 import com.example.railway.repository.TicketOrderRepository;
@@ -117,6 +124,15 @@ class RailwayApiIntegrationTests {
     private OutboxEventRepository outboxEventRepository;
 
     @Autowired
+    private RiskEventRepository riskEventRepository;
+
+    @Autowired
+    private OperationLogRepository operationLogRepository;
+
+    @Autowired
+    private DemoDataInitializer demoDataInitializer;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -151,6 +167,53 @@ class RailwayApiIntegrationTests {
         assertThat(trains)
                 .extracting(TrainSearchResponse::getRemainingSeats)
                 .allMatch(remainingSeats -> remainingSeats > 0);
+    }
+
+    @Test
+    void shouldSeedRichDemoDataIdempotently() throws Exception {
+        demoDataInitializer.run();
+
+        long stationCount = stationRepository.count();
+        long trainCount = trainRepository.count();
+        long inventoryCount = seatInventoryRepository.count();
+        long orderCount = ticketOrderRepository.count();
+        long paymentCount = paymentRecordRepository.count();
+        long refundCount = refundRecordRepository.count();
+        long riskCount = riskEventRepository.count();
+        long logCount = operationLogRepository.count();
+        long outboxCount = outboxEventRepository.count();
+
+        assertThat(stationCount).isGreaterThanOrEqualTo(16);
+        assertThat(trainCount).isGreaterThanOrEqualTo(16);
+        assertThat(inventoryCount).isGreaterThanOrEqualTo(200);
+        assertThat(orderCount).isGreaterThanOrEqualTo(48);
+        assertThat(paymentCount).isGreaterThanOrEqualTo(48);
+        assertThat(refundCount).isGreaterThanOrEqualTo(12);
+        assertThat(riskCount).isGreaterThanOrEqualTo(20);
+        assertThat(logCount).isGreaterThanOrEqualTo(30);
+        assertThat(outboxCount).isGreaterThanOrEqualTo(10);
+
+        assertThat(ticketOrderRepository.findAll()).extracting(TicketOrder::getStatus)
+                .contains(OrderStatus.PENDING_PAYMENT, OrderStatus.PAID, OrderStatus.CLOSED, OrderStatus.REFUNDED);
+        assertThat(paymentRecordRepository.findAll()).extracting(PaymentRecord::getStatus)
+                .contains(PaymentStatus.PENDING, PaymentStatus.SUCCESS, PaymentStatus.FAILED);
+        assertThat(refundRecordRepository.findAll()).extracting(RefundRecord::getStatus)
+                .contains(RefundStatus.PENDING, RefundStatus.SUCCESS, RefundStatus.FAILED);
+        assertThat(riskEventRepository.findAll()).extracting(event -> event.getStatus())
+                .contains(RiskStatus.PENDING, RiskStatus.CONFIRMED, RiskStatus.FALSE_POSITIVE, RiskStatus.CLOSED);
+        assertThat(outboxEventRepository.findAll()).extracting(OutboxEvent::getStatus)
+                .contains(OutboxEventStatus.PENDING, OutboxEventStatus.DONE, OutboxEventStatus.FAILED);
+
+        demoDataInitializer.run();
+
+        assertThat(stationRepository.count()).isEqualTo(stationCount);
+        assertThat(trainRepository.count()).isEqualTo(trainCount);
+        assertThat(ticketOrderRepository.count()).isEqualTo(orderCount);
+        assertThat(paymentRecordRepository.count()).isEqualTo(paymentCount);
+        assertThat(refundRecordRepository.count()).isEqualTo(refundCount);
+        assertThat(riskEventRepository.count()).isEqualTo(riskCount);
+        assertThat(operationLogRepository.count()).isEqualTo(logCount);
+        assertThat(outboxEventRepository.count()).isEqualTo(outboxCount);
     }
 
     @Test
@@ -558,11 +621,18 @@ class RailwayApiIntegrationTests {
                 1
         );
 
-        int processedCount = outboxEventDispatcher.dispatchOnce(1);
-        OutboxEvent failed = outboxEventRepository.findByEventId(event.getEventId())
-                .orElseThrow(() -> new AssertionError("expected outbox event"));
+        int processedCount = 0;
+        OutboxEvent failed = event;
+        for (int i = 0; i < 10; i++) {
+            processedCount += outboxEventDispatcher.dispatchOnce(1);
+            failed = outboxEventRepository.findByEventId(event.getEventId())
+                    .orElseThrow(() -> new AssertionError("expected outbox event"));
+            if (failed.getStatus() != OutboxEventStatus.PENDING) {
+                break;
+            }
+        }
 
-        assertThat(processedCount).isEqualTo(1);
+        assertThat(processedCount).isGreaterThanOrEqualTo(1);
         assertThat(failed.getStatus()).isEqualTo(OutboxEventStatus.FAILED);
         assertThat(failed.getRetryCount()).isEqualTo(1);
         assertThat(failed.getLastError()).contains("No outbox handler");

@@ -9,6 +9,7 @@
 ## 核心功能
 
 - 车次余票查询：按出发站、到达站和乘车日期查询车次、票价和余票。
+- 演示数据初始化：默认提供车站、车次、库存、订单、支付、退款、风险、日志和 Outbox 事件样例。
 - 订单状态机：订单创建后进入 `PENDING_PAYMENT`，支持支付、关闭、超时关闭和退票。
 - 库存一致性：创建待支付订单锁定库存，关闭和退票释放库存。
 - 防超卖控制：座位库存使用 JPA 乐观锁版本号，降低并发扣减时的超卖风险。
@@ -88,6 +89,7 @@
 | 模块 | 说明 |
 | --- | --- |
 | 车站车次 | 维护车站、车次和座位库存基础数据 |
+| 演示数据 | 初始化多状态订单、资金流水、风险事件、操作日志和 Outbox 事件，便于本地查看系统运行状态 |
 | 车次查询 | 按线路和日期查询余票，支持 local / Redis TTL 缓存 |
 | 订单管理 | 创建待支付订单、支付确认、关闭、超时关闭、退票和分页筛选 |
 | 库存控制 | 通过事务和 JPA 乐观锁维护库存扣减与释放 |
@@ -193,6 +195,8 @@ jdbc:h2:mem:railway
 ```
 
 默认模式使用 H2、本地缓存和本地限流，不依赖 Docker、MySQL 或 Redis。
+
+系统默认启用演示数据初始化，配置项为 `railway.demo-data.enabled=true`。首次启动会写入一组幂等演示数据，包括 17 个车站、16 趟车、未来 14 天库存、48 条订单以及配套支付、退款、风险、操作日志和 Outbox 事件。重复启动不会重复插入同一批演示数据。
 
 ### Docker Compose 启动
 
@@ -348,6 +352,7 @@ PAID -> REFUNDED
 - [缓存设计](docs/cache-design.md)
 - [并发防超卖设计](docs/concurrency-design.md)
 - [技术设计笔记](docs/technical-design-notes.md)
+- [演示数据设计](docs/demo-data-design.md)
 - [部署指南](docs/deployment-guide.md)
 - [项目最终总结](docs/final-project-summary.md)
 - [开发日志](docs/project-development-log.md)
