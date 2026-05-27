@@ -44,11 +44,39 @@ public class TrainController {
         return trainQueryService.search(departureCode, arrivalCode, travelDate);
     }
 
+    @Operation(summary = "查询全部可购买车次")
+    @GetMapping("/available")
+    public List<TrainSearchResponse> available(@RequestParam(value = "fromStation", required = false) String fromStation,
+                                               @RequestParam(value = "toStation", required = false) String toStation,
+                                               @RequestParam(value = "from", required = false) String fromAlias,
+                                               @RequestParam(value = "to", required = false) String toAlias,
+                                               @RequestParam(value = "travelDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate travelDate,
+                                               @RequestParam(value = "date", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateAlias,
+                                               @RequestParam(value = "page", defaultValue = "0") int page,
+                                               @RequestParam(value = "size", defaultValue = "50") int size,
+                                               HttpServletRequest request) {
+        rateLimitService.check("train-search", "rate:train:available:" + requesterKey(request));
+        return trainQueryService.available(
+                firstNonBlank(fromStation, fromAlias),
+                firstNonBlank(toStation, toAlias),
+                travelDate == null ? dateAlias : travelDate,
+                page,
+                size
+        );
+    }
+
     private String requesterKey(HttpServletRequest request) {
         AuthPrincipal principal = AuthContext.currentOrNull();
         if (principal != null && principal.getUserId() != null) {
             return "user:" + principal.getUserId();
         }
         return "ip:" + request.getRemoteAddr();
+    }
+
+    private String firstNonBlank(String primary, String fallback) {
+        if (primary != null && !primary.trim().isEmpty()) {
+            return primary;
+        }
+        return fallback;
     }
 }

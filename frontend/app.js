@@ -45,6 +45,14 @@ const state = {
   },
 };
 
+const HOT_ROUTES = [
+  { from: "BJP", to: "SHH", label: "G101 北京南 → 上海虹桥" },
+  { from: "SHH", to: "BJP", label: "G102 上海虹桥 → 北京南" },
+  { from: "GZQ", to: "WHN", label: "G606 广州南 → 武汉" },
+  { from: "WHN", to: "CDD", label: "D2201 武汉 → 成都东" },
+  { from: "HFG", to: "SHH", label: "D931 合肥南 → 上海虹桥" },
+];
+
 const elements = {
   apiStatus: document.querySelector("#api-status"),
   apiStatusText: document.querySelector("#api-status-text"),
@@ -69,6 +77,9 @@ const elements = {
   fromStation: document.querySelector("#from-station"),
   toStation: document.querySelector("#to-station"),
   travelDate: document.querySelector("#travel-date"),
+  showAvailableTrains: document.querySelector("#show-available-trains"),
+  showHotRoutes: document.querySelector("#show-hot-routes"),
+  hotRouteShortcuts: document.querySelector("#hot-route-shortcuts"),
   trainResults: document.querySelector("#train-results"),
   orderResults: document.querySelector("#order-results"),
   orderUserId: document.querySelector("#order-user-id"),
@@ -143,6 +154,11 @@ document.querySelector("#search-form").addEventListener("submit", event => {
   event.preventDefault();
   searchTrains();
 });
+elements.showAvailableTrains.addEventListener("click", loadAvailableTrains);
+elements.showHotRoutes.addEventListener("click", () => {
+  revealHotRoutes();
+  showToast("已显示热门线路快捷入口");
+});
 document.querySelector("#load-orders").addEventListener("click", loadOrders);
 document.querySelector("#reset-orders").addEventListener("click", resetOrderFilters);
 elements.prevOrders.addEventListener("click", () => changeOrderPage(-1));
@@ -176,10 +192,12 @@ init();
 async function init() {
   applyCaptureMode();
   setupNavigation();
+  setupDashboardDrilldowns();
   renderAuthState();
   elements.travelDate.value = new Date().toISOString().slice(0, 10);
   await checkHealth();
   await loadStations();
+  renderHotRoutes(false);
   await refreshAll();
   scrollToInitialHash();
 }
@@ -259,6 +277,38 @@ function renderStationOptions() {
   elements.toStation.innerHTML = options;
   elements.fromStation.value = "BJP";
   elements.toStation.value = "SHH";
+}
+
+function renderHotRoutes(expanded) {
+  if (!elements.hotRouteShortcuts) {
+    return;
+  }
+  elements.hotRouteShortcuts.classList.toggle("expanded", Boolean(expanded));
+  elements.hotRouteShortcuts.innerHTML = HOT_ROUTES
+    .map(route => `
+      <button class="route-chip" type="button" data-hot-from="${route.from}" data-hot-to="${route.to}">
+        ${escapeHtml(route.label)}
+      </button>
+    `)
+    .join("");
+  elements.hotRouteShortcuts.querySelectorAll("[data-hot-from]").forEach(button => {
+    button.addEventListener("click", () => applyHotRoute(button.dataset.hotFrom, button.dataset.hotTo));
+  });
+}
+
+function revealHotRoutes() {
+  renderHotRoutes(true);
+  elements.hotRouteShortcuts.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+async function applyHotRoute(from, to) {
+  elements.fromStation.value = from;
+  elements.toStation.value = to;
+  if (!elements.travelDate.value) {
+    elements.travelDate.value = new Date().toISOString().slice(0, 10);
+  }
+  await searchTrains();
+  showToast("已切换到热门线路并完成查询");
 }
 
 async function refreshAll() {
@@ -375,20 +425,37 @@ async function searchTrains() {
   const to = elements.toStation.value;
   const date = elements.travelDate.value;
   if (!from || !to || !date) {
+    renderTrainEmpty("请选择出发站、到达站和乘车日期后查询，也可以直接查看全部可购车次。");
     return;
   }
 
   try {
-    const trains = await request(`/trains/search?from=${from}&to=${to}&date=${date}`);
+    const trains = await request(`/trains/search?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${encodeURIComponent(date)}`);
     renderTrains(trains);
   } catch (error) {
-    elements.trainResults.innerHTML = tableEmpty(7, "无法获取车次数据");
+    renderTrainEmpty(error.message || "无法获取车次数据");
+  }
+}
+
+async function loadAvailableTrains() {
+  try {
+    const params = new URLSearchParams();
+    if (elements.travelDate.value) {
+      params.set("travelDate", elements.travelDate.value);
+    }
+    params.set("page", "0");
+    params.set("size", "80");
+    const trains = await request(`/trains/available?${params.toString()}`);
+    renderTrains(trains, "全部可购车次");
+    showToast("已加载全部可购车次");
+  } catch (error) {
+    renderTrainEmpty(error.message || "无法获取可购车次");
   }
 }
 
 function renderTrains(trains) {
   if (trains.length === 0) {
-    elements.trainResults.innerHTML = tableEmpty(7, "当前条件没有可售车次");
+    renderTrainEmpty("当前线路暂无可售车次，可查看全部可购车次或选择热门线路。");
     return;
   }
   elements.trainResults.innerHTML = trains
@@ -408,6 +475,27 @@ function renderTrains(trains) {
   document.querySelectorAll("[data-buy]").forEach(button => {
     button.addEventListener("click", () => createOrder(button.dataset.buy, button.dataset.inventory));
   });
+}
+
+function renderTrainEmpty(message) {
+  elements.trainResults.innerHTML = `
+    <tr>
+      <td colspan="7">
+        <div class="empty-action">
+          <strong>${escapeHtml(message)}</strong>
+          <span>建议查看全部可购车次，或使用热门线路快捷入口快速定位有库存的车次。</span>
+          <div class="inline-actions">
+            <button class="secondary-button compact-button" type="button" data-empty-action="available">查看全部可购车次</button>
+            <button class="ghost-button compact-button" type="button" data-empty-action="hot-routes">查看热门线路</button>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `;
+  const availableButton = elements.trainResults.querySelector('[data-empty-action="available"]');
+  const hotRoutesButton = elements.trainResults.querySelector('[data-empty-action="hot-routes"]');
+  availableButton.addEventListener("click", loadAvailableTrains);
+  hotRoutesButton.addEventListener("click", revealHotRoutes);
 }
 
 async function createOrder(trainId, inventoryId) {
@@ -1468,6 +1556,100 @@ function generateChannelPaymentNo(paymentNo) {
 
 function generateChannelRefundNo(refundNo) {
   return `CH-${refundNo}-${Date.now()}`;
+}
+
+function setupDashboardDrilldowns() {
+  bindMetricCard(elements.totalOrders, () => openOrdersByStatus("", "全部订单"));
+  bindMetricCard(elements.pendingOrders, () => openOrdersByStatus("PENDING_PAYMENT", "待支付订单"));
+  bindMetricCard(elements.paidOrders, () => openOrdersByStatus("PAID", "已支付订单"));
+  bindMetricCard(elements.closedOrders, () => openOrdersByStatus("CLOSED", "已关闭订单"));
+  bindMetricCard(elements.refundedOrders, () => openOrdersByStatus("REFUNDED", "退票订单"));
+  bindMetricCard(elements.refundRate, () => openRefunds("", "退款流水"));
+  bindMetricCard(elements.riskRate, () => openRisksByStatus("", "风险运营报表"));
+  bindMetricCard(elements.openRisks, () => openRisksByStatus("PENDING", "未处理风险"));
+  bindMetricCard(elements.outboxSummaryPending, () => openOutboxByStatus("PENDING", "待处理事件"));
+  bindMetricCard(elements.outboxSummaryProcessing, () => openOutboxByStatus("PROCESSING", "处理中事件"));
+  bindMetricCard(elements.outboxSummaryFailed, () => openOutboxByStatus("FAILED", "失败事件"));
+  bindMetricCard(elements.outboxSummaryBacklog, () => openOutboxByStatus("", "Outbox 积压概览"));
+}
+
+function bindMetricCard(valueElement, handler) {
+  if (!valueElement) {
+    return;
+  }
+  const card = valueElement.closest(".metric");
+  if (!card) {
+    return;
+  }
+  card.classList.add("clickable-card");
+  card.setAttribute("role", "button");
+  card.setAttribute("tabindex", "0");
+  card.addEventListener("click", handler);
+  card.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handler();
+    }
+  });
+}
+
+async function openOrdersByStatus(status, label) {
+  elements.orderUserId.value = "";
+  elements.orderStatus.value = status;
+  elements.orderNo.value = "";
+  elements.orderFromDate.value = "";
+  elements.orderToDate.value = "";
+  state.orderPage.page = 0;
+  navigateToSection("orders");
+  await loadOrdersPage();
+  showToast(`已切换到${label}`);
+}
+
+async function openRisksByStatus(status, label) {
+  elements.riskStatus.value = status;
+  elements.riskScene.value = "";
+  elements.riskUserId.value = "";
+  elements.riskOrderNo.value = "";
+  elements.riskFromDate.value = "";
+  elements.riskToDate.value = "";
+  state.riskPage.page = 0;
+  navigateToSection("risks");
+  await Promise.all([loadRisksPage(), loadRiskSummary()]);
+  showToast(`已切换到${label}`);
+}
+
+async function openRefunds(status, label) {
+  elements.refundStatus.value = status;
+  elements.refundNoFilter.value = "";
+  elements.refundOrderId.value = "";
+  state.refundPage.page = 0;
+  navigateToSection("refunds");
+  await loadRefundsPage();
+  showToast(`已切换到${label}`);
+}
+
+async function openOutboxByStatus(status, label) {
+  elements.outboxStatus.value = status;
+  elements.outboxEventType.value = "";
+  state.outboxPage.page = 0;
+  navigateToSection("outbox");
+  await Promise.all([loadOutboxSummary(), loadOutboxEventsPage()]);
+  showToast(`已切换到${label}`);
+}
+
+function navigateToSection(sectionId) {
+  const section = document.querySelector(`#${sectionId}`);
+  if (!section) {
+    return;
+  }
+  if (window.location.hash !== `#${sectionId}`) {
+    window.location.hash = sectionId;
+  }
+  section.scrollIntoView({ behavior: "smooth", block: "start" });
+  section.classList.remove("section-highlight");
+  window.setTimeout(() => section.classList.add("section-highlight"), 20);
+  window.setTimeout(() => section.classList.remove("section-highlight"), 1400);
+  updateActiveNav();
 }
 
 function showToast(message) {

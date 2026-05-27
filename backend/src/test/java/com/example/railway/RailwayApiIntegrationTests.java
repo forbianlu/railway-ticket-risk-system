@@ -1261,6 +1261,44 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldListAvailableTrainsWithoutBreakingRouteSearch() {
+        String date = LocalDate.now().toString();
+
+        ResponseEntity<TrainSearchResponse[]> availableResponse = restTemplate.getForEntity(
+                "/api/trains/available?travelDate={date}&page=0&size=8",
+                TrainSearchResponse[].class,
+                date
+        );
+        ResponseEntity<TrainSearchResponse[]> filteredResponse = restTemplate.getForEntity(
+                "/api/trains/available?fromStation=BJP&toStation=SHH&travelDate={date}",
+                TrainSearchResponse[].class,
+                date
+        );
+        ResponseEntity<TrainSearchResponse[]> originalSearchResponse = restTemplate.getForEntity(
+                "/api/trains/search?from=BJP&to=SHH&date={date}",
+                TrainSearchResponse[].class,
+                date
+        );
+
+        assertThat(availableResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(availableResponse.getBody()).isNotNull();
+        assertThat(Arrays.asList(availableResponse.getBody()))
+                .isNotEmpty()
+                .allSatisfy(train -> assertThat(train.getRemainingSeats()).isGreaterThan(0));
+        assertThat(filteredResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(filteredResponse.getBody()).isNotNull();
+        assertThat(Arrays.asList(filteredResponse.getBody()))
+                .isNotEmpty()
+                .allSatisfy(train -> assertThat(train.getTrainNo()).isEqualTo("G101"));
+        assertThat(originalSearchResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(originalSearchResponse.getBody()).isNotNull();
+        assertThat(Arrays.asList(originalSearchResponse.getBody()))
+                .isNotEmpty()
+                .extracting(TrainSearchResponse::getTrainNo)
+                .contains("G101");
+    }
+
+    @Test
     void shouldPreventOversellUnderConcurrentPurchase() throws Exception {
         SeatInventory inventory = createSingleSeatInventory();
         int requestCount = 16;
