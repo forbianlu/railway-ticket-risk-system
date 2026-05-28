@@ -50,6 +50,7 @@ const state = {
   openRiskHistoryId: null,
   navObserver: null,
   activeSectionId: "",
+  authExpiredNotified: false,
 };
 
 const HOT_ROUTES = [
@@ -251,6 +252,7 @@ async function login() {
       }),
     }, false);
     state.auth = auth;
+    state.authExpiredNotified = false;
     localStorage.setItem("railway-auth", JSON.stringify(auth));
     renderAuthState();
     showToast("登录成功，当前角色：" + roleText(auth.role));
@@ -262,7 +264,8 @@ async function login() {
 
 function logout() {
   state.auth = null;
-  localStorage.removeItem("railway-auth");
+  state.authExpiredNotified = false;
+  clearStoredAuth();
   renderAuthState();
   showToast("已退出登录");
   refreshAll();
@@ -282,13 +285,13 @@ function renderAuthState() {
 
 async function checkHealth() {
   try {
-    const health = await request("/health");
+    const health = await request("/health", {}, false);
     elements.apiStatus.className = "status-dot ok";
     elements.apiStatusText.textContent = `${health.service} 已连接`;
   } catch (error) {
     elements.apiStatus.className = "status-dot fail";
     elements.apiStatusText.textContent = "后端未连接";
-    showToast("请先启动 Spring Boot 后端，再刷新页面");
+    showToast(error.message || "无法连接后端服务，请确认 Spring Boot 后端已启动");
   }
 }
 
@@ -1508,22 +1511,92 @@ function collapseLogs() {
 async function request(path, options = {}, withAuth = true) {
   const requestOptions = { ...options };
   requestOptions.headers = { ...(options.headers || {}) };
+  const hasAuthHeader = Boolean(withAuth && state.auth && state.auth.token);
   if (withAuth && state.auth && state.auth.token) {
     requestOptions.headers.Authorization = `Bearer ${state.auth.token}`;
   }
-  const response = await fetch(`${API_BASE}${path}`, requestOptions);
-  const data = await response.json();
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, requestOptions);
+  } catch (error) {
+    const networkError = new Error("无法连接后端服务，请确认 Spring Boot 后端已启动");
+    networkError.status = 0;
+    networkError.code = "NETWORK_ERROR";
+    throw networkError;
+  }
+  const data = await readResponseBody(response);
   if (!response.ok) {
-    throw new Error(data.message || "请求失败");
+    if (response.status === 401) {
+      if (hasAuthHeader) {
+        handleAuthExpired();
+        const authError = new Error("登录已过期，请重新登录");
+        authError.status = 401;
+        throw authError;
+      }
+      const unauthorizedError = new Error(data.message || "请先登录后再访问该功能");
+      unauthorizedError.status = 401;
+      throw unauthorizedError;
+    }
+    if (response.status === 403) {
+      const forbiddenError = new Error("当前账号权限不足");
+      forbiddenError.status = 403;
+      throw forbiddenError;
+    }
+    if (response.status === 429) {
+      const rateLimitError = new Error("请求过于频繁，请稍后再试");
+      rateLimitError.status = 429;
+      throw rateLimitError;
+    }
+    const requestError = new Error(data.message || `请求失败（${response.status}）`);
+    requestError.status = response.status;
+    throw requestError;
   }
   return data;
 }
 
+async function readResponseBody(response) {
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    return { message: text };
+  }
+}
+
 function loadStoredAuth() {
   try {
-    return JSON.parse(localStorage.getItem("railway-auth"));
+    const stored = localStorage.getItem("railway-auth") || sessionStorage.getItem("railway-auth");
+    return stored ? JSON.parse(stored) : null;
   } catch (error) {
     return null;
+  }
+}
+
+function clearStoredAuth() {
+  localStorage.removeItem("railway-auth");
+  localStorage.removeItem("railway-token");
+  localStorage.removeItem("token");
+  localStorage.removeItem("auth");
+  sessionStorage.removeItem("railway-auth");
+  sessionStorage.removeItem("railway-token");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("auth");
+}
+
+function handleAuthExpired() {
+  clearStoredAuth();
+  state.auth = null;
+  renderAuthState();
+  if (!state.authExpiredNotified) {
+    state.authExpiredNotified = true;
+    showToast("登录已过期，请重新登录");
+  }
+  const loginScreen = document.querySelector(".login-screen");
+  if (loginScreen) {
+    loginScreen.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 }
 
