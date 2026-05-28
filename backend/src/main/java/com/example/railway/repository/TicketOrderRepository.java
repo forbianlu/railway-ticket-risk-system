@@ -20,9 +20,17 @@ public interface TicketOrderRepository extends JpaRepository<TicketOrder, Long>,
 
     List<TicketOrder> findByUserIdOrderByCreatedAtDesc(Long userId);
 
+    List<TicketOrder> findTop5ByUserIdOrderByCreatedAtDesc(Long userId);
+
+    List<TicketOrder> findTop5ByUserIdAndStatusAndTravelDateGreaterThanEqualOrderByTravelDateAscCreatedAtDesc(Long userId, OrderStatus status, java.time.LocalDate travelDate);
+
+    Optional<TicketOrder> findByIdAndUserId(Long id, Long userId);
+
     Optional<TicketOrder> findByUserIdAndRequestId(Long userId, String requestId);
 
     long countByStatus(OrderStatus status);
+
+    long countByUserIdAndStatus(Long userId, OrderStatus status);
 
     long countByUserIdAndCreatedAtAfter(Long userId, LocalDateTime createdAt);
 

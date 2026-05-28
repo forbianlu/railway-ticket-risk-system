@@ -20,5 +20,7 @@ public interface PaymentRecordRepository extends JpaRepository<PaymentRecord, Lo
 
     Optional<PaymentRecord> findByCallbackRequestId(String callbackRequestId);
 
+    long countByUserId(Long userId);
+
     boolean existsByPaymentNo(String paymentNo);
 }

@@ -142,6 +142,23 @@ public class PaymentService {
                                             String paymentNo,
                                             Integer page,
                                             Integer size) {
+        return listPaymentsInternal(null, orderId, status, paymentNo, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentPageResponse listPaymentsForUser(Long userId,
+                                                   String status,
+                                                   Integer page,
+                                                   Integer size) {
+        return listPaymentsInternal(userId, null, status, null, page, size);
+    }
+
+    private PaymentPageResponse listPaymentsInternal(Long userId,
+                                                     Long orderId,
+                                                     String status,
+                                                     String paymentNo,
+                                                     Integer page,
+                                                     Integer size) {
         final PaymentStatus paymentStatus = parsePaymentStatus(status);
         final String normalizedPaymentNo = normalizeText(paymentNo);
         int pageNumber = normalizePage(page);
@@ -152,7 +169,7 @@ public class PaymentService {
                 Sort.by(Sort.Direction.DESC, "createdAt", "id")
         );
         Page<PaymentRecord> paymentPage = paymentRecordRepository.findAll(
-                buildPaymentSpecification(orderId, paymentStatus, normalizedPaymentNo),
+                buildPaymentSpecification(userId, orderId, paymentStatus, normalizedPaymentNo),
                 pageRequest
         );
         return PaymentPageResponse.from(paymentPage);
@@ -329,11 +346,15 @@ public class PaymentService {
         return Math.min(size, MAX_PAGE_SIZE);
     }
 
-    private Specification<PaymentRecord> buildPaymentSpecification(final Long orderId,
+    private Specification<PaymentRecord> buildPaymentSpecification(final Long userId,
+                                                                   final Long orderId,
                                                                    final PaymentStatus status,
                                                                    final String paymentNo) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<Predicate>();
+            if (userId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("userId"), userId));
+            }
             if (orderId != null) {
                 predicates.add(criteriaBuilder.equal(root.get("orderId"), orderId));
             }

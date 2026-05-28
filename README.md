@@ -2,9 +2,9 @@
 
 ## 项目简介
 
-铁路客运票务与风控运营管理系统是一个围绕铁路客运售票、订单支付、库存一致性、风险识别、风险处置和运营统计构建的后台管理系统。系统模拟铁路客运业务中的车次查询、余票锁定、订单支付、超时关闭、退票、风控事件生成、人工处置、权限控制和日志审计等核心流程。
+铁路客运票务与风控运营管理系统是一个围绕铁路客运售票、订单支付、库存一致性、风险识别、风险处置和运营统计构建的业务系统。系统模拟铁路客运业务中的车次查询、余票锁定、订单支付、超时关闭、退票、风控事件生成、人工处置、权限控制和日志审计等核心流程。
 
-当前版本采用 Spring Boot + Spring Data JPA 实现后端业务链路，使用 H2 作为本地演示数据库，并提供 MySQL profile。前端为原生 HTML/CSS/JavaScript 管理台，用于展示运营看板、订单管理、支付退款流水、风险运营、Outbox 事件中心、缓存限流和审计日志。
+当前版本采用 Spring Boot + Spring Data JPA 实现后端业务链路，使用 H2 作为本地演示数据库，并提供 MySQL profile。系统正在扩展为乘客购票端和运营管理端双端结构：后端已提供普通乘客 `USER` 角色与 `/api/passenger/**` 接口，前端当前仍以原生 HTML/CSS/JavaScript 管理台为主，用于展示运营看板、订单管理、支付退款流水、风险运营、Outbox 事件中心、缓存限流和审计日志。
 
 ## 核心功能
 
@@ -26,6 +26,7 @@
 - 接口限流：车次查询、下单、支付回调、风险处置等高频接口支持本地 / Redis 限流，阈值通过配置文件维护。
 - Outbox 事件：核心交易事务内写入 Outbox 事件表，支持派发、失败重试、积压统计和失败率监控。
 - 权限和审计：使用 Spring Security、JWT、BCrypt、角色校验、操作日志和风险处置历史。
+- 乘客端 API：新增 `USER` 角色，支持当前乘客查询概览、我的订单、下单、支付、取消、退票、我的支付流水和我的退款流水。
 - 前端管理台：提供登录屏、侧边导航、运营看板、交易列表、风险报表、事件中心和系统治理视图。
 - 集成测试：覆盖交易状态、幂等、并发防超卖、支付回调、风险处置、缓存和权限链路。
 
@@ -112,6 +113,14 @@ POST /api/auth/login
 GET  /api/auth/me
 GET  /api/stations
 GET  /api/trains/search?from=BJP&to=SHH&date=2026-06-01
+GET  /api/passenger/summary
+GET  /api/passenger/orders?status=PAID&page=0&size=10
+POST /api/passenger/orders
+POST /api/passenger/orders/{id}/pay
+POST /api/passenger/orders/{id}/close
+POST /api/passenger/orders/{id}/refund
+GET  /api/passenger/payments?status=SUCCESS&page=0&size=10
+GET  /api/passenger/refunds?status=PENDING&page=0&size=10
 POST /api/orders
 POST /api/orders/{id}/pay
 POST /api/orders/{id}/close
@@ -158,6 +167,8 @@ GET  /api/logs
 | `risk_events` | 风险类型、等级、场景、状态和最新处置信息 |
 | `risk_event_handle_records` | 风险事件处置前后状态、备注、操作人和操作时间 |
 | `operation_logs` | 关键业务动作审计日志 |
+
+乘客端接口与管理端共用订单、支付流水、退款流水、风险事件、Outbox 事件和操作日志等核心表。乘客端产生的数据会进入运营管理端视图。
 
 数据库字段见 [数据库设计](docs/database-design.md)，实体关系见 [ER 图](docs/er-diagram.mmd)。
 
@@ -240,6 +251,9 @@ http://127.0.0.1:5173
 | `admin` | `admin123` | 系统管理员 | 查看日志、处理风险事件、管理缓存 |
 | `risk` | `risk123` | 风控专员 | 查看日志、处理风险事件 |
 | `ops` | `ops123` | 运营人员 | 查看运营数据，不能处理风险事件 |
+| `passenger1` | `123456` | 普通乘客 | 访问乘客端接口，只能查看和操作自己的订单 |
+| `passenger2` | `123456` | 普通乘客 | 访问乘客端接口，只能查看和操作自己的订单 |
+| `passenger3` | `123456` | 普通乘客 | 访问乘客端接口，只能查看和操作自己的订单 |
 
 ## 测试方式
 
@@ -331,7 +345,7 @@ PAID -> REFUNDED
 
 ### 认证授权
 
-系统使用 Spring Security 以无状态方式接入认证链路。登录接口校验 BCrypt 密码后签发 HMAC-SHA256 JWT，JWT 中包含用户 ID、用户名、角色、签发时间和过期时间。后端过滤器解析 Bearer Token 并写入 SecurityContext，敏感接口继续通过 `@RequiredRole` 校验 `ADMIN`、`RISK_OFFICER`、`OPERATOR` 的访问范围。
+系统使用 Spring Security 以无状态方式接入认证链路。登录接口校验 BCrypt 密码后签发 HMAC-SHA256 JWT，JWT 中包含用户 ID、用户名、角色、签发时间和过期时间。后端过滤器解析 Bearer Token 并写入 SecurityContext，敏感接口继续通过 `@RequiredRole` 校验 `ADMIN`、`RISK_OFFICER`、`OPERATOR`、`USER` 的访问范围。普通乘客只能访问 `/api/passenger/**` 和公开查询接口，不能进入管理端接口。
 
 ### Outbox 事件
 
@@ -354,6 +368,7 @@ PAID -> REFUNDED
 - [缓存设计](docs/cache-design.md)
 - [并发防超卖设计](docs/concurrency-design.md)
 - [技术设计笔记](docs/technical-design-notes.md)
+- [乘客端 API 设计](docs/passenger-api-design.md)
 - [演示数据设计](docs/demo-data-design.md)
 - [前端管理台设计](docs/frontend-design.md)
 - [部署指南](docs/deployment-guide.md)

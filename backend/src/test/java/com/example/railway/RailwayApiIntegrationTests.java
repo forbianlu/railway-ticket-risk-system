@@ -61,6 +61,8 @@ import com.example.railway.dto.OutboxEventPageResponse;
 import com.example.railway.dto.OutboxEventResponse;
 import com.example.railway.dto.OutboxEventSummaryResponse;
 import com.example.railway.dto.OutboxRetryResponse;
+import com.example.railway.dto.PassengerCreateOrderRequest;
+import com.example.railway.dto.PassengerSummaryResponse;
 import com.example.railway.dto.PaymentCallbackRequest;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
@@ -1134,6 +1136,115 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldExposePassengerApisWithOwnershipBoundaries() {
+        AuthResponse passenger1 = login("passenger1", "123456");
+        AuthResponse passenger2 = login("passenger2", "123456");
+        AuthResponse admin = login("admin", "admin123");
+        Long passenger1Id = appUserRepository.findByUsername("passenger1")
+                .orElseThrow(() -> new AssertionError("expected passenger1"))
+                .getId();
+        Long passenger2Id = appUserRepository.findByUsername("passenger2")
+                .orElseThrow(() -> new AssertionError("expected passenger2"))
+                .getId();
+
+        OrderResponse passenger1Pending = createPassengerOrder(passenger1, firstTrainInventory(), "Passenger One A");
+        OrderResponse passenger1CloseTarget = createPassengerOrder(passenger1, firstTrainInventory(), "Passenger One B");
+        OrderResponse passenger2Pending = createPassengerOrder(passenger2, firstTrainInventory(), "Passenger Two A");
+
+        PassengerSummaryResponse summary = restTemplate.exchange(
+                "/api/passenger/summary",
+                HttpMethod.GET,
+                authorizedEntity(passenger1),
+                PassengerSummaryResponse.class
+        ).getBody();
+        OrderPageResponse passenger1Orders = restTemplate.exchange(
+                "/api/passenger/orders?size=50",
+                HttpMethod.GET,
+                authorizedEntity(passenger1),
+                OrderPageResponse.class
+        ).getBody();
+        ResponseEntity<String> payOtherOrder = restTemplate.exchange(
+                "/api/passenger/orders/{id}/pay",
+                HttpMethod.POST,
+                authorizedEntity(passenger1),
+                String.class,
+                passenger2Pending.getId()
+        );
+        OrderResponse closed = restTemplate.exchange(
+                "/api/passenger/orders/{id}/close",
+                HttpMethod.POST,
+                authorizedEntity(passenger1),
+                OrderResponse.class,
+                passenger1CloseTarget.getId()
+        ).getBody();
+        OrderResponse paid = restTemplate.exchange(
+                "/api/passenger/orders/{id}/pay",
+                HttpMethod.POST,
+                authorizedEntity(passenger1),
+                OrderResponse.class,
+                passenger1Pending.getId()
+        ).getBody();
+        PaymentPageResponse payments = restTemplate.exchange(
+                "/api/passenger/payments?status=SUCCESS&size=50",
+                HttpMethod.GET,
+                authorizedEntity(passenger1),
+                PaymentPageResponse.class
+        ).getBody();
+        OrderResponse refunded = restTemplate.exchange(
+                "/api/passenger/orders/{id}/refund",
+                HttpMethod.POST,
+                authorizedEntity(passenger1),
+                OrderResponse.class,
+                paid.getId()
+        ).getBody();
+        RefundPageResponse refunds = restTemplate.exchange(
+                "/api/passenger/refunds?size=50",
+                HttpMethod.GET,
+                authorizedEntity(passenger1),
+                RefundPageResponse.class
+        ).getBody();
+        OrderPageResponse adminOrders = restTemplate.exchange(
+                "/api/orders?userId={userId}&size=50",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                OrderPageResponse.class,
+                passenger1Id
+        ).getBody();
+
+        assertThat(passenger1.getRole()).isEqualTo("USER");
+        assertThat(passenger1Pending.getUserId()).isEqualTo(passenger1Id);
+        assertThat(passenger2Pending.getUserId()).isEqualTo(passenger2Id);
+        assertThat(summary).isNotNull();
+        assertThat(summary.getPendingPaymentOrderCount()).isGreaterThanOrEqualTo(1);
+        assertThat(passenger1Orders).isNotNull();
+        assertThat(passenger1Orders.getContent()).isNotEmpty();
+        assertThat(passenger1Orders.getContent()).allSatisfy(order -> assertThat(order.getUserId()).isEqualTo(passenger1Id));
+        assertThat(passenger1Orders.getContent()).extracting(OrderResponse::getId).doesNotContain(passenger2Pending.getId());
+        assertThat(payOtherOrder.getStatusCodeValue()).isEqualTo(403);
+        assertThat(closed).isNotNull();
+        assertThat(closed.getStatus()).isEqualTo("CLOSED");
+        assertThat(paid).isNotNull();
+        assertThat(paid.getStatus()).isEqualTo("PAID");
+        assertThat(payments).isNotNull();
+        assertThat(payments.getContent()).isNotEmpty();
+        assertThat(payments.getContent()).allSatisfy(payment -> assertThat(payment.getUserId()).isEqualTo(passenger1Id));
+        assertThat(payments.getContent()).extracting(PaymentResponse::getOrderId).contains(paid.getId());
+        assertThat(refunded).isNotNull();
+        assertThat(refunded.getStatus()).isEqualTo("REFUNDED");
+        assertThat(refunds).isNotNull();
+        assertThat(refunds.getContent()).isNotEmpty();
+        assertThat(refunds.getContent()).allSatisfy(refund -> assertThat(refund.getUserId()).isEqualTo(passenger1Id));
+        assertThat(refunds.getContent()).extracting(RefundResponse::getOrderId).contains(refunded.getId());
+        assertThat(adminOrders).isNotNull();
+        assertThat(adminOrders.getContent()).extracting(OrderResponse::getId).contains(passenger1Pending.getId());
+
+        assertThat(userGetStatus(passenger1, "/api/orders")).isEqualTo(403);
+        assertThat(userGetStatus(passenger1, "/api/risks")).isEqualTo(403);
+        assertThat(userGetStatus(passenger1, "/api/outbox-events")).isEqualTo(403);
+        assertThat(userGetStatus(passenger1, "/api/logs")).isEqualTo(403);
+    }
+
+    @Test
     void shouldCacheTrainSearchAndEvictAfterInventoryChange() {
         AuthResponse admin = login("admin", "admin123");
         clearTrainSearchCache(admin);
@@ -1590,6 +1701,34 @@ class RailwayApiIntegrationTests {
         request.setPassengerName(passengerName);
         request.setPassengerIdCard("11010120000202" + userId);
         return restTemplate.postForEntity("/api/orders", request, String.class);
+    }
+
+    private OrderResponse createPassengerOrder(AuthResponse auth, TrainSearchResponse train, String passengerName) {
+        PassengerCreateOrderRequest request = new PassengerCreateOrderRequest();
+        request.setTrainId(train.getTrainId());
+        request.setInventoryId(train.getInventoryId());
+        request.setPassengerName(passengerName);
+        request.setPassengerIdCard("32010119900101" + String.format("%04d", Math.abs(passengerName.hashCode()) % 10000));
+        request.setRequestId("passenger-order-" + auth.getUsername() + "-" + System.nanoTime());
+        ResponseEntity<OrderResponse> response = restTemplate.exchange(
+                "/api/passenger/orders",
+                HttpMethod.POST,
+                authorizedEntity(auth, request),
+                OrderResponse.class
+        );
+        assertThat(response.getStatusCodeValue()).isEqualTo(200);
+        assertThat(response.getBody()).isNotNull();
+        return response.getBody();
+    }
+
+    private int userGetStatus(AuthResponse auth, String path) {
+        ResponseEntity<String> response = restTemplate.exchange(
+                path,
+                HttpMethod.GET,
+                authorizedEntity(auth),
+                String.class
+        );
+        return response.getStatusCodeValue();
     }
 
     private SeatInventory createSingleSeatInventory() {

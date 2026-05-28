@@ -132,6 +132,15 @@ public class RefundService {
 
     @Transactional(readOnly = true)
     public RefundPageResponse listRefunds(Long orderId, String refundNo, String status, Integer page, Integer size) {
+        return listRefundsInternal(null, orderId, refundNo, status, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public RefundPageResponse listRefundsForUser(Long userId, String status, Integer page, Integer size) {
+        return listRefundsInternal(userId, null, null, status, page, size);
+    }
+
+    private RefundPageResponse listRefundsInternal(Long userId, Long orderId, String refundNo, String status, Integer page, Integer size) {
         final String normalizedRefundNo = normalizeText(refundNo);
         final RefundStatus refundStatus = parseRefundStatus(status);
         PageRequest pageRequest = PageRequest.of(
@@ -140,7 +149,7 @@ public class RefundService {
                 Sort.by(Sort.Direction.DESC, "createdAt", "id")
         );
         Page<RefundRecord> refundPage = refundRecordRepository.findAll(
-                buildRefundSpecification(orderId, normalizedRefundNo, refundStatus),
+                buildRefundSpecification(userId, orderId, normalizedRefundNo, refundStatus),
                 pageRequest
         );
         return RefundPageResponse.from(refundPage);
@@ -256,11 +265,15 @@ public class RefundService {
         }
     }
 
-    private Specification<RefundRecord> buildRefundSpecification(final Long orderId,
-                                                                final String refundNo,
-                                                                final RefundStatus status) {
+    private Specification<RefundRecord> buildRefundSpecification(final Long userId,
+                                                                 final Long orderId,
+                                                                 final String refundNo,
+                                                                 final RefundStatus status) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<Predicate>();
+            if (userId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("userId"), userId));
+            }
             if (orderId != null) {
                 predicates.add(criteriaBuilder.equal(root.get("orderId"), orderId));
             }

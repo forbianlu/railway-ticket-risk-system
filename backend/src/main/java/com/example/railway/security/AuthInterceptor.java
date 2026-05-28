@@ -21,6 +21,11 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
+        AuthPrincipal principal = AuthContext.currentOrNull();
+        if (principal != null && UserRole.USER.equals(principal.getRole()) && isManagementPath(request.getRequestURI())) {
+            throw new AuthorizationException("Passenger users are not allowed to access management APIs");
+        }
+
         HandlerMethod handlerMethod = (HandlerMethod) handler;
         RequiredRole requiredRole = handlerMethod.getMethodAnnotation(RequiredRole.class);
         if (requiredRole == null) {
@@ -30,7 +35,7 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
-        AuthPrincipal principal = AuthContext.current();
+        principal = AuthContext.current();
         checkRole(requiredRole.value(), principal.getRole());
         return true;
     }
@@ -48,5 +53,17 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (!roles.contains(currentRole)) {
             throw new AuthorizationException("Current role is not allowed to access this API");
         }
+    }
+
+    private boolean isManagementPath(String uri) {
+        return uri.startsWith("/api/orders")
+                || uri.startsWith("/api/payments")
+                || uri.startsWith("/api/refunds")
+                || uri.startsWith("/api/risks")
+                || uri.startsWith("/api/logs")
+                || uri.startsWith("/api/outbox-events")
+                || uri.startsWith("/api/cache")
+                || uri.startsWith("/api/rate-limit")
+                || uri.startsWith("/api/dashboard");
     }
 }

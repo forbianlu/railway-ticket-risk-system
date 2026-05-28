@@ -20,5 +20,7 @@ public interface RefundRecordRepository extends JpaRepository<RefundRecord, Long
 
     Optional<RefundRecord> findByCallbackRequestId(String callbackRequestId);
 
+    long countByUserId(Long userId);
+
     boolean existsByRefundNo(String refundNo);
 }

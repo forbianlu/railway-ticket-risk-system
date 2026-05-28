@@ -6,9 +6,10 @@
 
 ## 2. 项目目标
 
-系统目标是提供一个可运行的铁路客运票务与风控运营管理后台：
+系统目标是提供一个可运行的铁路客运票务与风控运营系统，并逐步形成乘客购票端与运营管理端双端结构：
 
 - 乘客可以查询车次和余票。
+- 乘客通过 `USER` 角色访问 `/api/passenger/**`，查看和操作自己的订单、支付流水和退款流水。
 - 乘客可以创建待支付订单并锁定余票。
 - 乘客可以模拟支付，支付成功后订单生效。
 - 待支付订单可以手动关闭或超时自动关闭并释放库存。
@@ -29,7 +30,7 @@
 
 ## 3. 用户角色
 
-- 乘客：查询车次、购票、退票、查看自己的订单。
+- 乘客：查询车次、购票、支付、取消待支付订单、退票、查看自己的订单和资金流水。
 - 运营人员：查看订单、支付流水、缓存和运营统计。
 - 风控人员：查看风险事件、处置风险事件、查看审计日志。
 - 管理员：查看日志、处理风险事件、管理缓存。
@@ -46,6 +47,7 @@
 ### 4.2 票务交易
 
 - 车次查询：按出发站、到达站、乘车日期查询。
+- 乘客端 API：`/api/passenger/**` 提供我的订单、下单、支付、取消、退票、我的支付流水和我的退款流水。
 - 查询缓存：按出发站、到达站、乘车日期缓存余票结果，支持 local / Redis 模式。
 - 接口限流：对车次查询、下单、支付回调和风险处置进行固定窗口限流，阈值由配置文件维护。
 - 创建订单：校验余票、校验幂等号、扣减库存、生成待支付订单。
@@ -135,10 +137,11 @@
 
 ### 4.7 登录与角色权限
 
-- 演示账号：管理员、风控专员、运营人员。
+- 演示账号：管理员、风控专员、运营人员、普通乘客。
 - 登录接口：使用 BCrypt 校验账号密码后签发带过期时间的 JWT。
 - 鉴权过滤：前端携带 `Authorization: Bearer {token}`，后端 Spring Security 过滤器解析用户身份并写入 SecurityContext。
 - 角色控制：使用 `@RequiredRole` 标注敏感接口，风控处置和审计日志只允许管理员或风控专员访问。
+- 乘客边界：`USER` 只能访问乘客端接口和公开查询接口，不能访问管理端订单、风险、日志、Outbox、缓存限流和运营看板接口。
 - 前端联动：登录后通过 Bearer Token 调用受保护接口，并根据当前角色展示风险处理、事件中心和审计日志等操作结果。
 
 ### 4.8 前端管理台
@@ -182,6 +185,14 @@
 - `POST /api/auth/login`
 - `GET /api/auth/me`
 - `GET /api/trains/search`
+- `GET /api/passenger/summary`
+- `GET /api/passenger/orders`
+- `POST /api/passenger/orders`
+- `POST /api/passenger/orders/{id}/pay`
+- `POST /api/passenger/orders/{id}/close`
+- `POST /api/passenger/orders/{id}/refund`
+- `GET /api/passenger/payments`
+- `GET /api/passenger/refunds`
 - `POST /api/orders`
 - `POST /api/orders/{id}/pay`
 - `POST /api/orders/{id}/close`

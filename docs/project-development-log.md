@@ -485,3 +485,50 @@
 
 - 后续可增加只读演示模式提示、局部加载状态和更细粒度的数据图表。
 - 如需进一步增强，可补充管理台截图和更多窄屏交互验证。
+
+## 乘客角色和用户端接口
+
+### 目标
+
+在既有运营管理后台基础上增加普通乘客后端边界，为后续乘客购票前端提供接口基础。乘客端与管理端共用订单、支付、退款、风险、Outbox 和操作日志数据，保证双端数据互通。
+
+### 开发前状态
+
+- 系统已有 Spring Security + JWT + BCrypt、订单状态机、支付退款流水、风险处置、Outbox、缓存限流和管理端前端。
+- 角色模型包含 `ADMIN`、`RISK_OFFICER`、`OPERATOR`，缺少普通乘客角色。
+- 当前管理台前端相关提交已完成并与远端同步，工作区干净。
+
+### 主要内容
+
+- 新增 `USER` 角色，表示普通乘客。
+- 演示账号初始化增加 `passenger1`、`passenger2`、`passenger3`，密码均为 `123456`，并继续使用 BCrypt 存储。
+- 新增 `/api/passenger/**` 接口：
+  - `GET /api/passenger/summary`
+  - `GET /api/passenger/orders`
+  - `POST /api/passenger/orders`
+  - `POST /api/passenger/orders/{id}/pay`
+  - `POST /api/passenger/orders/{id}/close`
+  - `POST /api/passenger/orders/{id}/refund`
+  - `GET /api/passenger/payments`
+  - `GET /api/passenger/refunds`
+- 新增 `PassengerService`，复用 `OrderService`、`PaymentService`、`RefundService` 完成下单、模拟支付、取消和退票。
+- 乘客下单时从 JWT 读取当前 `userId`，不信任前端传入用户 ID。
+- 乘客查询和操作订单前校验订单归属，不能支付、关闭或退票其他乘客订单。
+- 拦截器增加 `USER` 管理端访问边界，已登录乘客访问订单管理、风险管理、审计日志、Outbox、缓存限流和看板接口时返回 403。
+- 演示数据订单用户 ID 改为关联 passenger 演示账号，便于后续用户端页面展示“我的订单”。
+- 新增 `docs/passenger-api-design.md`，并同步更新 API、安全、项目大纲、技术笔记、总结和路线文档。
+
+### 测试结果
+
+- 新增 passenger 集成测试，覆盖 USER 登录、乘客概览、我的订单、下单、管理端可见、跨用户操作拒绝、乘客支付、取消、退票、支付流水和退款流水隔离，以及 USER 访问管理端接口返回 403。
+- Maven 测试通过：`Tests run: 37, Failures: 0, Errors: 0, Skipped: 0`。
+
+### 当前提交状态
+
+- 本轮改动计划提交为 `add passenger role and APIs`。
+- 本轮提交仅保留在本地，不自动推送远端。
+
+### 后续建议
+
+- 下一轮可以开发入口选择页和乘客购票前端。
+- 乘客端前端完成后再统一整理 README 的双端平台说明和截图。

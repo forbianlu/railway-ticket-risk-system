@@ -67,6 +67,67 @@ Authorization: Bearer {token}
 
 系统使用 Spring Security + JWT + BCrypt 实现认证授权。受保护接口统一使用 `Authorization: Bearer {token}` 传递登录令牌。缺少令牌或令牌无效返回 401，角色不足返回 403。
 
+## 乘客端接口
+
+乘客端接口统一使用 `USER` 角色访问，路径前缀为 `/api/passenger`。乘客只能查询和操作当前登录用户自己的订单、支付流水和退款流水。
+
+### 当前乘客概览
+
+```http
+GET /api/passenger/summary
+Authorization: Bearer {USER token}
+```
+
+响应包含待支付、已支付、已关闭、已退票订单数量，支付流水数量、退款流水数量、最近订单和即将出行订单。
+
+### 我的订单
+
+```http
+GET /api/passenger/orders?status=PAID&page=0&size=10
+Authorization: Bearer {USER token}
+```
+
+`status` 可选，取值同订单状态。服务端固定使用 JWT 中的 `userId` 查询，不接受前端覆盖用户 ID。
+
+### 乘客下单
+
+```http
+POST /api/passenger/orders
+Authorization: Bearer {USER token}
+Content-Type: application/json
+
+{
+  "requestId": "passenger-order-001",
+  "trainId": 1,
+  "inventoryId": 1,
+  "passengerName": "张三",
+  "passengerIdCard": "110101200001010011"
+}
+```
+
+下单会复用管理端订单创建逻辑，订单进入 `PENDING_PAYMENT`，库存被锁定，并保持 `requestId` 幂等。
+
+### 支付、取消和退票
+
+```http
+POST /api/passenger/orders/{id}/pay
+POST /api/passenger/orders/{id}/close
+POST /api/passenger/orders/{id}/refund
+Authorization: Bearer {USER token}
+```
+
+这些接口都会先校验订单归属。支付复用支付流水和模拟成功回调链路；退票复用订单退票、库存释放、风险触发和退款流水创建链路。
+
+### 我的支付和退款流水
+
+```http
+GET /api/passenger/payments?status=SUCCESS&page=0&size=10
+GET /api/passenger/refunds?status=PENDING&page=0&size=10
+Authorization: Bearer {USER token}
+```
+
+查询结果只包含当前乘客自己的资金流水。
+
 ## 查询车次
 
 ```http

@@ -110,12 +110,19 @@ public class DemoDataInitializer implements CommandLineRunner {
     }
 
     private void seedUsers() {
-        if (appUserRepository.count() > 0) {
+        saveUserIfMissing("admin", "admin123", "系统管理员", UserRole.ADMIN);
+        saveUserIfMissing("risk", "risk123", "风控专员", UserRole.RISK_OFFICER);
+        saveUserIfMissing("ops", "ops123", "运营人员", UserRole.OPERATOR);
+        saveUserIfMissing("passenger1", "123456", "乘客一号", UserRole.USER);
+        saveUserIfMissing("passenger2", "123456", "乘客二号", UserRole.USER);
+        saveUserIfMissing("passenger3", "123456", "乘客三号", UserRole.USER);
+    }
+
+    private void saveUserIfMissing(String username, String password, String displayName, UserRole role) {
+        if (appUserRepository.findByUsername(username).isPresent()) {
             return;
         }
-        appUserRepository.save(new AppUser("admin", passwordService.hash("admin123"), "系统管理员", UserRole.ADMIN));
-        appUserRepository.save(new AppUser("risk", passwordService.hash("risk123"), "风控专员", UserRole.RISK_OFFICER));
-        appUserRepository.save(new AppUser("ops", passwordService.hash("ops123"), "运营人员", UserRole.OPERATOR));
+        appUserRepository.save(new AppUser(username, passwordService.hash(password), displayName, role));
     }
 
     private Map<String, Station> seedStations() {
@@ -244,7 +251,7 @@ public class DemoDataInitializer implements CommandLineRunner {
             OrderStatus status = statuses[i % statuses.length];
             TicketOrder order = new TicketOrder();
             order.setOrderNo(String.format("DEMO20260518%04d", i + 1));
-            order.setUserId(10001L + i % 8);
+            order.setUserId(demoPassengerUserId(i));
             order.setRequestId("demo-order-request-" + (i + 1));
             order.setPassengerName("演示乘客" + String.format("%02d", i + 1));
             order.setPassengerIdCard("1101011990" + String.format("%08d", i + 1));
@@ -275,6 +282,13 @@ public class DemoDataInitializer implements CommandLineRunner {
                 seedRefundRecord(savedOrder, i);
             }
         }
+    }
+
+    private Long demoPassengerUserId(int index) {
+        String username = "passenger" + ((index % 3) + 1);
+        return appUserRepository.findByUsername(username)
+                .map(AppUser::getId)
+                .orElse(10001L + index % 8);
     }
 
     private void seedPaymentRecord(TicketOrder order, int index) {
