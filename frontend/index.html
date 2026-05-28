@@ -563,8 +563,44 @@
           <p>记录登录、下单、支付回调、退票、风险处置、缓存清理和事件派发过程。</p>
         </div>
         <div id="log-list" class="event-list log-list"></div>
+        <div class="log-controls">
+          <span id="log-display-info">默认显示最近 10 条</span>
+          <div class="inline-actions">
+            <button id="show-more-logs" class="secondary-button compact-button" type="button">展开更多</button>
+            <button id="collapse-logs" class="ghost-button compact-button" type="button">收起日志</button>
+          </div>
+        </div>
       </section>
     </main>
+  </div>
+
+  <div id="buy-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="purchase-modal" role="dialog" aria-modal="true" aria-labelledby="buy-modal-title">
+      <button id="buy-modal-close" class="modal-close" type="button" aria-label="关闭购票弹窗"></button>
+      <div class="modal-head">
+        <p class="eyebrow">Ticket Checkout</p>
+        <h2 id="buy-modal-title">确认购票信息</h2>
+        <p>核对车次、席别和票价后填写乘客信息，确认后系统将创建待支付订单并锁定库存。</p>
+      </div>
+      <div id="buy-summary" class="buy-summary"></div>
+      <form id="buy-form" class="buy-form">
+        <div class="form-grid">
+          <label>
+            乘客姓名
+            <input id="buy-passenger-name" type="text" maxlength="64" placeholder="请输入乘客姓名" autocomplete="name" required>
+          </label>
+          <label>
+            证件号
+            <input id="buy-passenger-id-card" type="text" maxlength="32" placeholder="请输入证件号" autocomplete="off" required>
+          </label>
+        </div>
+        <div id="buy-error" class="form-error" aria-live="polite"></div>
+        <div class="modal-actions">
+          <button id="buy-modal-cancel" class="ghost-button" type="button">取消</button>
+          <button id="buy-confirm" class="primary-button" type="submit">确认下单</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

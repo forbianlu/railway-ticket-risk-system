@@ -43,6 +43,13 @@ const state = {
     first: true,
     last: true,
   },
+  trainByInventory: {},
+  selectedTrain: null,
+  logs: [],
+  visibleLogCount: 10,
+  openRiskHistoryId: null,
+  navObserver: null,
+  activeSectionId: "",
 };
 
 const HOT_ROUTES = [
@@ -140,12 +147,24 @@ const elements = {
   riskSceneSummary: document.querySelector("#risk-scene-summary"),
   riskList: document.querySelector("#risk-list"),
   logList: document.querySelector("#log-list"),
+  showMoreLogs: document.querySelector("#show-more-logs"),
+  collapseLogs: document.querySelector("#collapse-logs"),
+  logDisplayInfo: document.querySelector("#log-display-info"),
   authRole: document.querySelector("#auth-role"),
   authUser: document.querySelector("#auth-user"),
   loginForm: document.querySelector("#login-form"),
   loginUsername: document.querySelector("#login-username"),
   loginPassword: document.querySelector("#login-password"),
   logoutButton: document.querySelector("#logout-button"),
+  buyModal: document.querySelector("#buy-modal"),
+  buyModalClose: document.querySelector("#buy-modal-close"),
+  buyModalCancel: document.querySelector("#buy-modal-cancel"),
+  buyForm: document.querySelector("#buy-form"),
+  buySummary: document.querySelector("#buy-summary"),
+  buyPassengerName: document.querySelector("#buy-passenger-name"),
+  buyPassengerIdCard: document.querySelector("#buy-passenger-id-card"),
+  buyError: document.querySelector("#buy-error"),
+  buyConfirm: document.querySelector("#buy-confirm"),
   toast: document.querySelector("#toast"),
 };
 
@@ -180,11 +199,29 @@ document.querySelector("#load-risks").addEventListener("click", loadRisks);
 document.querySelector("#reset-risks").addEventListener("click", resetRiskFilters);
 elements.prevRisks.addEventListener("click", () => changeRiskPage(-1));
 elements.nextRisks.addEventListener("click", () => changeRiskPage(1));
+elements.showMoreLogs.addEventListener("click", showMoreLogs);
+elements.collapseLogs.addEventListener("click", collapseLogs);
 elements.loginForm.addEventListener("submit", event => {
   event.preventDefault();
   login();
 });
 elements.logoutButton.addEventListener("click", logout);
+elements.buyForm.addEventListener("submit", event => {
+  event.preventDefault();
+  submitPurchase();
+});
+elements.buyModalCancel.addEventListener("click", closePurchaseModal);
+elements.buyModalClose.addEventListener("click", closePurchaseModal);
+elements.buyModal.addEventListener("click", event => {
+  if (event.target === elements.buyModal) {
+    closePurchaseModal();
+  }
+});
+window.addEventListener("keydown", event => {
+  if (event.key === "Escape" && elements.buyModal.classList.contains("show")) {
+    closePurchaseModal();
+  }
+});
 window.addEventListener("hashchange", updateActiveNav);
 
 init();
@@ -192,6 +229,7 @@ init();
 async function init() {
   applyCaptureMode();
   setupNavigation();
+  setupScrollSpy();
   setupDashboardDrilldowns();
   renderAuthState();
   elements.travelDate.value = new Date().toISOString().slice(0, 10);
@@ -458,6 +496,10 @@ function renderTrains(trains) {
     renderTrainEmpty("当前线路暂无可售车次，可查看全部可购车次或选择热门线路。");
     return;
   }
+  state.trainByInventory = {};
+  trains.forEach(train => {
+    state.trainByInventory[String(train.inventoryId)] = train;
+  });
   elements.trainResults.innerHTML = trains
     .map(train => `
       <tr>
@@ -473,7 +515,7 @@ function renderTrains(trains) {
     .join("");
 
   document.querySelectorAll("[data-buy]").forEach(button => {
-    button.addEventListener("click", () => createOrder(button.dataset.buy, button.dataset.inventory));
+    button.addEventListener("click", () => openPurchaseModal(button.dataset.inventory));
   });
 }
 
@@ -498,34 +540,81 @@ function renderTrainEmpty(message) {
   hotRoutesButton.addEventListener("click", revealHotRoutes);
 }
 
-async function createOrder(trainId, inventoryId) {
-  const userId = Number(elements.orderUserId.value || 1001);
-  const passengerName = window.prompt("请输入乘客姓名", "张三");
-  if (!passengerName) {
+function openPurchaseModal(inventoryId) {
+  const train = state.trainByInventory[String(inventoryId)];
+  if (!train) {
+    showToast("未找到当前车次库存，请重新查询");
     return;
   }
-  const passengerIdCard = window.prompt("请输入证件号", "110101200001010011");
-  if (!passengerIdCard) {
+  state.selectedTrain = train;
+  elements.buySummary.innerHTML = `
+    <div class="buy-route">
+      <strong>${escapeHtml(train.trainNo)}</strong>
+      <span>${escapeHtml(train.departureStation)} → ${escapeHtml(train.arrivalStation)}</span>
+    </div>
+    <div class="buy-detail-grid">
+      <div><span>乘车日期</span><strong>${formatDate(train.travelDate)}</strong></div>
+      <div><span>发车时间</span><strong>${formatTime(train.departureTime)}</strong></div>
+      <div><span>到达时间</span><strong>${formatTime(train.arrivalTime)}</strong></div>
+      <div><span>席别</span><strong>${seatTypeText(train.seatType)}</strong></div>
+      <div><span>票价</span><strong class="money">¥${train.price}</strong></div>
+      <div><span>剩余票数</span><strong>${train.remainingSeats}</strong></div>
+    </div>
+  `;
+  elements.buyPassengerName.value = "";
+  elements.buyPassengerIdCard.value = "";
+  elements.buyError.textContent = "";
+  elements.buyConfirm.disabled = false;
+  elements.buyConfirm.textContent = "确认下单";
+  elements.buyModal.classList.add("show");
+  elements.buyModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+  window.setTimeout(() => elements.buyPassengerName.focus(), 80);
+}
+
+function closePurchaseModal() {
+  elements.buyModal.classList.remove("show");
+  elements.buyModal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+  state.selectedTrain = null;
+}
+
+async function submitPurchase() {
+  const train = state.selectedTrain;
+  if (!train) {
     return;
   }
+  const passengerName = elements.buyPassengerName.value.trim();
+  const passengerIdCard = elements.buyPassengerIdCard.value.trim();
+  if (!passengerName || !passengerIdCard) {
+    elements.buyError.textContent = "请完整填写乘客姓名和证件号";
+    return;
+  }
+
+  elements.buyConfirm.disabled = true;
+  elements.buyConfirm.textContent = "下单中...";
+  elements.buyError.textContent = "";
 
   try {
     await request("/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId,
+        userId: Number(elements.orderUserId.value || 1001),
         requestId: generateRequestId(),
-        trainId: Number(trainId),
-        inventoryId: Number(inventoryId),
+        trainId: Number(train.trainId),
+        inventoryId: Number(train.inventoryId),
         passengerName,
         passengerIdCard,
       }),
     });
+    closePurchaseModal();
     showToast("订单已创建，库存已锁定，请在 15 分钟内支付");
-    await refreshAll();
+    await Promise.all([loadDashboard(), searchTrains(), loadOrders(), loadPayments()]);
   } catch (error) {
-    showToast(error.message || "购票失败");
+    elements.buyError.textContent = error.message || "购票失败，请稍后重试";
+    elements.buyConfirm.disabled = false;
+    elements.buyConfirm.textContent = "确认下单";
   }
 }
 
@@ -1120,6 +1209,7 @@ async function loadRisksPage() {
       renderRiskPagination();
       return;
     }
+    state.openRiskHistoryId = null;
     elements.riskList.innerHTML = risks
       .map(risk => `
         <div class="event-item">
@@ -1144,7 +1234,7 @@ async function loadRisksPage() {
       button.addEventListener("click", () => handleRisk(button.dataset.handleRisk));
     });
     document.querySelectorAll("[data-risk-history]").forEach(button => {
-      button.addEventListener("click", () => loadRiskHistory(button.dataset.riskHistory));
+      button.addEventListener("click", () => toggleRiskHistory(button.dataset.riskHistory));
     });
     renderRiskPagination();
   } catch (error) {
@@ -1288,50 +1378,131 @@ async function handleRisk(riskId) {
   }
 }
 
+async function toggleRiskHistory(riskId) {
+  if (state.openRiskHistoryId === riskId) {
+    closeRiskHistory(riskId);
+    return;
+  }
+  if (state.openRiskHistoryId) {
+    closeRiskHistory(state.openRiskHistoryId);
+  }
+  await loadRiskHistory(riskId);
+}
+
+function closeRiskHistory(riskId) {
+  const container = document.querySelector(`#risk-history-${riskId}`);
+  const button = document.querySelector(`[data-risk-history="${riskId}"]`);
+  if (container) {
+    container.innerHTML = "";
+    container.classList.remove("open");
+  }
+  if (button) {
+    button.textContent = "处置历史";
+  }
+  if (state.openRiskHistoryId === riskId) {
+    state.openRiskHistoryId = null;
+  }
+}
+
 async function loadRiskHistory(riskId) {
   const container = document.querySelector(`#risk-history-${riskId}`);
+  const button = document.querySelector(`[data-risk-history="${riskId}"]`);
   if (!container) {
     return;
   }
+  container.classList.add("open");
+  container.innerHTML = `<span class="muted-text">历史加载中...</span>`;
+  if (button) {
+    button.textContent = "收起历史";
+  }
+  state.openRiskHistoryId = riskId;
   try {
     const records = await request(`/risks/${riskId}/handle-records`);
     if (records.length === 0) {
-      container.innerHTML = `<span class="muted-text">暂无处置历史</span>`;
+      container.innerHTML = `
+        <button class="history-close" type="button" data-risk-history-close="${riskId}" aria-label="关闭处置历史"></button>
+        <span class="muted-text">暂无处置历史</span>
+      `;
+      bindRiskHistoryClose(riskId);
       return;
     }
-    container.innerHTML = records
-      .map(record => `
-        <div class="history-row">
-          <strong>${riskStatusText(record.fromStatus)} → ${riskStatusText(record.toStatus)}</strong>
-          <span>${record.operatorName || "-"} / ${formatDateTime(record.operatedAt) || "-"}</span>
-          <span>${record.remark ? escapeHtml(record.remark) : "无备注"}</span>
-        </div>
-      `)
-      .join("");
+    container.innerHTML = `
+      <button class="history-close" type="button" data-risk-history-close="${riskId}" aria-label="关闭处置历史"></button>
+      ${records
+        .map(record => `
+          <div class="history-row">
+            <strong>${riskStatusText(record.fromStatus)} → ${riskStatusText(record.toStatus)}</strong>
+            <span>${record.operatorName || "-"} / ${formatDateTime(record.operatedAt) || "-"}</span>
+            <span>${record.remark ? escapeHtml(record.remark) : "无备注"}</span>
+          </div>
+        `)
+        .join("")}
+    `;
+    bindRiskHistoryClose(riskId);
   } catch (error) {
-    container.innerHTML = `<span class="muted-text">无法获取处置历史</span>`;
+    container.innerHTML = `
+      <button class="history-close" type="button" data-risk-history-close="${riskId}" aria-label="关闭处置历史"></button>
+      <span class="muted-text">无法获取处置历史</span>
+    `;
+    bindRiskHistoryClose(riskId);
+  }
+}
+
+function bindRiskHistoryClose(riskId) {
+  const closeButton = document.querySelector(`[data-risk-history-close="${riskId}"]`);
+  if (closeButton) {
+    closeButton.addEventListener("click", () => closeRiskHistory(riskId));
   }
 }
 
 async function loadLogs() {
   try {
-    const logs = await request("/logs");
-    if (logs.length === 0) {
-      elements.logList.innerHTML = emptyItem("暂无审计日志");
-      return;
-    }
-    elements.logList.innerHTML = logs
-      .map(log => `
-        <div class="event-item">
-          <strong>${log.action} / ${log.targetType}</strong>
-          <span>${log.operator} · ${log.createdAt}</span>
-          <span>${log.detail}</span>
-        </div>
-      `)
-      .join("");
+    state.logs = await request("/logs");
+    state.visibleLogCount = 10;
+    renderLogs();
   } catch (error) {
     elements.logList.innerHTML = emptyItem(error.message || "无法获取审计日志");
+    elements.logDisplayInfo.textContent = "日志加载失败";
+    elements.showMoreLogs.disabled = true;
+    elements.collapseLogs.disabled = true;
   }
+}
+
+function renderLogs() {
+  const logs = state.logs || [];
+  if (logs.length === 0) {
+    elements.logList.innerHTML = emptyItem("暂无审计日志");
+    elements.logDisplayInfo.textContent = "暂无审计日志";
+    elements.showMoreLogs.disabled = true;
+    elements.collapseLogs.disabled = true;
+    return;
+  }
+  const visibleLogs = logs.slice(0, state.visibleLogCount);
+  elements.logList.innerHTML = visibleLogs
+    .map(log => `
+      <div class="event-item">
+        <strong>${escapeHtml(log.action)} / ${escapeHtml(log.targetType)}</strong>
+        <span>${escapeHtml(log.operator)} · ${formatDateTime(log.createdAt) || "-"}</span>
+        <span>${escapeHtml(log.detail)}</span>
+      </div>
+    `)
+    .join("");
+  const visibleCount = Math.min(state.visibleLogCount, logs.length);
+  elements.logDisplayInfo.textContent = `已显示 ${visibleCount} / ${logs.length} 条`;
+  elements.showMoreLogs.disabled = visibleCount >= logs.length;
+  elements.showMoreLogs.textContent = visibleCount >= logs.length ? "已全部显示" : "展开更多";
+  elements.collapseLogs.disabled = visibleCount <= 10;
+}
+
+function showMoreLogs() {
+  state.visibleLogCount = Math.min((state.visibleLogCount || 10) + 20, state.logs.length);
+  renderLogs();
+}
+
+function collapseLogs() {
+  state.visibleLogCount = 10;
+  renderLogs();
+  document.querySelector("#logs").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function request(path, options = {}, withAuth = true) {
@@ -1370,6 +1541,10 @@ function emptyItem(message) {
 
 function formatTime(value) {
   return String(value || "").slice(0, 5);
+}
+
+function formatDate(value) {
+  return value ? String(value).slice(0, 10) : "-";
 }
 
 function formatDateTime(value) {
@@ -1649,7 +1824,7 @@ function navigateToSection(sectionId) {
   section.classList.remove("section-highlight");
   window.setTimeout(() => section.classList.add("section-highlight"), 20);
   window.setTimeout(() => section.classList.remove("section-highlight"), 1400);
-  updateActiveNav();
+  setActiveNav(sectionId);
 }
 
 function showToast(message) {
@@ -1680,15 +1855,55 @@ function applyCaptureMode() {
 function setupNavigation() {
   document.querySelectorAll(".nav a").forEach(link => {
     link.addEventListener("click", () => {
-      window.setTimeout(updateActiveNav, 0);
+      const sectionId = link.getAttribute("href").replace("#", "");
+      setActiveNav(sectionId);
     });
   });
   updateActiveNav();
 }
 
+function setupScrollSpy() {
+  const sections = Array.from(document.querySelectorAll(".main > .section"));
+  if (!("IntersectionObserver" in window)) {
+    window.addEventListener("scroll", () => {
+      const current = sections
+        .map(section => ({ id: section.id, top: Math.abs(section.getBoundingClientRect().top) }))
+        .sort((left, right) => left.top - right.top)[0];
+      if (current) {
+        setActiveNav(current.id);
+      }
+    }, { passive: true });
+    return;
+  }
+  if (state.navObserver) {
+    state.navObserver.disconnect();
+  }
+  state.navObserver = new IntersectionObserver(entries => {
+    const visible = entries
+      .filter(entry => entry.isIntersecting)
+      .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top);
+    if (visible.length > 0) {
+      setActiveNav(visible[0].target.id);
+    }
+  }, {
+    root: null,
+    rootMargin: "-18% 0px -58% 0px",
+    threshold: [0.08, 0.2, 0.45],
+  });
+  sections.forEach(section => state.navObserver.observe(section));
+}
+
 function updateActiveNav() {
-  const currentHash = window.location.hash || "#dashboard";
+  const sectionId = (window.location.hash || "#dashboard").replace("#", "");
+  setActiveNav(sectionId);
+}
+
+function setActiveNav(sectionId) {
+  if (!sectionId || state.activeSectionId === sectionId) {
+    return;
+  }
+  state.activeSectionId = sectionId;
   document.querySelectorAll(".nav a").forEach(link => {
-    link.classList.toggle("active", link.getAttribute("href") === currentHash);
+    link.classList.toggle("active", link.getAttribute("href") === `#${sectionId}`);
   });
 }
