@@ -6,22 +6,31 @@
   <title>乘客购票服务 - 铁路客运票务与风控运营平台</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="passenger-page">
-  <section class="passenger-login" aria-label="乘客登录">
+<body class="passenger-page passenger-consumer-page">
+  <section class="passenger-login passenger-gateway" aria-label="乘客登录">
     <a class="back-link login-back-link" href="./index.html">返回入口</a>
-    <div class="passenger-login-hero">
-      <div class="brand-card">
-        <div class="brand-mark large">RT</div>
-        <div>
-          <p class="eyebrow">Passenger Ticketing</p>
-          <h1>乘客购票服务</h1>
-          <p class="hero-copy">为普通乘客提供查票、下单、支付、退票和个人交易记录查询。登录后只展示当前乘客自己的订单和流水。</p>
+    <div class="passenger-gateway-copy">
+      <a class="portal-brand" href="./index.html" aria-label="返回铁路客运票务与风控运营平台">
+        <span class="brand-mark large">RT</span>
+        <span>
+          <strong>乘客购票服务</strong>
+          <small>Passenger Ticketing</small>
+        </span>
+      </a>
+      <p class="eyebrow">Search. Book. Travel.</p>
+      <h1>查询车票，管理每一段行程</h1>
+      <p class="hero-copy">登录后可以查看可购车次、创建待支付订单、完成模拟支付、申请退票，并只查看属于当前乘客的订单与资金记录。</p>
+      <div class="ticket-preview-card" aria-label="购票服务摘要">
+        <div class="ticket-preview-route">
+          <span>北京南</span>
+          <strong>G101</strong>
+          <span>上海虹桥</span>
         </div>
-      </div>
-      <div class="login-insights passenger-insights">
-        <div><span>查票购票</span><strong>余票 / 席别 / 价格</strong></div>
-        <div><span>交易闭环</span><strong>下单 / 支付 / 退票</strong></div>
-        <div><span>我的记录</span><strong>订单 / 支付 / 退款</strong></div>
+        <div class="ticket-preview-meta">
+          <span>余票锁定</span>
+          <span>支付状态机</span>
+          <span>退票退款</span>
+        </div>
       </div>
     </div>
 
@@ -29,7 +38,7 @@
       <div class="login-card-head">
         <p class="eyebrow">Passenger Access</p>
         <h2>登录乘客端</h2>
-        <p>使用普通乘客账号登录后，可以查询可购车次并管理自己的出行订单。</p>
+        <p>使用普通乘客账号进入购票服务。</p>
       </div>
       <form id="passenger-login-form" class="login-form">
         <label>
@@ -55,23 +64,23 @@
     </div>
   </section>
 
-  <div class="passenger-shell passenger-product-shell">
-    <header class="passenger-product-header">
-      <a class="product-brand" href="#passenger-search" aria-label="返回购票首页">
-        <div class="brand-mark">RT</div>
-        <div>
+  <div class="passenger-shell passenger-consumer-shell">
+    <header class="passenger-site-header">
+      <a class="product-brand passenger-site-brand" href="#passenger-search" aria-label="返回查票首页">
+        <span class="brand-mark">RT</span>
+        <span>
           <strong>铁路购票</strong>
-          <span>Passenger Service</span>
-        </div>
+          <small>Passenger Service</small>
+        </span>
       </a>
-      <nav class="passenger-nav passenger-product-nav" aria-label="乘客端导航">
-        <a href="#passenger-search">查票购票</a>
-        <a href="#passenger-summary">我的行程</a>
-        <a href="#passenger-orders">我的订单</a>
-        <a href="#passenger-payments">支付流水</a>
-        <a href="#passenger-refunds">退款流水</a>
+      <nav class="passenger-nav passenger-site-nav" aria-label="乘客端导航">
+        <a href="#passenger-search">查票</a>
+        <a href="#passenger-summary">行程</a>
+        <a href="#passenger-orders">订单</a>
+        <a href="#passenger-payments">支付</a>
+        <a href="#passenger-refunds">退款</a>
       </nav>
-      <div class="passenger-userbar">
+      <div class="passenger-userbar passenger-account">
         <div class="auth-summary">
           <span id="passenger-auth-role">未登录</span>
           <strong id="passenger-auth-user">访客模式</strong>
@@ -80,98 +89,89 @@
       </div>
     </header>
 
-    <main class="passenger-content">
-      <section id="passenger-search" class="section passenger-section passenger-hero-search">
-        <div class="ticket-hero-copy">
-          <p class="eyebrow">Ticket Search</p>
-          <h1>查找下一段行程</h1>
-          <p>选择出发站、到达站和乘车日期，查看可购车次并快速下单。也可以直接查看全部可购车次或使用热门线路。</p>
+    <main class="passenger-site-main">
+      <section id="passenger-search" class="passenger-section booking-landing">
+        <div class="booking-hero-panel">
+          <div class="booking-copy">
+            <p class="eyebrow">Ticket Search</p>
+            <h1>从这里开始你的下一段行程</h1>
+            <p>选择出发站、到达站和日期，系统会展示当前可购车次。也可以直接查看全部可购车次。</p>
+          </div>
+          <form id="passenger-search-form" class="booking-search-card">
+            <label>
+              出发站
+              <select id="passenger-from-station"></select>
+            </label>
+            <label>
+              到达站
+              <select id="passenger-to-station"></select>
+            </label>
+            <label>
+              乘车日期
+              <input id="passenger-travel-date" type="date">
+            </label>
+            <div class="booking-actions">
+              <button class="primary-button" type="submit">查询车票</button>
+              <button id="passenger-show-available" class="secondary-button" type="button">全部可购车次</button>
+              <button id="passenger-show-hot-routes" class="ghost-button" type="button">热门线路</button>
+            </div>
+          </form>
+          <div id="passenger-hot-routes" class="route-shortcuts passenger-route-shortcuts expanded" aria-label="热门线路快捷入口"></div>
         </div>
-        <form id="passenger-search-form" class="ticket-search-card">
-          <label>
-            出发站
-            <select id="passenger-from-station"></select>
-          </label>
-          <label>
-            到达站
-            <select id="passenger-to-station"></select>
-          </label>
-          <label>
-            乘车日期
-            <input id="passenger-travel-date" type="date">
-          </label>
-          <button class="primary-button" type="submit">查询车票</button>
-          <button id="passenger-show-available" class="secondary-button" type="button">全部可购车次</button>
-          <button id="passenger-show-hot-routes" class="ghost-button" type="button">热门线路</button>
-        </form>
-        <div id="passenger-hot-routes" class="route-shortcuts expanded" aria-label="热门线路快捷入口"></div>
-        <div class="table-wrap passenger-table-wrap ticket-result-panel">
-          <table>
-            <thead>
-              <tr>
-                <th>车次</th>
-                <th>区间</th>
-                <th>日期</th>
-                <th>时间</th>
-                <th>席别</th>
-                <th>余票</th>
-                <th>票价</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="passenger-train-results"></tbody>
-          </table>
+
+        <div class="passenger-search-results">
+          <div class="passenger-section-head">
+            <div>
+              <p class="eyebrow">Available Tickets</p>
+              <h2>可购车次</h2>
+            </div>
+            <span class="soft-pill">库存实时扣减</span>
+          </div>
+          <div id="passenger-train-results" class="train-ticket-list"></div>
         </div>
       </section>
 
-      <section id="passenger-summary" class="section passenger-section">
-        <div class="section-heading">
+      <section id="passenger-summary" class="passenger-section passenger-home-section">
+        <div class="passenger-section-head">
           <div>
-            <p class="eyebrow">My Travel Summary</p>
-            <h2>我的行程概览</h2>
-            <p>查看当前账号的订单状态、最近订单、即将出行和资金流水数量。</p>
+            <p class="eyebrow">My Journey</p>
+            <h2>我的行程</h2>
+            <p>当前乘客账号的订单状态、最近订单和即将出行。</p>
           </div>
           <button id="refresh-passenger" class="secondary-button" type="button">刷新</button>
         </div>
-        <div class="metric-grid passenger-metric-grid travel-metric-grid">
-          <button class="metric primary-metric clickable-card" type="button" data-jump-orders="">
+        <div class="journey-stat-strip">
+          <button class="journey-stat primary-metric clickable-card" type="button" data-jump-orders="">
             <span>全部订单</span>
             <strong id="passenger-metric-total">0</strong>
-            <small>当前账号订单</small>
           </button>
-          <button class="metric clickable-card" type="button" data-jump-orders="PENDING_PAYMENT">
+          <button class="journey-stat clickable-card" type="button" data-jump-orders="PENDING_PAYMENT">
             <span>待支付</span>
             <strong id="passenger-metric-pending">0</strong>
-            <small>已锁定库存</small>
           </button>
-          <button class="metric success-metric clickable-card" type="button" data-jump-orders="PAID">
+          <button class="journey-stat success-metric clickable-card" type="button" data-jump-orders="PAID">
             <span>已支付</span>
             <strong id="passenger-metric-paid">0</strong>
-            <small>可申请退票</small>
           </button>
-          <button class="metric neutral-metric clickable-card" type="button" data-jump-orders="CLOSED">
+          <button class="journey-stat neutral-metric clickable-card" type="button" data-jump-orders="CLOSED">
             <span>已关闭</span>
             <strong id="passenger-metric-closed">0</strong>
-            <small>库存已释放</small>
           </button>
-          <button class="metric clickable-card" type="button" data-jump-orders="REFUNDED">
+          <button class="journey-stat clickable-card" type="button" data-jump-orders="REFUNDED">
             <span>已退票</span>
             <strong id="passenger-metric-refunded">0</strong>
-            <small>已进入退款链路</small>
           </button>
-          <button class="metric clickable-card" type="button" data-jump-payments>
-            <span>支付流水</span>
+          <button class="journey-stat clickable-card" type="button" data-jump-payments>
+            <span>支付</span>
             <strong id="passenger-metric-payments">0</strong>
-            <small>仅当前乘客</small>
           </button>
-          <button class="metric clickable-card" type="button" data-jump-refunds>
-            <span>退款流水</span>
+          <button class="journey-stat clickable-card" type="button" data-jump-refunds>
+            <span>退款</span>
             <strong id="passenger-metric-refunds">0</strong>
-            <small>仅当前乘客</small>
           </button>
         </div>
-        <div class="passenger-dashboard-grid">
-          <div class="panel">
+        <div class="journey-board">
+          <article class="journey-panel">
             <div class="panel-head">
               <div>
                 <h3>最近订单</h3>
@@ -179,8 +179,8 @@
               </div>
             </div>
             <div id="passenger-latest-orders" class="event-list compact-list"></div>
-          </div>
-          <div class="panel">
+          </article>
+          <article class="journey-panel accent-panel">
             <div class="panel-head">
               <div>
                 <h3>即将出行</h3>
@@ -188,17 +188,19 @@
               </div>
             </div>
             <div id="passenger-upcoming-trips" class="event-list compact-list"></div>
-          </div>
+          </article>
         </div>
       </section>
 
-      <section id="passenger-orders" class="section passenger-section">
-        <div class="section-title">
-          <p class="eyebrow">My Orders</p>
-          <h2>我的订单</h2>
-          <p>查看当前乘客账号的订单，并对待支付、已支付订单执行支付、取消和退票操作。</p>
+      <section id="passenger-orders" class="passenger-section passenger-order-center">
+        <div class="passenger-section-head">
+          <div>
+            <p class="eyebrow">Order Center</p>
+            <h2>我的订单</h2>
+            <p>待支付订单可支付或取消，已支付订单可申请退票。</p>
+          </div>
         </div>
-        <div class="toolbar passenger-toolbar">
+        <div class="passenger-filter-bar">
           <label>
             订单状态
             <select id="passenger-order-status">
@@ -212,7 +214,7 @@
           <button id="passenger-load-orders" class="secondary-button" type="button">查询订单</button>
           <button id="passenger-reset-orders" class="ghost-button" type="button">重置</button>
         </div>
-        <div id="passenger-order-cards" class="passenger-card-list"></div>
+        <div id="passenger-order-cards" class="passenger-card-list journey-card-list"></div>
         <div class="pagination">
           <span id="passenger-order-page-info">第 1 / 1 页，共 0 条</span>
           <div class="inline-actions">
@@ -222,12 +224,14 @@
         </div>
       </section>
 
-      <section id="passenger-payments" class="section passenger-section">
-        <div class="section-title">
-          <p class="eyebrow">My Payments</p>
-          <h2>我的支付流水</h2>
+      <section id="passenger-payments" class="passenger-section passenger-record-section">
+        <div class="passenger-section-head">
+          <div>
+            <p class="eyebrow">Payment Records</p>
+            <h2>我的支付流水</h2>
+          </div>
         </div>
-        <div class="toolbar passenger-toolbar">
+        <div class="passenger-filter-bar">
           <label>
             支付状态
             <select id="passenger-payment-status">
@@ -239,21 +243,7 @@
           </label>
           <button id="passenger-load-payments" class="secondary-button" type="button">查询支付流水</button>
         </div>
-        <div class="table-wrap passenger-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>支付流水号</th>
-                <th>订单号</th>
-                <th>金额</th>
-                <th>状态</th>
-                <th>渠道流水</th>
-                <th>支付时间</th>
-              </tr>
-            </thead>
-            <tbody id="passenger-payment-results"></tbody>
-          </table>
-        </div>
+        <div id="passenger-payment-results" class="passenger-record-list"></div>
         <div class="pagination">
           <span id="passenger-payment-page-info">第 1 / 1 页，共 0 条</span>
           <div class="inline-actions">
@@ -263,12 +253,14 @@
         </div>
       </section>
 
-      <section id="passenger-refunds" class="section passenger-section">
-        <div class="section-title">
-          <p class="eyebrow">My Refunds</p>
-          <h2>我的退款流水</h2>
+      <section id="passenger-refunds" class="passenger-section passenger-record-section">
+        <div class="passenger-section-head">
+          <div>
+            <p class="eyebrow">Refund Records</p>
+            <h2>我的退款流水</h2>
+          </div>
         </div>
-        <div class="toolbar passenger-toolbar">
+        <div class="passenger-filter-bar">
           <label>
             退款状态
             <select id="passenger-refund-status">
@@ -280,22 +272,7 @@
           </label>
           <button id="passenger-load-refunds" class="secondary-button" type="button">查询退款流水</button>
         </div>
-        <div class="table-wrap passenger-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>退款流水号</th>
-                <th>订单号</th>
-                <th>支付流水号</th>
-                <th>金额</th>
-                <th>状态</th>
-                <th>渠道流水</th>
-                <th>退款时间</th>
-              </tr>
-            </thead>
-            <tbody id="passenger-refund-results"></tbody>
-          </table>
-        </div>
+        <div id="passenger-refund-results" class="passenger-record-list"></div>
         <div class="pagination">
           <span id="passenger-refund-page-info">第 1 / 1 页，共 0 条</span>
           <div class="inline-actions">

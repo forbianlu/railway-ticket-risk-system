@@ -6,73 +6,67 @@
   <title>铁路客运票务与风控运营平台</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="entry-page">
-  <main class="entry-shell" aria-label="系统入口选择">
-    <section class="entry-hero portal-hero">
-      <div class="entry-brand">
-        <div class="brand-mark large">RT</div>
-        <div>
-          <p class="eyebrow">Railway Ticketing Platform</p>
-          <h1>铁路客运票务与风控运营平台</h1>
-          <p class="hero-copy">一个面向乘客购票和运营治理的双端系统。乘客侧关注查票、购票、支付和退票；运营侧关注交易监控、风险处置、事件治理和审计追踪。</p>
+<body class="entry-page portal-page">
+  <main class="portal-shell" aria-label="系统入口选择">
+    <section class="portal-landing">
+      <div class="portal-copy">
+        <a class="portal-brand" href="./index.html" aria-label="铁路客运票务与风控运营平台">
+          <span class="brand-mark large">RT</span>
+          <span>
+            <strong>铁路客运票务与风控运营平台</strong>
+            <small>Railway Ticketing Platform</small>
+          </span>
+        </a>
+        <p class="eyebrow">Dual Service Platform</p>
+        <h1>一套系统连接乘客购票与运营治理</h1>
+        <p class="portal-lead">平台围绕车次查询、在线购票、支付退款、风险识别、事件处理和审计追踪构建。请选择当前要进入的服务端。</p>
+        <div class="portal-proof" aria-label="平台能力摘要">
+          <div>
+            <span>乘客服务</span>
+            <strong>查票、购票、支付、退票</strong>
+          </div>
+          <div>
+            <span>运营管理</span>
+            <strong>订单、风控、事件、审计</strong>
+          </div>
+          <div>
+            <span>系统治理</span>
+            <strong>缓存、限流、Outbox</strong>
+          </div>
         </div>
       </div>
-      <div class="portal-summary" aria-label="平台能力概览">
-        <div><span>票务交易</span><strong>查票 / 下单 / 支付 / 退票</strong></div>
-        <div><span>运营治理</span><strong>风险 / 审计 / Outbox / 限流</strong></div>
-      </div>
-    </section>
 
-    <section class="entry-grid portal-entry-grid" aria-label="选择访问端">
-      <a class="entry-card passenger-entry portal-card" href="./passenger.html" aria-label="进入乘客购票服务">
-        <div>
-          <span class="entry-kicker">Passenger Service</span>
-          <h2>乘客购票服务</h2>
-          <p>适合普通乘客使用的购票产品入口，突出车票查询、在线购票、模拟支付、我的订单和退票退款。</p>
-        </div>
-        <div class="entry-card-body">
-          <div class="entry-flow">
-            <span>查票</span>
-            <span>购票</span>
-            <span>支付</span>
-            <span>订单</span>
-            <span>退票</span>
+      <section class="portal-choice-grid" aria-label="选择访问端">
+        <a class="portal-choice passenger-choice" href="./passenger.html" aria-label="进入乘客购票服务">
+          <span class="choice-index">01</span>
+          <div>
+            <p class="entry-kicker">Passenger Service</p>
+            <h2>乘客购票服务</h2>
+            <p>面向普通乘客的购票入口，以查票、下单、支付和个人订单管理为核心。</p>
           </div>
-          <div class="entry-capabilities">
-            <span>车次查询</span>
-            <span>在线购票</span>
-            <span>模拟支付</span>
-            <span>我的订单</span>
-            <span>退票退款</span>
-          </div>
-        </div>
-        <strong class="entry-action">进入乘客端</strong>
-      </a>
+          <ul class="choice-points" aria-label="乘客端能力">
+            <li>车次查询与热门线路</li>
+            <li>在线购票与模拟支付</li>
+            <li>我的订单与退票退款</li>
+          </ul>
+          <strong class="choice-action">进入乘客端</strong>
+        </a>
 
-      <a class="entry-card admin-entry portal-card" href="./admin.html" aria-label="进入运营管理系统">
-        <div>
-          <span class="entry-kicker">Operations Console</span>
-          <h2>运营管理系统</h2>
-          <p>适合管理员、风控人员和运营人员使用的后台入口，聚焦订单监控、支付退款、风险处置和系统治理。</p>
-        </div>
-        <div class="entry-card-body">
-          <div class="entry-flow admin-flow">
-            <span>监控</span>
-            <span>流水</span>
-            <span>风控</span>
-            <span>审计</span>
-            <span>事件</span>
+        <a class="portal-choice admin-choice" href="./admin.html" aria-label="进入运营管理系统">
+          <span class="choice-index">02</span>
+          <div>
+            <p class="entry-kicker">Operations Console</p>
+            <h2>运营管理系统</h2>
+            <p>面向运营、风控和系统管理人员，聚焦交易监控、处置闭环和系统治理。</p>
           </div>
-          <div class="entry-capabilities">
-            <span>订单监控</span>
-            <span>支付退款</span>
-            <span>风险处置</span>
-            <span>审计日志</span>
-            <span>Outbox</span>
-          </div>
-        </div>
-        <strong class="entry-action">进入管理端</strong>
-      </a>
+          <ul class="choice-points" aria-label="管理端能力">
+            <li>订单、支付与退款监控</li>
+            <li>风险处置与审计日志</li>
+            <li>Outbox 事件与限流治理</li>
+          </ul>
+          <strong class="choice-action">进入管理端</strong>
+        </a>
+      </section>
     </section>
   </main>
 

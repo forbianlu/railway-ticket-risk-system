@@ -345,16 +345,25 @@ function renderPassengerTrains(trains) {
     passengerState.trainByInventory[String(train.inventoryId)] = train;
   });
   elements.trainResults.innerHTML = trains.map(train => `
-    <tr>
-      <td><strong class="train-no">${escapeHtml(train.trainNo)}</strong></td>
-      <td><span class="route">${escapeHtml(train.departureStation)} → ${escapeHtml(train.arrivalStation)}</span></td>
-      <td>${formatDate(train.travelDate)}</td>
-      <td>${formatTime(train.departureTime)} - ${formatTime(train.arrivalTime)}</td>
-      <td>${seatTypeText(train.seatType)}</td>
-      <td><span class="${Number(train.remainingSeats || 0) <= 5 ? "inventory-low" : "inventory-ok"}">${train.remainingSeats}</span></td>
-      <td><span class="money">¥${formatAmount(train.price)}</span></td>
-      <td><button class="primary-button compact-button" type="button" data-passenger-buy="${train.inventoryId}">购票</button></td>
-    </tr>
+    <article class="train-ticket-card">
+      <div class="ticket-card-route">
+        <strong class="train-no">${escapeHtml(train.trainNo)}</strong>
+        <span>${escapeHtml(train.departureStation)} → ${escapeHtml(train.arrivalStation)}</span>
+      </div>
+      <div class="ticket-card-time">
+        <strong>${formatTime(train.departureTime)}</strong>
+        <span>${formatDate(train.travelDate)}</span>
+        <strong>${formatTime(train.arrivalTime)}</strong>
+      </div>
+      <div class="ticket-card-meta">
+        <span>${seatTypeText(train.seatType)}</span>
+        <span class="${Number(train.remainingSeats || 0) <= 5 ? "inventory-low" : "inventory-ok"}">余票 ${train.remainingSeats}</span>
+      </div>
+      <div class="ticket-card-action">
+        <span class="ticket-price">¥${formatAmount(train.price)}</span>
+        <button class="primary-button compact-button" type="button" data-passenger-buy="${train.inventoryId}">购票</button>
+      </div>
+    </article>
   `).join("");
   elements.trainResults.querySelectorAll("[data-passenger-buy]").forEach(button => {
     button.addEventListener("click", () => openBuyModal(button.dataset.passengerBuy));
@@ -363,18 +372,14 @@ function renderPassengerTrains(trains) {
 
 function renderTrainEmpty(message) {
   elements.trainResults.innerHTML = `
-    <tr>
-      <td colspan="8">
-        <div class="empty-action">
-          <strong>${escapeHtml(message)}</strong>
-          <span>可以直接查看全部可购车次，或点击热门线路快速定位有库存的线路。</span>
-          <div class="inline-actions">
-            <button class="secondary-button compact-button" type="button" data-empty-action="available">查看全部可购车次</button>
-            <button class="ghost-button compact-button" type="button" data-empty-action="hot-routes">查看热门线路</button>
-          </div>
-        </div>
-      </td>
-    </tr>
+    <div class="empty-action passenger-empty-action">
+      <strong>${escapeHtml(message)}</strong>
+      <span>可以直接查看全部可购车次，或点击热门线路快速定位有库存的线路。</span>
+      <div class="inline-actions">
+        <button class="secondary-button compact-button" type="button" data-empty-action="available">查看全部可购车次</button>
+        <button class="ghost-button compact-button" type="button" data-empty-action="hot-routes">查看热门线路</button>
+      </div>
+    </div>
   `;
   elements.trainResults.querySelector('[data-empty-action="available"]').addEventListener("click", loadAvailablePassengerTrains);
   elements.trainResults.querySelector('[data-empty-action="hot-routes"]').addEventListener("click", () => renderHotRoutes(true));
@@ -605,25 +610,32 @@ async function loadPassengerPayments() {
     renderPassengerPayments(page.content || []);
     renderPagination("payments");
   } catch (error) {
-    elements.paymentResults.innerHTML = tableEmpty(6, error.message || "无法加载支付流水");
+    elements.paymentResults.innerHTML = recordEmpty(error.message || "无法加载支付流水");
     renderPagination("payments");
   }
 }
 
 function renderPassengerPayments(payments) {
   if (!payments.length) {
-    elements.paymentResults.innerHTML = tableEmpty(6, "暂无支付流水");
+    elements.paymentResults.innerHTML = recordEmpty("暂无支付流水");
     return;
   }
   elements.paymentResults.innerHTML = payments.map(payment => `
-    <tr>
-      <td><strong>${escapeHtml(payment.paymentNo)}</strong></td>
-      <td>${escapeHtml(payment.orderNo)}</td>
-      <td><span class="money">¥${formatAmount(payment.amount)}</span></td>
-      <td><span class="status ${paymentStatusClass(payment.status)}">${paymentStatusText(payment.status)}</span></td>
-      <td>${escapeHtml(payment.channelPaymentNo || "-")}</td>
-      <td>${formatDateTime(payment.paidAt) || "-"}</td>
-    </tr>
+    <article class="money-record-card">
+      <div class="record-title-row">
+        <div>
+          <span>支付流水</span>
+          <strong>${escapeHtml(payment.paymentNo)}</strong>
+        </div>
+        <span class="status ${paymentStatusClass(payment.status)}">${paymentStatusText(payment.status)}</span>
+      </div>
+      <div class="record-detail-grid">
+        <div><span>订单号</span><strong>${escapeHtml(payment.orderNo)}</strong></div>
+        <div><span>金额</span><strong class="money">¥${formatAmount(payment.amount)}</strong></div>
+        <div><span>渠道流水</span><strong>${escapeHtml(payment.channelPaymentNo || "-")}</strong></div>
+        <div><span>支付时间</span><strong>${formatDateTime(payment.paidAt) || "-"}</strong></div>
+      </div>
+    </article>
   `).join("");
 }
 
@@ -643,26 +655,33 @@ async function loadPassengerRefunds() {
     renderPassengerRefunds(page.content || []);
     renderPagination("refunds");
   } catch (error) {
-    elements.refundResults.innerHTML = tableEmpty(7, error.message || "无法加载退款流水");
+    elements.refundResults.innerHTML = recordEmpty(error.message || "无法加载退款流水");
     renderPagination("refunds");
   }
 }
 
 function renderPassengerRefunds(refunds) {
   if (!refunds.length) {
-    elements.refundResults.innerHTML = tableEmpty(7, "暂无退款流水");
+    elements.refundResults.innerHTML = recordEmpty("暂无退款流水");
     return;
   }
   elements.refundResults.innerHTML = refunds.map(refund => `
-    <tr>
-      <td><strong>${escapeHtml(refund.refundNo)}</strong></td>
-      <td>${escapeHtml(refund.orderNo)}</td>
-      <td>${escapeHtml(refund.paymentNo || "-")}</td>
-      <td><span class="money">¥${formatAmount(refund.amount)}</span></td>
-      <td><span class="status ${refundStatusClass(refund.status)}">${refundStatusText(refund.status)}</span></td>
-      <td>${escapeHtml(refund.channelRefundNo || "-")}</td>
-      <td>${formatDateTime(refund.refundedAt) || "-"}</td>
-    </tr>
+    <article class="money-record-card refund-record-card">
+      <div class="record-title-row">
+        <div>
+          <span>退款流水</span>
+          <strong>${escapeHtml(refund.refundNo)}</strong>
+        </div>
+        <span class="status ${refundStatusClass(refund.status)}">${refundStatusText(refund.status)}</span>
+      </div>
+      <div class="record-detail-grid">
+        <div><span>订单号</span><strong>${escapeHtml(refund.orderNo)}</strong></div>
+        <div><span>支付流水</span><strong>${escapeHtml(refund.paymentNo || "-")}</strong></div>
+        <div><span>金额</span><strong class="money">¥${formatAmount(refund.amount)}</strong></div>
+        <div><span>渠道退款号</span><strong>${escapeHtml(refund.channelRefundNo || "-")}</strong></div>
+        <div><span>退款时间</span><strong>${formatDateTime(refund.refundedAt) || "-"}</strong></div>
+      </div>
+    </article>
   `).join("");
 }
 
@@ -707,8 +726,8 @@ function renderLoggedOutPlaceholders() {
   elements.latestOrders.innerHTML = emptyItem("登录后查看最近订单");
   elements.upcomingTrips.innerHTML = emptyItem("登录后查看即将出行");
   elements.orderCards.innerHTML = emptyItem("登录后查看我的订单");
-  elements.paymentResults.innerHTML = tableEmpty(6, "登录后查看支付流水");
-  elements.refundResults.innerHTML = tableEmpty(7, "登录后查看退款流水");
+  elements.paymentResults.innerHTML = recordEmpty("登录后查看支付流水");
+  elements.refundResults.innerHTML = recordEmpty("登录后查看退款流水");
 }
 
 async function passengerRequest(path, options = {}, withAuth = true) {
@@ -844,6 +863,10 @@ function tableEmpty(colspan, message) {
 
 function emptyItem(message) {
   return `<div class="event-item empty-item"><span>${escapeHtml(message)}</span></div>`;
+}
+
+function recordEmpty(message) {
+  return `<div class="record-empty"><strong>${escapeHtml(message)}</strong><span>完成相关交易后，这里会展示当前乘客账号的资金记录。</span></div>`;
 }
 
 function generateRequestId(prefix) {
