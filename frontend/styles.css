@@ -4565,7 +4565,7 @@ body.passenger-consumer-page,
 
 .booking-hero-panel,
 .passenger-search-results {
-  min-height: 700px !important;
+  min-height: 620px !important;
 }
 
 .booking-hero-panel {
@@ -4593,7 +4593,7 @@ body.passenger-consumer-page,
 }
 
 .train-ticket-list {
-  min-height: 590px !important;
+  min-height: 510px !important;
 }
 
 .train-ticket-card {
