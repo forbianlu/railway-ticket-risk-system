@@ -4718,3 +4718,110 @@ body.passenger-consumer-page {
     margin-top: 10px !important;
   }
 }
+
+/* Passenger panel overflow fix: keep a fixed viewport-sized shell without clipping controls. */
+body.passenger-consumer-page {
+  --passenger-header-safe-height: 78px;
+  --passenger-booking-panel-height: clamp(600px, calc(100svh - var(--passenger-header-safe-height) - 38px), 670px);
+}
+
+.booking-hero-panel,
+.passenger-search-results {
+  height: var(--passenger-booking-panel-height) !important;
+  min-height: var(--passenger-booking-panel-height) !important;
+  max-height: var(--passenger-booking-panel-height) !important;
+}
+
+.booking-hero-panel {
+  padding: 18px !important;
+  gap: 10px !important;
+  overflow: visible !important;
+}
+
+.booking-hero-panel .booking-copy h1 {
+  font-size: clamp(31px, 3.2vw, 44px) !important;
+  line-height: 1.02 !important;
+}
+
+.booking-hero-panel .booking-copy p:last-child {
+  margin-top: 8px !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+}
+
+.booking-hero-panel .booking-search-card {
+  margin-top: 10px !important;
+  gap: 7px !important;
+}
+
+.booking-search-card label {
+  gap: 5px !important;
+}
+
+.booking-search-card select,
+.booking-search-card input {
+  min-height: 36px !important;
+  padding-block: 7px !important;
+}
+
+.booking-actions {
+  gap: 7px !important;
+}
+
+.booking-actions .primary-button,
+.booking-actions .secondary-button {
+  min-height: 38px !important;
+}
+
+.booking-hero-panel .passenger-route-shortcuts {
+  margin-top: auto !important;
+  padding-top: 10px !important;
+  gap: 7px !important;
+}
+
+.booking-hero-panel .passenger-route-shortcuts .route-chip {
+  min-height: 30px !important;
+  padding: 5px 9px !important;
+  font-size: 12px !important;
+}
+
+.passenger-search-results {
+  overflow: visible !important;
+}
+
+.passenger-search-results .passenger-section-head {
+  flex: 0 0 auto !important;
+}
+
+.train-ticket-list {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  justify-content: flex-start !important;
+}
+
+.train-list-toolbar {
+  position: static !important;
+  align-self: flex-end !important;
+  flex: 0 0 auto !important;
+  margin: auto 0 0 !important;
+  padding: 8px 2px 0 8px !important;
+  width: auto !important;
+  min-width: min(100%, 310px) !important;
+  z-index: auto !important;
+}
+
+@media (max-width: 1120px) {
+  .booking-hero-panel,
+  .passenger-search-results {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .booking-hero-panel {
+    padding: 18px !important;
+  }
+}
