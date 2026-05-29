@@ -2282,6 +2282,223 @@ body[data-capture="risks"] .section:not(#risks) {
   }
 }
 
+/* Precision fixes: pure white canvas, centered RT mark, wider ticket results */
+html,
+body.portal-page,
+body.passenger-consumer-page {
+  background-color: #ffffff !important;
+}
+
+.portal-page {
+  background:
+    radial-gradient(circle at 10% 10%, rgba(20, 184, 166, 0.10), transparent 24%),
+    radial-gradient(circle at 6% 86%, rgba(59, 130, 246, 0.09), transparent 26%),
+    #ffffff !important;
+}
+
+.passenger-gateway,
+.passenger-consumer-page,
+.passenger-consumer-shell {
+  background:
+    radial-gradient(circle at 9% 8%, rgba(20, 184, 166, 0.09), transparent 24%),
+    radial-gradient(circle at 8% 88%, rgba(59, 130, 246, 0.08), transparent 24%),
+    #ffffff !important;
+}
+
+.portal-page::before {
+  border-color: rgba(15, 23, 42, 0.04);
+}
+
+.portal-choice,
+.portal-proof > div,
+.booking-hero-panel,
+.passenger-search-results,
+.passenger-home-section,
+.passenger-order-center,
+.passenger-record-section,
+.login-card {
+  background: rgba(255, 255, 255, 0.94) !important;
+}
+
+.passenger-site-header {
+  background: rgba(255, 255, 255, 0.88) !important;
+}
+
+.passenger-header-compact .passenger-site-header {
+  background: rgba(255, 255, 255, 0.74) !important;
+}
+
+.portal-shell {
+  width: min(1180px, calc(100% - 28px));
+}
+
+.passenger-site-main {
+  width: min(1720px, calc(100% - 12px));
+}
+
+.booking-landing {
+  grid-template-columns: minmax(300px, 0.44fr) minmax(760px, 1.56fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.booking-hero-panel {
+  padding: 18px;
+}
+
+.booking-copy h1 {
+  font-size: clamp(30px, 3.6vw, 50px);
+}
+
+.booking-search-card {
+  padding: 10px;
+}
+
+.booking-actions .primary-button,
+.booking-actions .secondary-button,
+.booking-actions .ghost-button {
+  min-height: 40px;
+}
+
+.passenger-search-results {
+  min-height: 652px;
+  padding: 14px;
+}
+
+.passenger-section-head {
+  margin-bottom: 6px;
+}
+
+.train-ticket-list {
+  gap: 6px;
+}
+
+.train-list-toolbar {
+  position: static;
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  justify-content: flex-end;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.train-list-toolbar > div:first-child {
+  text-align: right;
+}
+
+.train-list-toolbar .inline-actions {
+  justify-content: flex-end;
+}
+
+.train-ticket-card {
+  min-height: 55px;
+  padding: 7px 9px;
+  grid-template-columns: minmax(120px, 0.78fr) minmax(174px, 1.1fr) minmax(130px, 0.76fr) minmax(96px, auto);
+  gap: 8px;
+  border-radius: 12px;
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.04);
+}
+
+.ticket-card-route {
+  gap: 2px;
+}
+
+.ticket-card-route .train-no {
+  padding: 2px 7px;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ticket-card-route span,
+.ticket-card-time span,
+.ticket-card-meta span {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.ticket-card-time {
+  gap: 6px;
+}
+
+.ticket-card-time strong {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.ticket-card-meta {
+  gap: 4px;
+}
+
+.inventory-low,
+.inventory-ok {
+  padding: 2px 7px;
+  font-size: 11px;
+}
+
+.ticket-price {
+  font-size: 15px;
+}
+
+.ticket-card-action .compact-button {
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.brand-mark.passenger-main-mark,
+.brand-mark.large {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff !important;
+  text-align: center;
+  line-height: 1;
+}
+
+.passenger-main-mark {
+  font-size: 15px;
+  font-weight: 850;
+}
+
+@media (max-width: 1280px) {
+  .booking-landing {
+    grid-template-columns: minmax(280px, 0.52fr) minmax(0, 1.48fr);
+  }
+
+  .passenger-search-results {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 1040px) {
+  .booking-landing {
+    grid-template-columns: 1fr;
+  }
+
+  .train-ticket-card {
+    grid-template-columns: minmax(140px, 0.9fr) minmax(180px, 1fr) minmax(120px, 0.8fr) auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .passenger-site-main {
+    width: min(100% - 18px, 1720px);
+  }
+
+  .train-ticket-card {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .train-list-toolbar,
+  .train-list-toolbar .inline-actions {
+    justify-content: stretch;
+    text-align: left;
+  }
+}
+
 /* Visual layout polish: white atmosphere, no nested scroll, tighter passenger cards */
 .visually-hidden {
   position: absolute;
@@ -4011,5 +4228,150 @@ body[data-capture="risks"] .section:not(#risks) {
   .passenger-filter-bar label,
   .passenger-filter-bar button {
     width: 100%;
+  }
+}
+
+/* Final precision overrides for passenger spacing and pure-white surfaces */
+body.portal-page,
+body.passenger-consumer-page,
+.passenger-gateway,
+.passenger-consumer-shell {
+  background:
+    radial-gradient(circle at 9% 9%, rgba(20, 184, 166, 0.08), transparent 23%),
+    radial-gradient(circle at 7% 90%, rgba(59, 130, 246, 0.075), transparent 24%),
+    #ffffff !important;
+}
+
+.portal-choice,
+.portal-proof > div,
+.booking-hero-panel,
+.passenger-search-results,
+.passenger-home-section,
+.passenger-order-center,
+.passenger-record-section,
+.login-card,
+.money-record-card,
+.passenger-order-card,
+.journey-panel,
+.train-ticket-card {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+}
+
+.brand-mark.large,
+.brand-mark.passenger-main-mark {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  line-height: 1 !important;
+  text-align: center !important;
+}
+
+.passenger-site-main {
+  width: min(1720px, calc(100% - 12px)) !important;
+}
+
+.booking-landing {
+  grid-template-columns: minmax(300px, 0.44fr) minmax(760px, 1.56fr) !important;
+  gap: 12px !important;
+}
+
+.passenger-search-results {
+  min-height: 652px !important;
+  padding: 14px !important;
+}
+
+.train-ticket-list,
+.passenger-route-shortcuts,
+.journey-panel,
+.journey-card-list,
+.passenger-record-list {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.train-ticket-list {
+  gap: 6px !important;
+}
+
+.train-ticket-card {
+  min-height: 55px !important;
+  padding: 7px 9px !important;
+  grid-template-columns: minmax(120px, 0.78fr) minmax(174px, 1.1fr) minmax(130px, 0.76fr) minmax(96px, auto) !important;
+  gap: 8px !important;
+  border-radius: 12px !important;
+}
+
+.ticket-card-route .train-no {
+  padding: 2px 7px !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+.ticket-card-route span,
+.ticket-card-time span,
+.ticket-card-meta span {
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+
+.ticket-card-time strong {
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+}
+
+.ticket-price {
+  font-size: 15px !important;
+}
+
+.ticket-card-action .compact-button {
+  min-height: 28px !important;
+  padding: 0 9px !important;
+  font-size: 12px !important;
+}
+
+.train-list-toolbar {
+  position: static !important;
+  margin: 8px 0 0 !important;
+  padding: 6px 8px !important;
+  justify-content: flex-end !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.train-list-toolbar > div:first-child {
+  text-align: right !important;
+}
+
+.train-list-toolbar .inline-actions {
+  justify-content: flex-end !important;
+}
+
+@media (max-width: 1280px) {
+  .booking-landing {
+    grid-template-columns: minmax(280px, 0.52fr) minmax(0, 1.48fr) !important;
+  }
+
+  .passenger-search-results {
+    min-height: 0 !important;
+  }
+}
+
+@media (max-width: 1040px) {
+  .booking-landing {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .passenger-site-main {
+    width: min(100% - 18px, 1720px) !important;
+  }
+
+  .train-ticket-card {
+    grid-template-columns: 1fr !important;
+    min-height: 0 !important;
   }
 }

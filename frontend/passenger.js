@@ -375,7 +375,7 @@ function renderTrainPage() {
       </div>
     </div>
   `;
-  elements.trainResults.innerHTML = controls + visibleTrains.map(train => `
+  elements.trainResults.innerHTML = visibleTrains.map(train => `
     <article class="train-ticket-card">
       <div class="ticket-card-route">
         <strong class="train-no">${escapeHtml(train.trainNo)}</strong>
@@ -395,7 +395,7 @@ function renderTrainPage() {
         <button class="primary-button compact-button" type="button" data-passenger-buy="${train.inventoryId}">购票</button>
       </div>
     </article>
-  `).join("");
+  `).join("") + controls;
   elements.trainResults.querySelectorAll("[data-train-page]").forEach(button => {
     button.addEventListener("click", () => {
       const direction = button.dataset.trainPage === "next" ? 1 : -1;
