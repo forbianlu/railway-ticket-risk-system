@@ -4557,3 +4557,96 @@ body.passenger-consumer-page,
     min-width: 0 !important;
   }
 }
+
+/* Passenger ticket panel alignment pass: equalize the two booking panels and restore compact readability. */
+.booking-landing {
+  align-items: stretch !important;
+}
+
+.booking-hero-panel,
+.passenger-search-results {
+  min-height: 700px !important;
+}
+
+.booking-hero-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+}
+
+.booking-hero-panel .booking-copy {
+  flex: 0 0 auto !important;
+}
+
+.booking-hero-panel .booking-search-card {
+  flex: 0 0 auto !important;
+  margin-top: 16px !important;
+}
+
+.booking-hero-panel .passenger-route-shortcuts {
+  margin-top: auto !important;
+  padding-top: 18px !important;
+}
+
+.passenger-search-results {
+  height: 100% !important;
+}
+
+.train-ticket-list {
+  min-height: 590px !important;
+}
+
+.train-ticket-card {
+  flex-basis: 64px !important;
+  min-height: 64px !important;
+  max-height: 64px !important;
+  padding: 9px 11px !important;
+  gap: 10px !important;
+}
+
+.ticket-card-route .train-no {
+  padding: 3px 8px !important;
+  line-height: 1.5 !important;
+}
+
+.ticket-card-route span,
+.ticket-card-time span,
+.ticket-card-meta span {
+  line-height: 1.45 !important;
+}
+
+.ticket-card-time strong {
+  font-size: 14px !important;
+  line-height: 1.32 !important;
+}
+
+.ticket-price {
+  font-size: 16px !important;
+  line-height: 1.24 !important;
+}
+
+.ticket-card-action .compact-button {
+  min-height: 31px !important;
+  padding: 0 11px !important;
+}
+
+@media (max-width: 1120px) {
+  .booking-hero-panel,
+  .passenger-search-results,
+  .train-ticket-list {
+    min-height: 0 !important;
+  }
+
+  .booking-hero-panel .passenger-route-shortcuts {
+    margin-top: 12px !important;
+    padding-top: 0 !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .train-ticket-card {
+    flex-basis: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+}
