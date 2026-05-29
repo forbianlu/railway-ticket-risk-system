@@ -18,7 +18,7 @@
         </span>
       </a>
       <p class="eyebrow">Search. Book. Travel.</p>
-      <h1>查询车票，管理每一段行程</h1>
+      <h1 class="reveal-title">查询车票<br>管理每一段行程</h1>
       <p class="hero-copy">登录后可以查看可购车次、创建待支付订单、完成模拟支付、申请退票，并只查看属于当前乘客的订单与资金记录。</p>
       <div class="passenger-login-points" aria-label="乘客端能力摘要">
         <span>余票查询</span>
@@ -60,14 +60,9 @@
   <div class="passenger-shell passenger-consumer-shell">
     <header class="passenger-site-header">
       <a class="product-brand passenger-site-brand" href="#passenger-search" aria-label="返回查票首页">
-        <span class="passenger-logo" aria-hidden="true">
-          <svg viewBox="0 0 40 40" focusable="false">
-            <path d="M12 9h16a5 5 0 0 1 5 5v10a6 6 0 0 1-6 6H13a6 6 0 0 1-6-6V14a5 5 0 0 1 5-5Z"></path>
-            <path d="M12 15h16M13 22h14M15 31l-3 4M25 31l3 4"></path>
-          </svg>
-        </span>
+        <span class="brand-mark passenger-main-mark">RT</span>
         <span>
-          <strong>铁路购票</strong>
+          <strong>铁路购票服务</strong>
           <small>Passenger Service</small>
         </span>
       </a>
@@ -92,7 +87,7 @@
         <div class="booking-hero-panel">
           <div class="booking-copy">
             <p class="eyebrow">Ticket Search</p>
-            <h1>从这里开始你的下一段行程</h1>
+            <h1 class="reveal-title">从这里开始<br>你的下一段行程</h1>
             <p>选择出发站、到达站和日期，系统会展示当前可购车次。也可以直接查看全部可购车次。</p>
           </div>
           <form id="passenger-search-form" class="booking-search-card">
@@ -139,10 +134,7 @@
           <button id="refresh-passenger" class="secondary-button" type="button">刷新</button>
         </div>
         <div class="journey-stat-strip">
-          <button class="journey-stat primary-metric clickable-card" type="button" data-jump-orders="">
-            <span>全部订单</span>
-            <strong id="passenger-metric-total">0</strong>
-          </button>
+          <span id="passenger-metric-total" class="visually-hidden">0</span>
           <button class="journey-stat clickable-card" type="button" data-jump-orders="PENDING_PAYMENT">
             <span>待支付</span>
             <strong id="passenger-metric-pending">0</strong>

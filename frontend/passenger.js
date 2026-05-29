@@ -10,10 +10,10 @@ const passengerState = {
   navObserver: null,
   scrollTicking: false,
   lastScrollY: 0,
-  trains: { items: [], page: 0, size: 6 },
-  orders: { page: 0, size: 8, totalPages: 0, totalElements: 0, first: true, last: true },
-  payments: { page: 0, size: 8, totalPages: 0, totalElements: 0, first: true, last: true },
-  refunds: { page: 0, size: 8, totalPages: 0, totalElements: 0, first: true, last: true },
+  trains: { items: [], page: 0, size: 8 },
+  orders: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
+  payments: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
+  refunds: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
 };
 
 const PASSENGER_HOT_ROUTES = [
