@@ -4650,3 +4650,71 @@ body.passenger-consumer-page,
     max-height: none !important;
   }
 }
+
+/* Passenger ticket viewport lock: panel height is driven by the viewport, not by ticket count. */
+body.passenger-consumer-page {
+  --passenger-header-safe-height: 78px;
+  --passenger-booking-panel-height: clamp(560px, calc(100svh - var(--passenger-header-safe-height) - 62px), 640px);
+}
+
+#passenger-search {
+  scroll-margin-top: calc(var(--passenger-header-safe-height) + 14px) !important;
+}
+
+.booking-landing {
+  align-items: start !important;
+}
+
+.booking-hero-panel,
+.passenger-search-results {
+  height: var(--passenger-booking-panel-height) !important;
+  min-height: var(--passenger-booking-panel-height) !important;
+  max-height: var(--passenger-booking-panel-height) !important;
+  overflow: hidden !important;
+}
+
+.booking-hero-panel {
+  justify-content: flex-start !important;
+}
+
+.passenger-search-results {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.passenger-search-results .passenger-section-head {
+  flex: 0 0 auto !important;
+}
+
+.train-ticket-list {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  justify-content: flex-start !important;
+  padding-bottom: 0 !important;
+}
+
+.train-list-toolbar {
+  position: absolute !important;
+  right: 14px !important;
+  bottom: 12px !important;
+  margin: 0 !important;
+  z-index: 2 !important;
+}
+
+@media (max-width: 1120px) {
+  .booking-hero-panel,
+  .passenger-search-results {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .train-list-toolbar {
+    position: static !important;
+    margin-top: 10px !important;
+  }
+}
