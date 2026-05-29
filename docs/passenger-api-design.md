@@ -75,3 +75,15 @@ USER 登录 -> 查询车次 -> POST /api/passenger/orders -> 复用 OrderService
 ## 后续前端计划
 
 后续可以新增入口选择页和乘客购票前端，使用本轮新增的 passenger API 展示查票、下单、我的订单、我的支付流水和我的退款流水。
+## 前端接入状态
+
+乘客端前端已新增 `frontend/passenger.html` 和 `frontend/passenger.js`。当前页面接入范围包括：
+
+- 乘客登录：调用 `/api/auth/login`，要求返回角色为 `USER`。
+- 乘客概览：调用 `/api/passenger/summary`，展示订单状态、支付流水、退款流水、最近订单和即将出行。
+- 查票购票：调用 `/api/trains/search` 和 `/api/trains/available`，购票弹窗提交到 `/api/passenger/orders`。
+- 我的订单：调用 `/api/passenger/orders`，支持状态筛选和分页，并提供支付、取消和退票操作。
+- 我的支付流水：调用 `/api/passenger/payments`。
+- 我的退款流水：调用 `/api/passenger/refunds`。
+
+入口页 `frontend/index.html` 提供乘客购票服务和运营管理系统两个入口，运营管理端保留在 `frontend/admin.html`。
