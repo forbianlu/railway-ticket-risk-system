@@ -4597,10 +4597,10 @@ body.passenger-consumer-page,
 }
 
 .train-ticket-card {
-  flex-basis: 64px !important;
-  min-height: 64px !important;
-  max-height: 64px !important;
-  padding: 9px 11px !important;
+  flex-basis: 80px !important;
+  min-height: 80px !important;
+  max-height: 80px !important;
+  padding: 12px 13px !important;
   gap: 10px !important;
 }
 
@@ -4612,12 +4612,12 @@ body.passenger-consumer-page,
 .ticket-card-route span,
 .ticket-card-time span,
 .ticket-card-meta span {
-  line-height: 1.45 !important;
+  line-height: 1.5 !important;
 }
 
 .ticket-card-time strong {
   font-size: 14px !important;
-  line-height: 1.32 !important;
+  line-height: 1.4 !important;
 }
 
 .ticket-price {
@@ -4626,7 +4626,7 @@ body.passenger-consumer-page,
 }
 
 .ticket-card-action .compact-button {
-  min-height: 31px !important;
+  min-height: 34px !important;
   padding: 0 11px !important;
 }
 
