@@ -8,61 +8,77 @@
 </head>
 <body class="entry-page">
   <main class="entry-shell" aria-label="系统入口选择">
-    <section class="entry-hero">
+    <section class="entry-hero portal-hero">
       <div class="entry-brand">
         <div class="brand-mark large">RT</div>
         <div>
           <p class="eyebrow">Railway Ticketing Platform</p>
           <h1>铁路客运票务与风控运营平台</h1>
-          <p class="hero-copy">围绕乘客购票服务和运营管理能力构建的双端平台，覆盖车次查询、订单支付、退票退款、风险处置、事件治理和审计运营。</p>
+          <p class="hero-copy">一个面向乘客购票和运营治理的双端系统。乘客侧关注查票、购票、支付和退票；运营侧关注交易监控、风险处置、事件治理和审计追踪。</p>
         </div>
       </div>
-      <div class="entry-status">
-        <span class="status-dot"></span>
-        <span>默认连接本地 Spring Boot 服务：http://localhost:8080</span>
+      <div class="portal-summary" aria-label="平台能力概览">
+        <div><span>票务交易</span><strong>查票 / 下单 / 支付 / 退票</strong></div>
+        <div><span>运营治理</span><strong>风险 / 审计 / Outbox / 限流</strong></div>
       </div>
     </section>
 
-    <section class="entry-grid" aria-label="选择访问端">
-      <a class="entry-card passenger-entry" href="./passenger.html" aria-label="进入乘客购票服务">
-        <span class="entry-kicker">Passenger Service</span>
-        <h2>乘客购票服务</h2>
-        <p>面向普通乘客的查票、购票、模拟支付、订单管理和退票退款服务。</p>
-        <div class="entry-capabilities">
-          <span>车次查询</span>
-          <span>在线购票</span>
-          <span>模拟支付</span>
-          <span>我的订单</span>
-          <span>退票退款</span>
+    <section class="entry-grid portal-entry-grid" aria-label="选择访问端">
+      <a class="entry-card passenger-entry portal-card" href="./passenger.html" aria-label="进入乘客购票服务">
+        <div>
+          <span class="entry-kicker">Passenger Service</span>
+          <h2>乘客购票服务</h2>
+          <p>适合普通乘客使用的购票产品入口，突出车票查询、在线购票、模拟支付、我的订单和退票退款。</p>
+        </div>
+        <div class="entry-card-body">
+          <div class="entry-flow">
+            <span>查票</span>
+            <span>购票</span>
+            <span>支付</span>
+            <span>订单</span>
+            <span>退票</span>
+          </div>
+          <div class="entry-capabilities">
+            <span>车次查询</span>
+            <span>在线购票</span>
+            <span>模拟支付</span>
+            <span>我的订单</span>
+            <span>退票退款</span>
+          </div>
         </div>
         <strong class="entry-action">进入乘客端</strong>
       </a>
 
-      <a class="entry-card admin-entry" href="./admin.html" aria-label="进入运营管理系统">
-        <span class="entry-kicker">Operations Console</span>
-        <h2>运营管理系统</h2>
-        <p>面向运营、风控和管理角色的交易监控、风险处置、事件中心和审计治理后台。</p>
-        <div class="entry-capabilities">
-          <span>订单监控</span>
-          <span>支付退款</span>
-          <span>风险处置</span>
-          <span>审计日志</span>
-          <span>Outbox 事件</span>
+      <a class="entry-card admin-entry portal-card" href="./admin.html" aria-label="进入运营管理系统">
+        <div>
+          <span class="entry-kicker">Operations Console</span>
+          <h2>运营管理系统</h2>
+          <p>适合管理员、风控人员和运营人员使用的后台入口，聚焦订单监控、支付退款、风险处置和系统治理。</p>
+        </div>
+        <div class="entry-card-body">
+          <div class="entry-flow admin-flow">
+            <span>监控</span>
+            <span>流水</span>
+            <span>风控</span>
+            <span>审计</span>
+            <span>事件</span>
+          </div>
+          <div class="entry-capabilities">
+            <span>订单监控</span>
+            <span>支付退款</span>
+            <span>风险处置</span>
+            <span>审计日志</span>
+            <span>Outbox</span>
+          </div>
         </div>
         <strong class="entry-action">进入管理端</strong>
       </a>
     </section>
-
-    <section class="entry-footnote" aria-label="演示账号">
-      <div>
-        <span>乘客端账号</span>
-        <strong>passenger1 / 123456</strong>
-      </div>
-      <div>
-        <span>管理端账号</span>
-        <strong>admin / admin123 · risk / risk123 · ops / ops123</strong>
-      </div>
-    </section>
   </main>
+
+  <aside class="entry-status portal-status" aria-label="本地服务状态">
+    <span class="status-dot"></span>
+    <span>本地服务：http://localhost:8080</span>
+  </aside>
 </body>
 </html>

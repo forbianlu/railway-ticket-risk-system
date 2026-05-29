@@ -1516,8 +1516,8 @@ body.modal-open {
 .entry-page {
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 16% 14%, rgba(15, 107, 87, 0.12), transparent 30%),
-    radial-gradient(circle at 86% 20%, rgba(37, 99, 235, 0.10), transparent 28%),
+    radial-gradient(circle at 14% 12%, rgba(15, 107, 87, 0.14), transparent 30%),
+    radial-gradient(circle at 88% 14%, rgba(37, 99, 235, 0.12), transparent 28%),
     linear-gradient(180deg, #f8fafc 0%, #eef3f7 100%);
 }
 
@@ -1528,7 +1528,7 @@ body.modal-open {
   padding: clamp(26px, 5vw, 70px) 0;
   display: grid;
   align-content: center;
-  gap: 28px;
+  gap: 32px;
 }
 
 .entry-hero {
@@ -1546,6 +1546,10 @@ body.modal-open {
 }
 
 .entry-status {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 50;
   min-height: 44px;
   padding: 10px 14px;
   display: inline-flex;
@@ -1555,7 +1559,39 @@ body.modal-open {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
   box-shadow: var(--shadow-sm);
+}
+
+.portal-hero {
+  padding: clamp(8px, 2vw, 18px) 0;
+}
+
+.portal-summary {
+  display: grid;
+  gap: 10px;
+  min-width: min(320px, 100%);
+}
+
+.portal-summary > div {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: var(--shadow-sm);
+}
+
+.portal-summary span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.portal-summary strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink-strong);
 }
 
 .entry-grid {
@@ -1566,7 +1602,7 @@ body.modal-open {
 
 .entry-card {
   position: relative;
-  min-height: 340px;
+  min-height: 380px;
   padding: clamp(22px, 3vw, 34px);
   display: grid;
   align-content: space-between;
@@ -1579,6 +1615,10 @@ body.modal-open {
   background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow-md);
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.portal-card {
+  isolation: isolate;
 }
 
 .entry-card::after {
@@ -1623,6 +1663,35 @@ body.modal-open {
   margin-bottom: 0;
   color: var(--muted-strong);
   font-size: 16px;
+}
+
+.entry-card-body {
+  display: grid;
+  gap: 16px;
+}
+
+.entry-flow {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.entry-flow span {
+  min-height: 54px;
+  padding: 10px 8px;
+  display: grid;
+  place-items: center;
+  color: var(--primary-strong);
+  font-weight: 720;
+  border: 1px solid #bcebd0;
+  border-radius: var(--radius);
+  background: var(--primary-soft);
+}
+
+.admin-flow span {
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+  background: var(--blue-soft);
 }
 
 .entry-capabilities {
@@ -1685,6 +1754,14 @@ body.modal-open {
   color: var(--ink-strong);
 }
 
+.login-back-link {
+  position: fixed;
+  top: 22px;
+  left: 22px;
+  z-index: 20;
+  box-shadow: var(--shadow-sm);
+}
+
 .passenger-page {
   background:
     linear-gradient(180deg, rgba(15, 107, 87, 0.08), transparent 420px),
@@ -1738,8 +1815,7 @@ body:not([data-passenger-authenticated="true"]) .passenger-shell {
 
 .passenger-shell {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: var(--sidebar) minmax(0, 1fr);
+  display: block;
 }
 
 .passenger-sidebar {
@@ -1756,6 +1832,128 @@ body:not([data-passenger-authenticated="true"]) .passenger-shell {
 
 .passenger-main {
   min-width: 0;
+}
+
+.passenger-product-shell {
+  background:
+    linear-gradient(180deg, rgba(15, 107, 87, 0.09), transparent 360px),
+    var(--bg);
+}
+
+.passenger-product-header {
+  position: sticky;
+  top: 0;
+  z-index: 80;
+  min-height: 76px;
+  padding: 12px clamp(18px, 4vw, 48px);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  border-bottom: 1px solid rgba(217, 226, 234, 0.82);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-sm);
+}
+
+.product-brand {
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.product-brand strong,
+.product-brand span {
+  display: block;
+}
+
+.product-brand span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.passenger-product-nav {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.passenger-product-nav a {
+  min-height: 42px;
+  padding: 10px 13px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted-strong);
+  text-decoration: none;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.passenger-product-nav a:hover,
+.passenger-product-nav a.active {
+  color: var(--primary-strong);
+  background: var(--primary-soft);
+}
+
+.passenger-userbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.passenger-content {
+  width: min(1240px, calc(100% - 36px));
+  margin: 0 auto;
+  padding: 30px 0 52px;
+}
+
+.passenger-hero-search {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  padding: clamp(24px, 4vw, 44px);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(15, 107, 87, 0.10), transparent 44%),
+    rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-md);
+}
+
+.ticket-hero-copy {
+  max-width: 760px;
+}
+
+.ticket-hero-copy p:last-child {
+  margin-bottom: 0;
+  color: var(--muted-strong);
+  font-size: 16px;
+}
+
+.ticket-search-card {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr)) auto auto auto;
+  gap: 12px;
+  align-items: end;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.ticket-search-card label {
+  min-width: 0;
+}
+
+.ticket-result-panel {
+  border-radius: 12px;
 }
 
 .passenger-metric-grid {
@@ -1949,8 +2147,24 @@ body[data-capture="risks"] .section:not(#risks) {
   .refunds-toolbar,
   .risk-toolbar,
   .outbox-toolbar,
-  .search-toolbar {
+  .search-toolbar,
+  .ticket-search-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .passenger-product-header {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .passenger-product-nav {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .passenger-userbar {
+    justify-content: flex-start;
   }
 }
 
@@ -1978,6 +2192,10 @@ body[data-capture="risks"] .section:not(#risks) {
   .entry-hero {
     grid-template-columns: 1fr;
     align-items: start;
+  }
+
+  .portal-summary {
+    grid-template-columns: 1fr;
   }
 
   .app-shell,
@@ -2037,6 +2255,7 @@ body[data-capture="risks"] .section:not(#risks) {
   .risk-toolbar,
   .outbox-toolbar,
   .search-toolbar,
+  .ticket-search-card,
   .rule-list {
     grid-template-columns: 1fr;
   }
@@ -2071,6 +2290,40 @@ body[data-capture="risks"] .section:not(#risks) {
 
   .entry-card {
     min-height: 300px;
+  }
+
+  .entry-flow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .entry-status {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    justify-content: center;
+  }
+
+  .login-back-link {
+    top: 12px;
+    left: 12px;
+  }
+
+  .passenger-content {
+    width: min(100% - 24px, 1240px);
+    padding-top: 18px;
+  }
+
+  .passenger-hero-search {
+    padding: 18px;
+  }
+
+  .passenger-product-header {
+    padding: 12px;
+  }
+
+  .passenger-userbar {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .nav {

@@ -8,14 +8,14 @@
 </head>
 <body class="passenger-page">
   <section class="passenger-login" aria-label="乘客登录">
+    <a class="back-link login-back-link" href="./index.html">返回入口</a>
     <div class="passenger-login-hero">
-      <a class="back-link" href="./index.html">返回入口</a>
       <div class="brand-card">
         <div class="brand-mark large">RT</div>
         <div>
           <p class="eyebrow">Passenger Ticketing</p>
           <h1>乘客购票服务</h1>
-          <p class="hero-copy">查询可购车次，创建待支付订单，完成模拟支付，并在同一端查看订单、支付和退款记录。</p>
+          <p class="hero-copy">为普通乘客提供查票、下单、支付、退票和个人交易记录查询。登录后只展示当前乘客自己的订单和流水。</p>
         </div>
       </div>
       <div class="login-insights passenger-insights">
@@ -29,7 +29,7 @@
       <div class="login-card-head">
         <p class="eyebrow">Passenger Access</p>
         <h2>登录乘客端</h2>
-        <p>使用普通乘客账号登录后，只能查看和操作当前账号自己的订单与流水。</p>
+        <p>使用普通乘客账号登录后，可以查询可购车次并管理自己的出行订单。</p>
       </div>
       <form id="passenger-login-form" class="login-form">
         <label>
@@ -55,55 +55,85 @@
     </div>
   </section>
 
-  <div class="passenger-shell">
-    <aside class="passenger-sidebar">
-      <div class="brand">
+  <div class="passenger-shell passenger-product-shell">
+    <header class="passenger-product-header">
+      <a class="product-brand" href="#passenger-search" aria-label="返回购票首页">
         <div class="brand-mark">RT</div>
         <div>
-          <strong>乘客购票</strong>
-          <span>Ticket Service</span>
+          <strong>铁路购票</strong>
+          <span>Passenger Service</span>
         </div>
-      </div>
-      <nav class="nav passenger-nav" aria-label="乘客端导航">
-        <a href="#passenger-summary"><span class="nav-icon rail-icon"></span>乘客概览</a>
-        <a href="#passenger-search"><span class="nav-icon query-icon"></span>查票购票</a>
-        <a href="#passenger-orders"><span class="nav-icon order-icon"></span>我的订单</a>
-        <a href="#passenger-payments"><span class="nav-icon pay-icon"></span>支付流水</a>
-        <a href="#passenger-refunds"><span class="nav-icon refund-icon"></span>退款流水</a>
+      </a>
+      <nav class="passenger-nav passenger-product-nav" aria-label="乘客端导航">
+        <a href="#passenger-search">查票购票</a>
+        <a href="#passenger-summary">我的行程</a>
+        <a href="#passenger-orders">我的订单</a>
+        <a href="#passenger-payments">支付流水</a>
+        <a href="#passenger-refunds">退款流水</a>
       </nav>
-      <div class="sidebar-footer">
-        <span>当前端口</span>
-        <strong>Passenger / USER</strong>
+      <div class="passenger-userbar">
+        <div class="auth-summary">
+          <span id="passenger-auth-role">未登录</span>
+          <strong id="passenger-auth-user">访客模式</strong>
+        </div>
+        <button id="passenger-logout-button" class="ghost-button" type="button">退出</button>
       </div>
-    </aside>
+    </header>
 
-    <main class="main passenger-main">
-      <header class="topbar passenger-topbar">
-        <div>
-          <p class="eyebrow">Passenger Workspace</p>
-          <h1>我的出行与交易</h1>
+    <main class="passenger-content">
+      <section id="passenger-search" class="section passenger-section passenger-hero-search">
+        <div class="ticket-hero-copy">
+          <p class="eyebrow">Ticket Search</p>
+          <h1>查找下一段行程</h1>
+          <p>选择出发站、到达站和乘车日期，查看可购车次并快速下单。也可以直接查看全部可购车次或使用热门线路。</p>
         </div>
-        <div class="topbar-actions">
-          <a class="ghost-button" href="./index.html">入口页</a>
-          <a class="ghost-button" href="./admin.html">管理端</a>
-          <div class="auth-summary">
-            <span id="passenger-auth-role">未登录</span>
-            <strong id="passenger-auth-user">访客模式</strong>
-          </div>
-          <button id="passenger-logout-button" class="ghost-button" type="button">退出登录</button>
+        <form id="passenger-search-form" class="ticket-search-card">
+          <label>
+            出发站
+            <select id="passenger-from-station"></select>
+          </label>
+          <label>
+            到达站
+            <select id="passenger-to-station"></select>
+          </label>
+          <label>
+            乘车日期
+            <input id="passenger-travel-date" type="date">
+          </label>
+          <button class="primary-button" type="submit">查询车票</button>
+          <button id="passenger-show-available" class="secondary-button" type="button">全部可购车次</button>
+          <button id="passenger-show-hot-routes" class="ghost-button" type="button">热门线路</button>
+        </form>
+        <div id="passenger-hot-routes" class="route-shortcuts expanded" aria-label="热门线路快捷入口"></div>
+        <div class="table-wrap passenger-table-wrap ticket-result-panel">
+          <table>
+            <thead>
+              <tr>
+                <th>车次</th>
+                <th>区间</th>
+                <th>日期</th>
+                <th>时间</th>
+                <th>席别</th>
+                <th>余票</th>
+                <th>票价</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="passenger-train-results"></tbody>
+          </table>
         </div>
-      </header>
+      </section>
 
       <section id="passenger-summary" class="section passenger-section">
         <div class="section-heading">
           <div>
             <p class="eyebrow">My Travel Summary</p>
-            <h2>乘客概览</h2>
-            <p>聚合当前乘客的订单状态、支付与退款记录，并展示最近订单和即将出行。</p>
+            <h2>我的行程概览</h2>
+            <p>查看当前账号的订单状态、最近订单、即将出行和资金流水数量。</p>
           </div>
-          <button id="refresh-passenger" class="primary-button" type="button">刷新数据</button>
+          <button id="refresh-passenger" class="secondary-button" type="button">刷新</button>
         </div>
-        <div class="metric-grid passenger-metric-grid">
+        <div class="metric-grid passenger-metric-grid travel-metric-grid">
           <button class="metric primary-metric clickable-card" type="button" data-jump-orders="">
             <span>全部订单</span>
             <strong id="passenger-metric-total">0</strong>
@@ -140,7 +170,6 @@
             <small>仅当前乘客</small>
           </button>
         </div>
-
         <div class="passenger-dashboard-grid">
           <div class="panel">
             <div class="panel-head">
@@ -160,49 +189,6 @@
             </div>
             <div id="passenger-upcoming-trips" class="event-list compact-list"></div>
           </div>
-        </div>
-      </section>
-
-      <section id="passenger-search" class="section passenger-section">
-        <div class="section-title">
-          <p class="eyebrow">Train Search</p>
-          <h2>查票购票</h2>
-          <p>按站点和日期查询可售车次，也可以直接查看全部可购车次或使用热门线路快捷入口。</p>
-        </div>
-        <form id="passenger-search-form" class="toolbar search-toolbar passenger-toolbar">
-          <label>
-            出发站
-            <select id="passenger-from-station"></select>
-          </label>
-          <label>
-            到达站
-            <select id="passenger-to-station"></select>
-          </label>
-          <label>
-            乘车日期
-            <input id="passenger-travel-date" type="date">
-          </label>
-          <button class="primary-button" type="submit">查询车次</button>
-          <button id="passenger-show-available" class="secondary-button" type="button">查看全部可购车次</button>
-          <button id="passenger-show-hot-routes" class="ghost-button" type="button">热门线路</button>
-        </form>
-        <div id="passenger-hot-routes" class="route-shortcuts expanded" aria-label="热门线路快捷入口"></div>
-        <div class="table-wrap passenger-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>车次</th>
-                <th>区间</th>
-                <th>日期</th>
-                <th>时间</th>
-                <th>席别</th>
-                <th>余票</th>
-                <th>票价</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody id="passenger-train-results"></tbody>
-          </table>
         </div>
       </section>
 
