@@ -2362,6 +2362,466 @@ body[data-capture="risks"] .section:not(#risks) {
   }
 }
 
+/* Passenger layout polish: calmer portal, compact ticketing surface */
+.portal-page {
+  background:
+    linear-gradient(135deg, rgba(14, 91, 112, 0.10), transparent 34%),
+    linear-gradient(315deg, rgba(15, 107, 87, 0.09), transparent 36%),
+    #f4f8fb;
+}
+
+.portal-page::before {
+  inset: 18px;
+  border-color: rgba(22, 49, 44, 0.06);
+}
+
+.portal-shell {
+  min-height: 100dvh;
+  padding: clamp(20px, 4vh, 44px) 0;
+}
+
+.portal-landing {
+  grid-template-columns: minmax(0, 1fr) minmax(390px, 0.86fr);
+  gap: clamp(22px, 4vw, 44px);
+}
+
+.portal-copy {
+  gap: 16px;
+}
+
+.portal-copy h1 {
+  font-size: clamp(34px, 4.4vw, 56px);
+  line-height: 1.04;
+}
+
+.portal-lead {
+  max-width: 580px;
+  font-size: 16px;
+}
+
+.portal-proof {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.portal-proof > div {
+  min-height: 74px;
+  padding: 12px;
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(22, 49, 44, 0.05);
+}
+
+.portal-choice-grid {
+  gap: 14px;
+}
+
+.portal-choice {
+  min-height: 206px;
+  padding: clamp(20px, 2.6vw, 28px);
+  cursor: default;
+  box-shadow: 0 18px 46px rgba(22, 49, 44, 0.10);
+}
+
+.portal-choice:hover {
+  transform: translateY(-2px);
+}
+
+.portal-choice h2 {
+  font-size: clamp(24px, 2.5vw, 32px);
+}
+
+.portal-choice p {
+  font-size: 15px;
+}
+
+.choice-action {
+  color: #ffffff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.choice-action:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+}
+
+.choice-index,
+.choice-points {
+  display: none;
+}
+
+.passenger-consumer-page {
+  background:
+    linear-gradient(180deg, rgba(12, 93, 112, 0.08), transparent 380px),
+    #f4f8fb;
+}
+
+.passenger-gateway {
+  background:
+    linear-gradient(135deg, rgba(12, 93, 112, 0.11), transparent 36%),
+    linear-gradient(315deg, rgba(15, 107, 87, 0.08), transparent 34%),
+    #f4f8fb;
+}
+
+.passenger-gateway-copy {
+  gap: 18px;
+}
+
+.passenger-gateway-copy h1 {
+  font-size: clamp(34px, 4.7vw, 60px);
+}
+
+.passenger-login-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.passenger-login-points span {
+  min-height: 34px;
+  padding: 7px 12px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(15, 107, 87, 0.14);
+  border-radius: 999px;
+  color: #31524a;
+  background: rgba(255, 255, 255, 0.70);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.passenger-consumer-shell {
+  background:
+    linear-gradient(180deg, rgba(12, 93, 112, 0.08), transparent 400px),
+    #f4f8fb;
+}
+
+.passenger-site-header {
+  min-height: 70px;
+  padding: 10px clamp(18px, 4vw, 46px);
+  transition: min-height 0.2s ease, padding 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.passenger-header-compact .passenger-site-header {
+  min-height: 48px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  background: rgba(244, 248, 251, 0.72);
+  box-shadow: 0 8px 28px rgba(22, 49, 44, 0.08);
+}
+
+.passenger-header-compact .passenger-site-header:hover,
+.passenger-site-header:focus-within {
+  min-height: 70px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: rgba(244, 248, 251, 0.94);
+}
+
+.passenger-header-compact .passenger-account {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+.passenger-header-compact .passenger-site-header:hover .passenger-account,
+.passenger-site-header:focus-within .passenger-account {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.passenger-logo {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: #0f6b57;
+  background: linear-gradient(135deg, #ffffff, #e7f3f1);
+  border: 1px solid rgba(15, 107, 87, 0.14);
+  box-shadow: 0 10px 24px rgba(15, 107, 87, 0.12);
+}
+
+.passenger-logo svg {
+  width: 27px;
+  height: 27px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.passenger-site-main {
+  gap: 22px;
+}
+
+.booking-landing {
+  grid-template-columns: minmax(330px, 0.72fr) minmax(0, 1.28fr);
+}
+
+.booking-hero-panel,
+.passenger-search-results,
+.passenger-home-section,
+.passenger-order-center,
+.passenger-record-section {
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 14px 40px rgba(22, 49, 44, 0.08);
+}
+
+.booking-hero-panel {
+  align-content: start;
+  padding: 24px;
+}
+
+.booking-copy h1 {
+  font-size: clamp(30px, 3.5vw, 44px);
+}
+
+.booking-copy p:last-child {
+  font-size: 15px;
+}
+
+.booking-search-card {
+  padding: 14px;
+  grid-template-columns: 1fr;
+  border-radius: 16px;
+  box-shadow: 0 10px 26px rgba(22, 49, 44, 0.06);
+}
+
+.booking-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.passenger-route-shortcuts {
+  max-height: 110px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.passenger-search-results {
+  max-height: 640px;
+  overflow: hidden;
+}
+
+.train-ticket-list {
+  max-height: 560px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scroll-padding-top: 56px;
+}
+
+.train-list-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin-bottom: 10px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(22, 49, 44, 0.10);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.train-list-toolbar strong,
+.train-list-toolbar span {
+  display: block;
+}
+
+.train-list-toolbar strong {
+  color: #172033;
+  font-size: 13px;
+}
+
+.train-list-toolbar span {
+  color: #66736f;
+  font-size: 12px;
+}
+
+.train-ticket-card {
+  min-height: 82px;
+  padding: 12px;
+  grid-template-columns: minmax(116px, 0.78fr) minmax(160px, 1fr) minmax(120px, 0.72fr) auto;
+  border-radius: 16px;
+  box-shadow: 0 8px 18px rgba(22, 49, 44, 0.055);
+}
+
+.ticket-card-route {
+  gap: 3px;
+}
+
+.ticket-card-route .train-no {
+  padding: 4px 9px;
+  font-size: 13px;
+}
+
+.ticket-card-route span,
+.ticket-card-meta span {
+  font-size: 12px;
+}
+
+.ticket-card-time {
+  gap: 8px;
+}
+
+.ticket-card-time strong {
+  font-size: 15px;
+}
+
+.ticket-card-meta {
+  gap: 6px;
+}
+
+.ticket-card-action {
+  gap: 6px;
+}
+
+.ticket-price {
+  font-size: 18px;
+}
+
+.passenger-home-section,
+.passenger-order-center,
+.passenger-record-section {
+  padding: 22px;
+}
+
+.journey-stat-strip {
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 8px;
+}
+
+.journey-stat {
+  min-height: 74px;
+  padding: 11px;
+  border-radius: 14px;
+}
+
+.journey-stat strong {
+  font-size: 22px;
+}
+
+.journey-board {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.journey-panel {
+  max-height: 330px;
+  overflow-y: auto;
+  padding: 14px;
+  border-radius: 16px;
+}
+
+.journey-panel .event-item {
+  min-height: 66px;
+  padding: 11px;
+}
+
+.event-item.empty-item {
+  min-height: 58px;
+  align-content: center;
+  color: #66736f;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: none;
+}
+
+.journey-card-list {
+  max-height: 560px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.passenger-order-card {
+  padding: 13px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(22, 49, 44, 0.06);
+}
+
+.passenger-order-main h3 {
+  font-size: 16px;
+}
+
+.passenger-order-price strong {
+  font-size: 18px;
+}
+
+.passenger-order-meta {
+  margin-top: 9px;
+  padding-top: 9px;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.passenger-order-actions {
+  margin-top: 10px;
+}
+
+.passenger-record-list {
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.money-record-card {
+  padding: 13px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(22, 49, 44, 0.06);
+}
+
+.record-title-row {
+  padding-bottom: 9px;
+}
+
+.record-detail-grid {
+  gap: 8px;
+}
+
+@media (max-width: 1180px) {
+  .portal-landing,
+  .booking-landing {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-choice-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .booking-search-card {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .booking-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .portal-choice-grid,
+  .portal-proof,
+  .booking-search-card,
+  .booking-actions,
+  .journey-board,
+  .passenger-record-list {
+    grid-template-columns: 1fr;
+  }
+
+  .passenger-search-results,
+  .train-ticket-list,
+  .journey-card-list,
+  .passenger-record-list {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 /* Dual portal and passenger product redesign */
 .portal-page {
   min-height: 100dvh;

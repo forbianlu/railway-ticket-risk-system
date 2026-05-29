@@ -8,6 +8,9 @@ const passengerState = {
   selectedTrain: null,
   authExpiredNotified: false,
   navObserver: null,
+  scrollTicking: false,
+  lastScrollY: 0,
+  trains: { items: [], page: 0, size: 6 },
   orders: { page: 0, size: 8, totalPages: 0, totalElements: 0, first: true, last: true },
   payments: { page: 0, size: 8, totalPages: 0, totalElements: 0, first: true, last: true },
   refunds: { page: 0, size: 8, totalPages: 0, totalElements: 0, first: true, last: true },
@@ -337,6 +340,7 @@ async function loadAvailablePassengerTrains() {
 
 function renderPassengerTrains(trains) {
   if (!trains.length) {
+    passengerState.trains = { ...passengerState.trains, items: [], page: 0 };
     renderTrainEmpty("当前线路暂无可售车次，可查看全部可购车次或选择热门线路。");
     return;
   }
@@ -344,7 +348,34 @@ function renderPassengerTrains(trains) {
   trains.forEach(train => {
     passengerState.trainByInventory[String(train.inventoryId)] = train;
   });
-  elements.trainResults.innerHTML = trains.map(train => `
+  passengerState.trains = { ...passengerState.trains, items: trains, page: 0 };
+  renderTrainPage();
+}
+
+function renderTrainPage() {
+  const { items, page, size } = passengerState.trains;
+  if (!items.length) {
+    renderTrainEmpty("当前线路暂无可售车次，可查看全部可购车次或选择热门线路。");
+    return;
+  }
+  const totalPages = Math.max(1, Math.ceil(items.length / size));
+  const safePage = Math.min(Math.max(page, 0), totalPages - 1);
+  passengerState.trains.page = safePage;
+  const start = safePage * size;
+  const visibleTrains = items.slice(start, start + size);
+  const controls = `
+    <div class="train-list-toolbar">
+      <div>
+        <strong>当前展示 ${visibleTrains.length} / ${items.length} 趟</strong>
+        <span>第 ${safePage + 1} / ${totalPages} 页</span>
+      </div>
+      <div class="inline-actions">
+        <button class="secondary-button compact-button" type="button" data-train-page="prev" ${safePage === 0 ? "disabled" : ""}>上一页</button>
+        <button class="secondary-button compact-button" type="button" data-train-page="next" ${safePage >= totalPages - 1 ? "disabled" : ""}>下一页</button>
+      </div>
+    </div>
+  `;
+  elements.trainResults.innerHTML = controls + visibleTrains.map(train => `
     <article class="train-ticket-card">
       <div class="ticket-card-route">
         <strong class="train-no">${escapeHtml(train.trainNo)}</strong>
@@ -365,6 +396,14 @@ function renderPassengerTrains(trains) {
       </div>
     </article>
   `).join("");
+  elements.trainResults.querySelectorAll("[data-train-page]").forEach(button => {
+    button.addEventListener("click", () => {
+      const direction = button.dataset.trainPage === "next" ? 1 : -1;
+      passengerState.trains.page += direction;
+      renderTrainPage();
+      elements.trainResults.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  });
   elements.trainResults.querySelectorAll("[data-passenger-buy]").forEach(button => {
     button.addEventListener("click", () => openBuyModal(button.dataset.passengerBuy));
   });
@@ -817,27 +856,41 @@ function loadPassengerAuth() {
 
 function setupPassengerNavigation() {
   document.querySelectorAll(".passenger-nav a").forEach(link => {
-    link.addEventListener("click", () => {
-      window.setTimeout(() => updateActiveNav(link.getAttribute("href").slice(1)), 80);
+    link.addEventListener("click", event => {
+      event.preventDefault();
+      activateSection(link.getAttribute("href").slice(1));
     });
   });
 }
 
 function setupPassengerScrollSpy() {
   const sections = Array.from(document.querySelectorAll(".passenger-section"));
-  if (!("IntersectionObserver" in window) || !sections.length) {
-    updateActiveNav("passenger-summary");
+  if (!sections.length) {
+    updateActiveNav("passenger-search");
     return;
   }
-  passengerState.navObserver = new IntersectionObserver(entries => {
-    const visible = entries
-      .filter(entry => entry.isIntersecting)
-      .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-    if (visible) {
-      updateActiveNav(visible.target.id);
+  const onScroll = () => {
+    if (passengerState.scrollTicking) {
+      return;
     }
-  }, { rootMargin: "-20% 0px -58% 0px", threshold: [0.18, 0.32, 0.5] });
-  sections.forEach(section => passengerState.navObserver.observe(section));
+    passengerState.scrollTicking = true;
+    window.requestAnimationFrame(() => {
+      updateHeaderDensity();
+      const headerOffset = getPassengerHeaderOffset();
+      const anchorY = window.scrollY + headerOffset + 28;
+      let current = sections[0].id;
+      sections.forEach(section => {
+        if (section.offsetTop <= anchorY) {
+          current = section.id;
+        }
+      });
+      updateActiveNav(current);
+      passengerState.scrollTicking = false;
+    });
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onScroll);
+  onScroll();
 }
 
 function updateActiveNav(sectionId) {
@@ -852,9 +905,28 @@ function activateSection(sectionId) {
     return;
   }
   updateActiveNav(sectionId);
-  section.scrollIntoView({ behavior: "smooth", block: "start" });
+  const top = section.getBoundingClientRect().top + window.scrollY - getPassengerHeaderOffset() - 14;
+  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   section.classList.add("section-highlight");
   window.setTimeout(() => section.classList.remove("section-highlight"), 1200);
+}
+
+function getPassengerHeaderOffset() {
+  const header = document.querySelector(".passenger-site-header");
+  return header ? header.getBoundingClientRect().height : 0;
+}
+
+function updateHeaderDensity() {
+  const currentY = window.scrollY;
+  const goingDown = currentY > passengerState.lastScrollY + 8;
+  const goingUp = currentY < passengerState.lastScrollY - 8;
+  const atTop = currentY < 24;
+  if (atTop || goingUp) {
+    document.body.classList.remove("passenger-header-compact");
+  } else if (goingDown && currentY > 120) {
+    document.body.classList.add("passenger-header-compact");
+  }
+  passengerState.lastScrollY = currentY;
 }
 
 function tableEmpty(colspan, message) {
