@@ -175,6 +175,33 @@
 | SUCCESS | 退款渠道确认成功 | 订单保持 REFUNDED |
 | FAILED | 退款渠道确认失败 | 订单保持 REFUNDED，后续可人工处理或重新发起退款 |
 
+## ticket_records
+
+| Field | Type | Description |
+| --- | --- | --- |
+| id | bigint | Primary key |
+| ticket_no | varchar | Electronic ticket number, unique |
+| order_id | bigint | Related order ID, unique |
+| order_no | varchar | Related order number |
+| user_id | bigint | Passenger user ID |
+| train_no | varchar | Train number |
+| departure_station | varchar | Departure station name |
+| arrival_station | varchar | Arrival station name |
+| travel_date | date | Travel date |
+| departure_time | time | Departure time |
+| arrival_time | time | Arrival time |
+| seat_type | varchar | Seat type |
+| passenger_name | varchar | Passenger name |
+| passenger_id_card_masked | varchar | Masked passenger ID card number |
+| amount | decimal | Ticket amount |
+| status | varchar | Ticket status: ISSUED, REFUNDED, CANCELLED |
+| issued_at | timestamp | Ticket issue time |
+| invalidated_at | timestamp | Ticket invalidation time |
+| created_at | timestamp | Created time |
+| updated_at | timestamp | Updated time |
+
+Ticket records are generated after payment success. A paid order has at most one valid ticket record. When an order is refunded, the ticket record is marked `REFUNDED` and `invalidated_at` is recorded. This table tracks itinerary validity without changing the order state machine.
+
 ## outbox_events
 
 | 字段 | 类型 | 说明 |

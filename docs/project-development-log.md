@@ -565,6 +565,33 @@
 ### 当前提交状态
 
 - 本轮计划提交信息为 `add passenger frontend entry`。
+
+## 电子票与订单详情聚合
+
+### 目标
+
+新增电子票记录和订单详情聚合能力，让乘客端可以查看自己的行程单与资金流水，让运营管理端可以从订单维度查看交易、票务、风险、事件和日志链路。
+
+### 主要内容
+
+- 新增 `ticket_records` 表、`TicketRecord` 实体和 `TicketStatus`。
+- 支付成功后自动签发电子票，状态为 `ISSUED`。
+- 退票成功后将电子票标记为 `REFUNDED` 并记录失效时间。
+- 演示数据为已支付和已退票订单补充电子票记录。
+- 新增乘客订单详情接口：`GET /api/passenger/orders/{id}/detail`。
+- 新增管理端订单详情接口：`GET /api/orders/{id}/detail`。
+- 乘客详情只返回本人订单、电子票、支付流水和退款流水。
+- 管理端详情额外返回风险事件、Outbox 事件和最近操作日志。
+- 乘客端和管理端前端均增加订单详情入口和详情弹窗。
+
+### 验证结果
+
+- Maven 测试通过：`Tests run: 39, Failures: 0, Errors: 0, Skipped: 0`。
+- 前端脚本检查通过：`frontend/app.js`、`frontend/passenger.js`。
+
+### 当前提交状态
+
+- 本轮计划提交信息：`add ticket records and order details`。
 - 本轮提交仅保留在本地，不自动 push。
 
 ### 后续建议

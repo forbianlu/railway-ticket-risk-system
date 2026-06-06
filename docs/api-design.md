@@ -842,3 +842,46 @@ Authorization: Bearer {token}
 | `admin` | `admin123` | `ADMIN` |
 | `risk` | `risk123` | `RISK_OFFICER` |
 | `ops` | `ops123` | `OPERATOR` |
+
+## Ticket records and order detail APIs
+
+### Passenger order detail
+
+```http
+GET /api/passenger/orders/{id}/detail
+Authorization: Bearer {USER token}
+```
+
+Returns the current passenger's order detail. The response includes the order, electronic ticket, payment records, and refund records. The service validates order ownership before returning data.
+
+### Admin order detail
+
+```http
+GET /api/orders/{id}/detail
+Authorization: Bearer {ADMIN | OPERATOR | RISK_OFFICER token}
+```
+
+Returns a transaction trace view for the order. The response includes the order, electronic ticket, payment records, refund records, related risk events, related Outbox events, and recent operation logs.
+
+### Electronic ticket response fields
+
+```json
+{
+  "ticketNo": "TK202605180001",
+  "orderId": 1,
+  "orderNo": "RT202605180001",
+  "trainNo": "G101",
+  "departureStation": "Beijing South",
+  "arrivalStation": "Shanghai Hongqiao",
+  "travelDate": "2026-06-06",
+  "seatType": "SECOND_CLASS",
+  "passengerName": "Passenger",
+  "passengerIdCardMasked": "110101********0011",
+  "amount": 553.00,
+  "status": "ISSUED",
+  "issuedAt": "2026-06-06T10:00:00",
+  "invalidatedAt": null
+}
+```
+
+The ticket is issued after payment success and marked `REFUNDED` after order refund. Ticket status does not change the order state machine.

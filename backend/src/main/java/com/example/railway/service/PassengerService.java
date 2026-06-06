@@ -15,6 +15,7 @@ import com.example.railway.dto.CreateOrderRequest;
 import com.example.railway.dto.CreatePaymentRequest;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
+import com.example.railway.dto.OrderDetailResponse;
 import com.example.railway.dto.PassengerCreateOrderRequest;
 import com.example.railway.dto.PassengerSummaryResponse;
 import com.example.railway.dto.PaymentPageResponse;
@@ -36,19 +37,22 @@ public class PassengerService {
     private final OrderService orderService;
     private final PaymentService paymentService;
     private final RefundService refundService;
+    private final OrderDetailService orderDetailService;
 
     public PassengerService(TicketOrderRepository ticketOrderRepository,
                             PaymentRecordRepository paymentRecordRepository,
                             RefundRecordRepository refundRecordRepository,
                             OrderService orderService,
                             PaymentService paymentService,
-                            RefundService refundService) {
+                            RefundService refundService,
+                            OrderDetailService orderDetailService) {
         this.ticketOrderRepository = ticketOrderRepository;
         this.paymentRecordRepository = paymentRecordRepository;
         this.refundRecordRepository = refundRecordRepository;
         this.orderService = orderService;
         this.paymentService = paymentService;
         this.refundService = refundService;
+        this.orderDetailService = orderDetailService;
     }
 
     @Transactional(readOnly = true)
@@ -73,6 +77,11 @@ public class PassengerService {
     @Transactional(readOnly = true)
     public OrderPageResponse listOrders(String status, Integer page, Integer size) {
         return orderService.listOrders(currentUserId(), status, null, null, null, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDetailResponse orderDetail(Long orderId) {
+        return orderDetailService.passengerDetail(orderId, currentUserId());
     }
 
     @Transactional

@@ -48,6 +48,8 @@ import com.example.railway.domain.RiskStatus;
 import com.example.railway.domain.SeatInventory;
 import com.example.railway.domain.Station;
 import com.example.railway.domain.TicketOrder;
+import com.example.railway.domain.TicketRecord;
+import com.example.railway.domain.TicketStatus;
 import com.example.railway.domain.Train;
 import com.example.railway.dto.AuthResponse;
 import com.example.railway.dto.CreateOrderRequest;
@@ -56,6 +58,7 @@ import com.example.railway.dto.DashboardSummary;
 import com.example.railway.dto.LoginRequest;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
+import com.example.railway.dto.OrderDetailResponse;
 import com.example.railway.dto.OutboxDispatchResponse;
 import com.example.railway.dto.OutboxEventPageResponse;
 import com.example.railway.dto.OutboxEventResponse;
@@ -86,6 +89,7 @@ import com.example.railway.repository.RiskEventRepository;
 import com.example.railway.repository.SeatInventoryRepository;
 import com.example.railway.repository.StationRepository;
 import com.example.railway.repository.TicketOrderRepository;
+import com.example.railway.repository.TicketRecordRepository;
 import com.example.railway.repository.TrainRepository;
 import com.example.railway.service.CallbackSignatureService;
 import com.example.railway.service.outbox.OutboxEventDispatcher;
@@ -112,6 +116,9 @@ class RailwayApiIntegrationTests {
 
     @Autowired
     private TicketOrderRepository ticketOrderRepository;
+
+    @Autowired
+    private TicketRecordRepository ticketRecordRepository;
 
     @Autowired
     private AppUserRepository appUserRepository;
@@ -179,6 +186,7 @@ class RailwayApiIntegrationTests {
         long trainCount = trainRepository.count();
         long inventoryCount = seatInventoryRepository.count();
         long orderCount = ticketOrderRepository.count();
+        long ticketCount = ticketRecordRepository.count();
         long paymentCount = paymentRecordRepository.count();
         long refundCount = refundRecordRepository.count();
         long riskCount = riskEventRepository.count();
@@ -189,6 +197,7 @@ class RailwayApiIntegrationTests {
         assertThat(trainCount).isGreaterThanOrEqualTo(16);
         assertThat(inventoryCount).isGreaterThanOrEqualTo(200);
         assertThat(orderCount).isGreaterThanOrEqualTo(48);
+        assertThat(ticketCount).isGreaterThanOrEqualTo(20);
         assertThat(paymentCount).isGreaterThanOrEqualTo(48);
         assertThat(refundCount).isGreaterThanOrEqualTo(12);
         assertThat(riskCount).isGreaterThanOrEqualTo(20);
@@ -197,6 +206,8 @@ class RailwayApiIntegrationTests {
 
         assertThat(ticketOrderRepository.findAll()).extracting(TicketOrder::getStatus)
                 .contains(OrderStatus.PENDING_PAYMENT, OrderStatus.PAID, OrderStatus.CLOSED, OrderStatus.REFUNDED);
+        assertThat(ticketRecordRepository.findAll()).extracting(TicketRecord::getStatus)
+                .contains(TicketStatus.ISSUED, TicketStatus.REFUNDED);
         assertThat(paymentRecordRepository.findAll()).extracting(PaymentRecord::getStatus)
                 .contains(PaymentStatus.PENDING, PaymentStatus.SUCCESS, PaymentStatus.FAILED);
         assertThat(refundRecordRepository.findAll()).extracting(RefundRecord::getStatus)
@@ -211,6 +222,7 @@ class RailwayApiIntegrationTests {
         assertThat(stationRepository.count()).isEqualTo(stationCount);
         assertThat(trainRepository.count()).isEqualTo(trainCount);
         assertThat(ticketOrderRepository.count()).isEqualTo(orderCount);
+        assertThat(ticketRecordRepository.count()).isEqualTo(ticketCount);
         assertThat(paymentRecordRepository.count()).isEqualTo(paymentCount);
         assertThat(refundRecordRepository.count()).isEqualTo(refundCount);
         assertThat(riskEventRepository.count()).isEqualTo(riskCount);
@@ -341,6 +353,101 @@ class RailwayApiIntegrationTests {
         assertThat(afterCreate.getRemainingSeats()).isEqualTo(before.getRemainingSeats() - 1);
         assertThat(refunded.getStatus()).isEqualTo("REFUNDED");
         assertThat(afterRefund.getRemainingSeats()).isEqualTo(before.getRemainingSeats());
+    }
+
+    @Test
+    void shouldIssueTicketAndReturnPassengerOrderDetail() {
+        AuthResponse passenger = login("passenger1", "123456");
+        AuthResponse otherPassenger = login("passenger2", "123456");
+        TrainSearchResponse train = firstTrainInventory();
+
+        OrderResponse pending = createPassengerOrder(passenger, train, "PassengerTicketUser");
+        ResponseEntity<OrderDetailResponse> pendingDetail = restTemplate.exchange(
+                "/api/passenger/orders/{id}/detail",
+                HttpMethod.GET,
+                authorizedEntity(passenger),
+                OrderDetailResponse.class,
+                pending.getId()
+        );
+        assertThat(pendingDetail.getStatusCodeValue()).isEqualTo(200);
+        assertThat(pendingDetail.getBody()).isNotNull();
+        assertThat(pendingDetail.getBody().getTicket()).isNull();
+
+        ResponseEntity<OrderResponse> paidResponse = restTemplate.exchange(
+                "/api/passenger/orders/{id}/pay",
+                HttpMethod.POST,
+                authorizedEntity(passenger),
+                OrderResponse.class,
+                pending.getId()
+        );
+        assertThat(paidResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(paidResponse.getBody()).isNotNull();
+        assertThat(paidResponse.getBody().getStatus()).isEqualTo("PAID");
+
+        TicketRecord ticket = ticketRecordRepository.findByOrderId(pending.getId())
+                .orElseThrow(() -> new AssertionError("expected ticket"));
+        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.ISSUED);
+        assertThat(ticket.getPassengerIdCardMasked()).contains("****");
+
+        ResponseEntity<OrderDetailResponse> detail = restTemplate.exchange(
+                "/api/passenger/orders/{id}/detail",
+                HttpMethod.GET,
+                authorizedEntity(passenger),
+                OrderDetailResponse.class,
+                pending.getId()
+        );
+        assertThat(detail.getStatusCodeValue()).isEqualTo(200);
+        assertThat(detail.getBody()).isNotNull();
+        assertThat(detail.getBody().getTicket()).isNotNull();
+        assertThat(detail.getBody().getTicket().getStatus()).isEqualTo("ISSUED");
+        assertThat(detail.getBody().getPayments()).isNotEmpty();
+        assertThat(detail.getBody().getRisks()).isEmpty();
+        assertThat(detail.getBody().getOutboxEvents()).isEmpty();
+
+        ResponseEntity<String> otherDetail = restTemplate.exchange(
+                "/api/passenger/orders/{id}/detail",
+                HttpMethod.GET,
+                authorizedEntity(otherPassenger),
+                String.class,
+                pending.getId()
+        );
+        assertThat(otherDetail.getStatusCodeValue()).isEqualTo(403);
+    }
+
+    @Test
+    void shouldInvalidateTicketAfterRefundAndExposeAdminOrderDetail() {
+        AuthResponse admin = login("admin", "admin123");
+        TrainSearchResponse train = firstTrainInventory();
+
+        OrderResponse paid = createPaidOrder(7102L, train, "AdminTicketDetailUser");
+        TicketRecord issuedTicket = ticketRecordRepository.findByOrderId(paid.getId())
+                .orElseThrow(() -> new AssertionError("expected issued ticket"));
+        assertThat(issuedTicket.getStatus()).isEqualTo(TicketStatus.ISSUED);
+
+        OrderResponse refunded = refundOrder(paid.getId());
+        assertThat(refunded.getStatus()).isEqualTo("REFUNDED");
+
+        TicketRecord refundedTicket = ticketRecordRepository.findByOrderId(paid.getId())
+                .orElseThrow(() -> new AssertionError("expected refunded ticket"));
+        assertThat(refundedTicket.getStatus()).isEqualTo(TicketStatus.REFUNDED);
+        assertThat(refundedTicket.getInvalidatedAt()).isNotNull();
+
+        ResponseEntity<OrderDetailResponse> detail = restTemplate.exchange(
+                "/api/orders/{id}/detail",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                OrderDetailResponse.class,
+                paid.getId()
+        );
+        assertThat(detail.getStatusCodeValue()).isEqualTo(200);
+        assertThat(detail.getBody()).isNotNull();
+        assertThat(detail.getBody().getOrder().getStatus()).isEqualTo("REFUNDED");
+        assertThat(detail.getBody().getTicket()).isNotNull();
+        assertThat(detail.getBody().getTicket().getStatus()).isEqualTo("REFUNDED");
+        assertThat(detail.getBody().getRefunds()).isNotEmpty();
+        assertThat(detail.getBody().getOutboxEvents())
+                .extracting(OutboxEventResponse::getEventType)
+                .contains(OutboxEventTypes.ORDER_REFUNDED, OutboxEventTypes.TICKET_REFUNDED);
     }
 
     @Test

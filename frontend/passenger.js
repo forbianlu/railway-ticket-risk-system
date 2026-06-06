@@ -568,6 +568,7 @@ function renderPassengerOrders(orders) {
       <div class="inline-actions passenger-order-actions">${renderOrderActions(order)}</div>
     </article>
   `).join("");
+  decoratePassengerOrderDetailButtons(orders);
   elements.orderCards.querySelectorAll("[data-pay-order]").forEach(button => {
     button.addEventListener("click", () => payPassengerOrder(button.dataset.payOrder));
   });
@@ -583,6 +584,139 @@ function renderPassengerOrders(orders) {
       loadPassengerRefunds();
     });
   });
+}
+
+function decoratePassengerOrderDetailButtons(orders) {
+  const cards = elements.orderCards.querySelectorAll(".passenger-order-card");
+  cards.forEach((card, index) => {
+    const order = orders[index];
+    const actions = card.querySelector(".passenger-order-actions");
+    if (!order || !actions || actions.querySelector("[data-passenger-order-detail]")) {
+      return;
+    }
+    const button = document.createElement("button");
+    button.className = "secondary-button compact-button";
+    button.type = "button";
+    button.textContent = "详情";
+    button.dataset.passengerOrderDetail = String(order.id);
+    button.addEventListener("click", () => openPassengerOrderDetail(order.id));
+    actions.insertBefore(button, actions.firstChild);
+  });
+}
+
+async function openPassengerOrderDetail(orderId) {
+  try {
+    const detail = await passengerRequest(`/passenger/orders/${orderId}/detail`);
+    showPassengerOrderDetail(detail);
+  } catch (error) {
+    showToast(error.message || "无法加载订单详情");
+  }
+}
+
+function showPassengerOrderDetail(detail) {
+  const modal = ensurePassengerDetailModal();
+  const order = detail.order || {};
+  const ticket = detail.ticket;
+  const payments = detail.payments || [];
+  const refunds = detail.refunds || [];
+  modal.querySelector(".order-detail-body").innerHTML = `
+    <div class="detail-hero">
+      <div>
+        <p class="eyebrow">Order Detail</p>
+        <h2>${escapeHtml(order.trainNo || "-")} / ${escapeHtml(order.orderNo || "-")}</h2>
+        <span>${formatDate(order.travelDate)} · ${seatTypeText(order.seatType)} · ${escapeHtml(order.passengerName || "-")}</span>
+      </div>
+      <div class="detail-amount">
+        <strong>¥${formatAmount(order.amount)}</strong>
+        <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
+      </div>
+    </div>
+    <section class="detail-section">
+      <h3>电子票 / 行程单</h3>
+      ${ticket ? renderTicketDetail(ticket) : `<div class="detail-empty">订单支付成功后自动生成电子票。</div>`}
+    </section>
+    <section class="detail-section">
+      <h3>支付记录</h3>
+      ${renderDetailRecords(payments, payment => `
+        <div class="detail-record">
+          <strong>${escapeHtml(payment.paymentNo)}</strong>
+          <span>${paymentStatusText(payment.status)} · ¥${formatAmount(payment.amount)} · ${formatDateTime(payment.paidAt) || "-"}</span>
+        </div>
+      `, "暂无支付记录")}
+    </section>
+    <section class="detail-section">
+      <h3>退款记录</h3>
+      ${renderDetailRecords(refunds, refund => `
+        <div class="detail-record">
+          <strong>${escapeHtml(refund.refundNo)}</strong>
+          <span>${refundStatusText(refund.status)} · ¥${formatAmount(refund.amount)} · ${formatDateTime(refund.refundedAt) || "-"}</span>
+        </div>
+      `, "暂无退款记录")}
+    </section>
+  `;
+  openDetailModal(modal);
+}
+
+function renderTicketDetail(ticket) {
+  return `
+    <div class="ticket-itinerary">
+      <div><span>Ticket No</span><strong>${escapeHtml(ticket.ticketNo)}</strong></div>
+      <div><span>Route</span><strong>${escapeHtml(ticket.departureStation)} → ${escapeHtml(ticket.arrivalStation)}</strong></div>
+      <div><span>Time</span><strong>${formatTime(ticket.departureTime)} - ${formatTime(ticket.arrivalTime)}</strong></div>
+      <div><span>Passenger</span><strong>${escapeHtml(ticket.passengerName)} / ${escapeHtml(ticket.passengerIdCardMasked)}</strong></div>
+      <div><span>Status</span><strong>${escapeHtml(ticket.status)}</strong></div>
+      <div><span>Issued At</span><strong>${formatDateTime(ticket.issuedAt) || "-"}</strong></div>
+    </div>
+  `;
+}
+
+function renderDetailRecords(records, mapper, emptyText) {
+  if (!records.length) {
+    return `<div class="detail-empty">${escapeHtml(emptyText)}</div>`;
+  }
+  return records.map(mapper).join("");
+}
+
+function ensurePassengerDetailModal() {
+  let modal = document.querySelector("#passenger-order-detail-modal");
+  if (modal) {
+    return modal;
+  }
+  modal = document.createElement("div");
+  modal.id = "passenger-order-detail-modal";
+  modal.className = "modal-backdrop order-detail-modal";
+  modal.setAttribute("aria-hidden", "true");
+  modal.innerHTML = `
+    <div class="purchase-modal order-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="passenger-order-detail-title">
+      <button class="modal-close" type="button" aria-label="关闭订单详情"></button>
+      <div class="modal-head">
+        <p class="eyebrow">Passenger Order</p>
+        <h2 id="passenger-order-detail-title">订单详情</h2>
+        <p>展示当前订单的电子票、支付和退款记录。</p>
+      </div>
+      <div class="order-detail-body"></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener("click", event => {
+    if (event.target === modal) {
+      closeDetailModal(modal);
+    }
+  });
+  modal.querySelector(".modal-close").addEventListener("click", () => closeDetailModal(modal));
+  return modal;
+}
+
+function openDetailModal(modal) {
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+function closeDetailModal(modal) {
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
 }
 
 function renderOrderActions(order) {

@@ -666,6 +666,7 @@ function renderOrders(orders) {
       </tr>
     `)
     .join("");
+  decorateAdminOrderDetailButtons(orders);
 
   document.querySelectorAll("[data-pay]").forEach(button => {
     button.addEventListener("click", () => payOrder(button.dataset.pay));
@@ -679,6 +680,152 @@ function renderOrders(orders) {
   document.querySelectorAll("[data-refund]").forEach(button => {
     button.addEventListener("click", () => refundOrder(button.dataset.refund));
   });
+}
+
+function decorateAdminOrderDetailButtons(orders) {
+  const rows = elements.orderResults.querySelectorAll("tr");
+  rows.forEach((row, index) => {
+    const order = orders[index];
+    const actions = row.querySelector("td:last-child .inline-actions") || row.querySelector("td:last-child");
+    if (!order || !actions || actions.querySelector("[data-admin-order-detail]")) {
+      return;
+    }
+    const button = document.createElement("button");
+    button.className = "secondary-button compact-button";
+    button.type = "button";
+    button.textContent = "详情";
+    button.dataset.adminOrderDetail = String(order.id);
+    button.addEventListener("click", () => openAdminOrderDetail(order.id));
+    actions.insertBefore(button, actions.firstChild);
+  });
+}
+
+async function openAdminOrderDetail(orderId) {
+  try {
+    const detail = await request(`/orders/${orderId}/detail`);
+    showAdminOrderDetail(detail);
+  } catch (error) {
+    showToast(error.message || "无法加载订单详情");
+  }
+}
+
+function showAdminOrderDetail(detail) {
+  const modal = ensureAdminDetailModal();
+  const order = detail.order || {};
+  const ticket = detail.ticket;
+  const payments = detail.payments || [];
+  const refunds = detail.refunds || [];
+  const risks = detail.risks || [];
+  const outboxEvents = detail.outboxEvents || [];
+  const logs = detail.operationLogs || [];
+  modal.querySelector(".order-detail-body").innerHTML = `
+    <div class="detail-hero">
+      <div>
+        <p class="eyebrow">Admin Order Detail</p>
+        <h2>${escapeHtml(order.orderNo || "-")}</h2>
+        <span>User ${order.userId || "-"} · ${escapeHtml(order.trainNo || "-")} · ${formatDate(order.travelDate)}</span>
+      </div>
+      <div class="detail-amount">
+        <strong>¥${formatAmount(order.amount)}</strong>
+        <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
+      </div>
+    </div>
+    <section class="detail-section">
+      <h3>电子票 / 行程单</h3>
+      ${ticket ? renderTicketDetail(ticket) : `<div class="detail-empty">暂无电子票。</div>`}
+    </section>
+    <section class="detail-section">
+      <h3>支付与退款</h3>
+      <div class="detail-two-column">
+        <div>${renderDetailRecords(payments, payment => `
+          <div class="detail-record"><strong>${escapeHtml(payment.paymentNo)}</strong><span>${paymentStatusText(payment.status)} · ¥${formatAmount(payment.amount)}</span></div>
+        `, "暂无支付记录")}</div>
+        <div>${renderDetailRecords(refunds, refund => `
+          <div class="detail-record"><strong>${escapeHtml(refund.refundNo)}</strong><span>${refundStatusText(refund.status)} · ¥${formatAmount(refund.amount)}</span></div>
+        `, "暂无退款记录")}</div>
+      </div>
+    </section>
+    <section class="detail-section">
+      <h3>风险与事件链路</h3>
+      <div class="detail-two-column">
+        <div>${renderDetailRecords(risks, risk => `
+          <div class="detail-record"><strong>${riskTypeText(risk.riskType)} / ${riskStatusText(risk.status)}</strong><span>${escapeHtml(risk.reason || "-")}</span></div>
+        `, "暂无风险事件")}</div>
+        <div>${renderDetailRecords(outboxEvents, event => `
+          <div class="detail-record"><strong>${escapeHtml(event.eventType)}</strong><span>${outboxStatusText(event.status)} · ${formatDateTime(event.createdAt) || "-"}</span></div>
+        `, "暂无 Outbox 事件")}</div>
+      </div>
+    </section>
+    <section class="detail-section">
+      <h3>操作日志</h3>
+      ${renderDetailRecords(logs, log => `
+        <div class="detail-record"><strong>${escapeHtml(log.action)}</strong><span>${escapeHtml(log.operator)} · ${formatDateTime(log.createdAt) || "-"} · ${escapeHtml(log.detail || "")}</span></div>
+      `, "暂无订单操作日志")}
+    </section>
+  `;
+  openDetailModal(modal);
+}
+
+function renderTicketDetail(ticket) {
+  return `
+    <div class="ticket-itinerary">
+      <div><span>Ticket No</span><strong>${escapeHtml(ticket.ticketNo)}</strong></div>
+      <div><span>Route</span><strong>${escapeHtml(ticket.departureStation)} → ${escapeHtml(ticket.arrivalStation)}</strong></div>
+      <div><span>Time</span><strong>${formatTime(ticket.departureTime)} - ${formatTime(ticket.arrivalTime)}</strong></div>
+      <div><span>Passenger</span><strong>${escapeHtml(ticket.passengerName)} / ${escapeHtml(ticket.passengerIdCardMasked)}</strong></div>
+      <div><span>Status</span><strong>${escapeHtml(ticket.status)}</strong></div>
+      <div><span>Issued At</span><strong>${formatDateTime(ticket.issuedAt) || "-"}</strong></div>
+    </div>
+  `;
+}
+
+function renderDetailRecords(records, mapper, emptyText) {
+  if (!records.length) {
+    return `<div class="detail-empty">${escapeHtml(emptyText)}</div>`;
+  }
+  return records.map(mapper).join("");
+}
+
+function ensureAdminDetailModal() {
+  let modal = document.querySelector("#admin-order-detail-modal");
+  if (modal) {
+    return modal;
+  }
+  modal = document.createElement("div");
+  modal.id = "admin-order-detail-modal";
+  modal.className = "modal-backdrop order-detail-modal";
+  modal.setAttribute("aria-hidden", "true");
+  modal.innerHTML = `
+    <div class="purchase-modal order-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-order-detail-title">
+      <button class="modal-close" type="button" aria-label="关闭订单详情"></button>
+      <div class="modal-head">
+        <p class="eyebrow">Operations Detail</p>
+        <h2 id="admin-order-detail-title">订单完整链路</h2>
+        <p>汇总订单、电子票、支付、退款、风险、Outbox 和日志。</p>
+      </div>
+      <div class="order-detail-body"></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener("click", event => {
+    if (event.target === modal) {
+      closeDetailModal(modal);
+    }
+  });
+  modal.querySelector(".modal-close").addEventListener("click", () => closeDetailModal(modal));
+  return modal;
+}
+
+function openDetailModal(modal) {
+  modal.classList.add("show");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+function closeDetailModal(modal) {
+  modal.classList.remove("show");
+  modal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
 }
 
 function buildOrderQueryPath() {
@@ -1622,6 +1769,11 @@ function formatDate(value) {
 
 function formatDateTime(value) {
   return value ? String(value).replace("T", " ").slice(0, 16) : "";
+}
+
+function formatAmount(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) ? number.toFixed(2) : String(value || "-");
 }
 
 function formatPercent(value) {

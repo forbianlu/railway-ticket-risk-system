@@ -12,6 +12,9 @@ public final class OutboxEventTypes {
     public static final String REFUND_FAILED = "REFUND_FAILED";
     public static final String RISK_EVENT_CREATED = "RISK_EVENT_CREATED";
     public static final String RISK_EVENT_HANDLED = "RISK_EVENT_HANDLED";
+    public static final String TICKET_ISSUED = "TICKET_ISSUED";
+    public static final String TICKET_REFUNDED = "TICKET_REFUNDED";
+    public static final String TICKET_CANCELLED = "TICKET_CANCELLED";
 
     private OutboxEventTypes() {
     }

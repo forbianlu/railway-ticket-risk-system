@@ -15,9 +15,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.railway.domain.UserRole;
 import com.example.railway.dto.CreateOrderRequest;
+import com.example.railway.dto.OrderDetailResponse;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
+import com.example.railway.security.RequiredRole;
+import com.example.railway.service.OrderDetailService;
 import com.example.railway.service.OrderService;
 import com.example.railway.service.RateLimitService;
 
@@ -30,11 +34,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class OrderController {
 
     private final OrderService orderService;
+    private final OrderDetailService orderDetailService;
     private final RateLimitService rateLimitService;
 
     public OrderController(OrderService orderService,
+                           OrderDetailService orderDetailService,
                            RateLimitService rateLimitService) {
         this.orderService = orderService;
+        this.orderDetailService = orderDetailService;
         this.rateLimitService = rateLimitService;
     }
 
@@ -63,6 +70,13 @@ public class OrderController {
     @PostMapping("/{id}/close")
     public OrderResponse close(@PathVariable("id") Long orderId) {
         return orderService.closeUnpaidOrder(orderId);
+    }
+
+    @Operation(summary = "鏌ヨ璁㈠崟瀹屾暣璇︽儏")
+    @RequiredRole({UserRole.ADMIN, UserRole.OPERATOR, UserRole.RISK_OFFICER})
+    @GetMapping("/{id}/detail")
+    public OrderDetailResponse detail(@PathVariable("id") Long orderId) {
+        return orderDetailService.adminDetail(orderId);
     }
 
     @Operation(summary = "批量关闭超时待支付订单")

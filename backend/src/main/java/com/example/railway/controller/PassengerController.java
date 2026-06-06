@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.railway.domain.UserRole;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
+import com.example.railway.dto.OrderDetailResponse;
 import com.example.railway.dto.PassengerCreateOrderRequest;
 import com.example.railway.dto.PassengerSummaryResponse;
 import com.example.railway.dto.PaymentPageResponse;
@@ -53,6 +54,12 @@ public class PassengerController {
                                     @RequestParam(value = "page", required = false) Integer page,
                                     @RequestParam(value = "size", required = false) Integer size) {
         return passengerService.listOrders(status, page, size);
+    }
+
+    @Operation(summary = "鏌ヨ鎴戠殑璁㈠崟璇︽儏鍜岀數瀛愮エ")
+    @GetMapping("/orders/{id}/detail")
+    public OrderDetailResponse orderDetail(@PathVariable("id") Long orderId) {
+        return passengerService.orderDetail(orderId);
     }
 
     @Operation(summary = "乘客下单并锁定库存")

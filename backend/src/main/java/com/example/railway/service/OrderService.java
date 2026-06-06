@@ -47,6 +47,7 @@ public class OrderService {
     private final TrainSearchCacheService trainSearchCacheService;
     private final RefundService refundService;
     private final OutboxEventPublisher outboxEventPublisher;
+    private final TicketService ticketService;
 
     public OrderService(TicketOrderRepository ticketOrderRepository,
                         SeatInventoryRepository seatInventoryRepository,
@@ -54,7 +55,8 @@ public class OrderService {
                         OperationLogService operationLogService,
                         TrainSearchCacheService trainSearchCacheService,
                         RefundService refundService,
-                        OutboxEventPublisher outboxEventPublisher) {
+                        OutboxEventPublisher outboxEventPublisher,
+                        TicketService ticketService) {
         this.ticketOrderRepository = ticketOrderRepository;
         this.seatInventoryRepository = seatInventoryRepository;
         this.riskService = riskService;
@@ -62,6 +64,7 @@ public class OrderService {
         this.trainSearchCacheService = trainSearchCacheService;
         this.refundService = refundService;
         this.outboxEventPublisher = outboxEventPublisher;
+        this.ticketService = ticketService;
     }
 
     @Transactional
@@ -133,6 +136,7 @@ public class OrderService {
         order.setStatus(OrderStatus.PAID);
         order.setPaidAt(now);
         TicketOrder saved = ticketOrderRepository.save(order);
+        ticketService.issueTicketForPaidOrder(saved);
         evictTrainSearchCacheAfterCommit(order.getInventory());
         operationLogService.record(
                 "USER-" + order.getUserId(),
@@ -162,6 +166,7 @@ public class OrderService {
         order.getInventory().releaseOne();
         TicketOrder saved = ticketOrderRepository.save(order);
         seatInventoryRepository.save(order.getInventory());
+        ticketService.refundTicketForOrder(saved);
         evictTrainSearchCacheAfterCommit(order.getInventory());
 
         operationLogService.record(
@@ -324,6 +329,7 @@ public class OrderService {
         order.getInventory().releaseOne();
         TicketOrder saved = ticketOrderRepository.save(order);
         seatInventoryRepository.save(order.getInventory());
+        ticketService.cancelTicketForOrder(saved);
         evictTrainSearchCacheAfterCommit(order.getInventory());
         operationLogService.record(
                 "SYSTEM",

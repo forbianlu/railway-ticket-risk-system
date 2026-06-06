@@ -385,6 +385,25 @@ PAID -> REFUNDED
 - [开发日志](docs/project-development-log.md)
 - [GitHub 上传步骤](docs/github-upload.md)
 
+## 电子票与订单详情
+
+系统在支付成功后生成电子票记录。乘客端订单详情展示当前用户自己的订单、电子票、支付流水和退款流水；运营管理端订单详情聚合订单、电子票、支付流水、退款流水、风险事件、Outbox 事件和最近操作日志，用于查看单笔交易全链路。
+
+新增接口：
+
+```text
+GET /api/passenger/orders/{id}/detail
+GET /api/orders/{id}/detail
+```
+
+新增核心表：
+
+```text
+ticket_records
+```
+
+详细设计见 [Ticket Record and Order Detail Design](docs/ticket-record-design.md)。
+
 ## 后续规划
 
 - 增加独立部署环境的缓存监控指标和运行告警。

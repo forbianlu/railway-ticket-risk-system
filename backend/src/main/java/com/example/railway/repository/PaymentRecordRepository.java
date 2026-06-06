@@ -1,5 +1,6 @@
 package com.example.railway.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,6 +20,8 @@ public interface PaymentRecordRepository extends JpaRepository<PaymentRecord, Lo
     Optional<PaymentRecord> findByRequestId(String requestId);
 
     Optional<PaymentRecord> findByCallbackRequestId(String callbackRequestId);
+
+    List<PaymentRecord> findByOrderIdOrderByCreatedAtDesc(Long orderId);
 
     long countByUserId(Long userId);
 

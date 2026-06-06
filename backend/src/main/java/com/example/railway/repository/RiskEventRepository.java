@@ -19,6 +19,8 @@ public interface RiskEventRepository extends JpaRepository<RiskEvent, Long>, Jpa
 
     List<RiskEvent> findTop50ByStatusAndSceneOrderByCreatedAtDesc(RiskStatus status, RiskScene scene);
 
+    List<RiskEvent> findByOrder_IdOrderByCreatedAtDesc(Long orderId);
+
     long countByHandledFalse();
 
     long countByStatus(RiskStatus status);

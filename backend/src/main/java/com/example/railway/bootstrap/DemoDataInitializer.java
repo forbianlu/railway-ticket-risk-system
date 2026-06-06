@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,6 +34,8 @@ import com.example.railway.domain.RiskType;
 import com.example.railway.domain.SeatInventory;
 import com.example.railway.domain.Station;
 import com.example.railway.domain.TicketOrder;
+import com.example.railway.domain.TicketRecord;
+import com.example.railway.domain.TicketStatus;
 import com.example.railway.domain.Train;
 import com.example.railway.domain.UserRole;
 import com.example.railway.repository.AppUserRepository;
@@ -45,6 +48,7 @@ import com.example.railway.repository.RiskEventRepository;
 import com.example.railway.repository.SeatInventoryRepository;
 import com.example.railway.repository.StationRepository;
 import com.example.railway.repository.TicketOrderRepository;
+import com.example.railway.repository.TicketRecordRepository;
 import com.example.railway.repository.TrainRepository;
 import com.example.railway.service.PasswordService;
 
@@ -56,6 +60,7 @@ public class DemoDataInitializer implements CommandLineRunner {
     private final SeatInventoryRepository seatInventoryRepository;
     private final AppUserRepository appUserRepository;
     private final TicketOrderRepository ticketOrderRepository;
+    private final TicketRecordRepository ticketRecordRepository;
     private final PaymentRecordRepository paymentRecordRepository;
     private final RefundRecordRepository refundRecordRepository;
     private final RiskEventRepository riskEventRepository;
@@ -70,6 +75,7 @@ public class DemoDataInitializer implements CommandLineRunner {
                                SeatInventoryRepository seatInventoryRepository,
                                AppUserRepository appUserRepository,
                                TicketOrderRepository ticketOrderRepository,
+                               TicketRecordRepository ticketRecordRepository,
                                PaymentRecordRepository paymentRecordRepository,
                                RefundRecordRepository refundRecordRepository,
                                RiskEventRepository riskEventRepository,
@@ -83,6 +89,7 @@ public class DemoDataInitializer implements CommandLineRunner {
         this.seatInventoryRepository = seatInventoryRepository;
         this.appUserRepository = appUserRepository;
         this.ticketOrderRepository = ticketOrderRepository;
+        this.ticketRecordRepository = ticketRecordRepository;
         this.paymentRecordRepository = paymentRecordRepository;
         this.refundRecordRepository = refundRecordRepository;
         this.riskEventRepository = riskEventRepository;
@@ -104,6 +111,7 @@ public class DemoDataInitializer implements CommandLineRunner {
         seedTrains(stations);
         seedInventories();
         seedOrdersAndMoneyRecords();
+        seedTicketRecords();
         seedRiskEvents();
         seedOperationLogs();
         seedOutboxEvents();
@@ -356,6 +364,49 @@ public class DemoDataInitializer implements CommandLineRunner {
             refund.setCallbackMessage("waiting for refund callback");
         }
         refundRecordRepository.save(refund);
+    }
+
+    private void seedTicketRecords() {
+        List<TicketOrder> orders = ticketOrderRepository.findAll();
+        for (TicketOrder order : orders) {
+            if (!OrderStatus.PAID.equals(order.getStatus()) && !OrderStatus.REFUNDED.equals(order.getStatus())) {
+                continue;
+            }
+            if (ticketRecordRepository.findByOrderId(order.getId()).isPresent()) {
+                continue;
+            }
+            TicketRecord ticket = new TicketRecord();
+            ticket.setTicketNo("ETDEMO" + order.getTravelDate().format(DateTimeFormatter.ofPattern("yyyyMMdd"))
+                    + String.format("%08d", order.getId()));
+            ticket.setOrderId(order.getId());
+            ticket.setOrderNo(order.getOrderNo());
+            ticket.setUserId(order.getUserId());
+            ticket.setTrainNo(order.getTrain().getTrainNo());
+            ticket.setDepartureStation(order.getTrain().getDepartureStation().getName());
+            ticket.setArrivalStation(order.getTrain().getArrivalStation().getName());
+            ticket.setTravelDate(order.getTravelDate());
+            ticket.setDepartureTime(order.getTrain().getDepartureTime());
+            ticket.setArrivalTime(order.getTrain().getArrivalTime());
+            ticket.setSeatType(order.getSeatType());
+            ticket.setPassengerName(order.getPassengerName());
+            ticket.setPassengerIdCardMasked(maskIdCard(order.getPassengerIdCard()));
+            ticket.setAmount(order.getAmount());
+            ticket.setIssuedAt(order.getPaidAt() == null ? order.getCreatedAt().plusMinutes(8) : order.getPaidAt());
+            ticket.setStatus(OrderStatus.REFUNDED.equals(order.getStatus()) ? TicketStatus.REFUNDED : TicketStatus.ISSUED);
+            if (TicketStatus.REFUNDED.equals(ticket.getStatus())) {
+                ticket.setInvalidatedAt(order.getRefundedAt() == null ? ticket.getIssuedAt().plusDays(1) : order.getRefundedAt());
+            }
+            ticket.setCreatedAt(ticket.getIssuedAt());
+            ticket.setUpdatedAt(ticket.getInvalidatedAt() == null ? ticket.getIssuedAt() : ticket.getInvalidatedAt());
+            ticketRecordRepository.save(ticket);
+        }
+    }
+
+    private String maskIdCard(String idCard) {
+        if (idCard == null || idCard.length() <= 8) {
+            return "****";
+        }
+        return idCard.substring(0, 4) + "********" + idCard.substring(idCard.length() - 4);
     }
 
     private void seedRiskEvents() {

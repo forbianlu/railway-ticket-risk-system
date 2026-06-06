@@ -6,6 +6,7 @@ erDiagram
     SEAT_INVENTORIES ||--o{ TICKET_ORDERS : locks
     TICKET_ORDERS ||--o{ PAYMENT_RECORDS : pays
     TICKET_ORDERS ||--o{ REFUND_RECORDS : refunds
+    TICKET_ORDERS ||--o| TICKET_RECORDS : issues
     PAYMENT_RECORDS ||--o{ REFUND_RECORDS : returns
     TICKET_ORDERS ||--o{ RISK_EVENTS : triggers
     RISK_EVENTS ||--o{ RISK_EVENT_HANDLE_RECORDS : records
@@ -131,6 +132,29 @@ erDiagram
         timestamp created_at
         timestamp updated_at
         timestamp refunded_at
+    }
+
+    TICKET_RECORDS {
+        bigint id PK
+        varchar ticket_no
+        bigint order_id FK
+        varchar order_no
+        bigint user_id
+        varchar train_no
+        varchar departure_station
+        varchar arrival_station
+        date travel_date
+        time departure_time
+        time arrival_time
+        varchar seat_type
+        varchar passenger_name
+        varchar passenger_id_card_masked
+        decimal amount
+        varchar status
+        timestamp issued_at
+        timestamp invalidated_at
+        timestamp created_at
+        timestamp updated_at
     }
 
     OUTBOX_EVENTS {

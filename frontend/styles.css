@@ -1491,6 +1491,93 @@ body.modal-open {
   gap: 10px;
 }
 
+.order-detail-dialog {
+  width: min(880px, 100%);
+}
+
+.order-detail-body {
+  display: grid;
+  gap: 16px;
+}
+
+.detail-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  background:
+    linear-gradient(135deg, rgba(15, 107, 87, 0.08), transparent 44%),
+    #ffffff;
+}
+
+.detail-hero h2 {
+  margin: 4px 0 6px;
+  color: var(--ink-strong);
+}
+
+.detail-amount {
+  min-width: 130px;
+  display: grid;
+  justify-items: end;
+  align-content: center;
+  gap: 8px;
+}
+
+.detail-amount strong {
+  color: var(--ink-strong);
+  font-size: 24px;
+}
+
+.detail-section {
+  display: grid;
+  gap: 10px;
+}
+
+.detail-section h3 {
+  margin: 0;
+  color: var(--ink-strong);
+  font-size: 16px;
+}
+
+.ticket-itinerary,
+.detail-two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ticket-itinerary > div,
+.detail-record,
+.detail-empty {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.ticket-itinerary span,
+.detail-record span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ticket-itinerary strong,
+.detail-record strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--ink-strong);
+  overflow-wrap: anywhere;
+}
+
+.detail-empty {
+  color: var(--muted);
+}
+
 .toast {
   position: fixed;
   right: 22px;

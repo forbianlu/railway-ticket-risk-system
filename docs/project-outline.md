@@ -158,6 +158,14 @@
 - Docker Compose：编排后端、MySQL 和 Redis。
 - Profile：默认 H2/local 模式用于本地开发和 CI，`docker` profile 使用 MySQL 和 Redis。
 
+### 4.10 电子票与订单详情
+
+- 支付成功后生成 `ticket_records` 电子票记录。
+- 电子票状态包括 `ISSUED`、`REFUNDED`、`CANCELLED`。
+- 退票成功后电子票标记为 `REFUNDED`，并记录失效时间。
+- 乘客端订单详情展示本人订单、电子票、支付流水和退款流水。
+- 管理端订单详情聚合订单、电子票、支付流水、退款流水、风险事件、Outbox 事件和最近操作日志。
+
 ## 5. 数据库设计
 
 核心表：
@@ -167,6 +175,7 @@
 - `trains`
 - `seat_inventories`
 - `ticket_orders`
+- `ticket_records`
 - `payment_records`
 - `refund_records`
 - `risk_events`
@@ -187,6 +196,7 @@
 - `GET /api/trains/search`
 - `GET /api/passenger/summary`
 - `GET /api/passenger/orders`
+- `GET /api/passenger/orders/{id}/detail`
 - `POST /api/passenger/orders`
 - `POST /api/passenger/orders/{id}/pay`
 - `POST /api/passenger/orders/{id}/close`
@@ -199,6 +209,7 @@
 - `POST /api/orders/close-expired`
 - `POST /api/orders/{id}/refund`
 - `GET /api/orders`
+- `GET /api/orders/{id}/detail`
 - `POST /api/payments`
 - `POST /api/payments/callback`
 - `GET /api/payments`

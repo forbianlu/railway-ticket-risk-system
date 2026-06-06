@@ -138,6 +138,12 @@ PAID -> REFUNDED
 
 这种设计保证用户端产生的数据天然进入管理端视图：订单管理、支付退款流水、风险事件、操作日志和 Outbox 事件中心都能看到乘客端操作结果。权限边界由 `USER` 角色和订单归属校验共同保证。
 
+## 电子票与订单详情
+
+电子票使用独立的 `ticket_records` 表建模，不改变订单状态机。支付成功后，`TicketService` 在同一交易链路中为订单签发电子票；退票成功后，电子票状态更新为 `REFUNDED` 并写入失效时间。
+
+订单详情聚合由 `OrderDetailService` 负责。乘客端详情接口会先校验订单归属，只返回订单、电子票、支付流水和退款流水；管理端详情接口额外聚合风险事件、Outbox 事件和最近操作日志，形成单笔交易追踪视图。
+
 ## OpenAPI 与 Docker
 
 系统通过 springdoc-openapi 暴露 `/v3/api-docs` 和 Swagger UI。Swagger 页面允许匿名访问，但业务接口仍按 JWT 和 `@RequiredRole` 校验执行。OpenAPI 配置声明 Bearer Token 安全方案，便于在 Swagger UI 中调试受保护接口。
