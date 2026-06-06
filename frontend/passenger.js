@@ -119,7 +119,10 @@ elements.travelerForm.addEventListener("submit", event => {
   event.preventDefault();
   savePassengerTraveler();
 });
-elements.travelerCancel.addEventListener("click", resetTravelerForm);
+elements.travelerCancel.addEventListener("click", () => {
+  resetTravelerForm();
+  showToast("已取消编辑，表单已恢复为新增模式");
+});
 elements.buyTraveler.addEventListener("change", applySelectedTravelerToBuyForm);
 elements.loadOrders.addEventListener("click", () => {
   passengerState.orders.page = 0;
@@ -331,7 +334,7 @@ function renderMiniOrders(container, orders, emptyText) {
   });
 }
 
-async function loadPassengerTravelers() {
+async function loadPassengerTravelers(options = {}) {
   if (!ensureSignedIn()) {
     return;
   }
@@ -345,7 +348,11 @@ async function loadPassengerTravelers() {
     renderPassengerTravelers();
     renderBuyTravelerOptions();
   } catch (error) {
-    elements.travelerList.innerHTML = recordEmpty(error.message || "无法加载常用乘车人");
+    if (!options.silent) {
+      elements.travelerList.innerHTML = recordEmpty(error.message || "无法加载常用乘车人");
+      return;
+    }
+    throw error;
   }
 }
 
@@ -389,6 +396,10 @@ function renderBuyTravelerOptions() {
     </option>
   `).join("");
   elements.buyTraveler.innerHTML = `<option value="">手动填写乘车人</option>${options}`;
+  const defaultTraveler = passengerState.travelers.find(traveler => traveler.defaultTraveler);
+  if (defaultTraveler) {
+    elements.buyTraveler.value = String(defaultTraveler.id);
+  }
 }
 
 async function savePassengerTraveler() {
@@ -403,7 +414,7 @@ async function savePassengerTraveler() {
     phone: elements.travelerPhone.value.trim(),
     defaultTraveler: elements.travelerDefault.checked,
   };
-  if (!body.passengerName || !body.idNo) {
+  if (!body.passengerName || (!travelerId && !body.idNo)) {
     elements.travelerError.textContent = "请填写乘车人姓名和证件号";
     return;
   }
@@ -418,6 +429,7 @@ async function savePassengerTraveler() {
     resetTravelerForm();
     await loadPassengerTravelers();
     showToast(travelerId ? "常用乘车人已更新" : "常用乘车人已新增");
+    document.querySelector("#passenger-travelers").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (error) {
     elements.travelerError.textContent = error.message || "保存乘车人失败";
   } finally {
@@ -439,7 +451,8 @@ function editTraveler(travelerId) {
   elements.travelerPhone.placeholder = traveler.phoneMasked ? `当前 ${traveler.phoneMasked}，可重新输入` : "请输入手机号";
   elements.travelerDefault.checked = Boolean(traveler.defaultTraveler);
   elements.travelerSubmit.textContent = "保存修改";
-  elements.travelerError.textContent = "编辑时需重新输入完整证件号，用于避免前端暴露明文证件信息。";
+  elements.travelerCancel.hidden = false;
+  elements.travelerError.textContent = "如需修改证件号或手机号请重新输入；留空将保留当前脱敏信息。";
 }
 
 function resetTravelerForm() {
@@ -452,6 +465,7 @@ function resetTravelerForm() {
   elements.travelerPhone.placeholder = "请输入手机号";
   elements.travelerDefault.checked = false;
   elements.travelerSubmit.textContent = "保存乘车人";
+  elements.travelerCancel.hidden = true;
   elements.travelerError.textContent = "";
 }
 
@@ -612,9 +626,14 @@ function renderHotRoutes(expanded) {
   });
 }
 
-function openBuyModal(inventoryId) {
+async function openBuyModal(inventoryId) {
   if (!ensureSignedIn()) {
     return;
+  }
+  try {
+    await loadPassengerTravelers({ silent: true });
+  } catch (error) {
+    showToast(error.message || "无法刷新常用乘车人，请稍后重试");
   }
   const train = passengerState.trainByInventory[String(inventoryId)];
   if (!train) {

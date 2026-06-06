@@ -246,8 +246,12 @@ public class PassengerService {
     private void applyTravelerRequest(PassengerTraveler traveler, Long userId, PassengerTravelerRequest request, Long currentId) {
         String name = normalizeRequired(request.getPassengerName(), "Passenger name is required");
         PassengerIdType idType = parseIdType(request.getIdType());
-        String idNo = normalizeRequired(request.getIdNo(), "Passenger id number is required");
-        String phone = isBlank(request.getPhone()) ? null : request.getPhone().trim();
+        String idNo = currentId != null && isBlank(request.getIdNo())
+                ? traveler.getIdNo()
+                : normalizeRequired(request.getIdNo(), "Passenger id number is required");
+        String phone = currentId != null && isBlank(request.getPhone())
+                ? traveler.getPhone()
+                : (isBlank(request.getPhone()) ? null : request.getPhone().trim());
         boolean duplicated = currentId == null
                 ? passengerTravelerRepository.existsByUserIdAndPassengerNameAndIdTypeAndIdNo(userId, name, idType, idNo)
                 : passengerTravelerRepository.existsByUserIdAndPassengerNameAndIdTypeAndIdNoAndIdNot(userId, name, idType, idNo, currentId);

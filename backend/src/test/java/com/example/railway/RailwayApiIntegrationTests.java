@@ -414,6 +414,76 @@ class RailwayApiIntegrationTests {
         assertThat(defaultResponse.getBody()).isNotNull();
         assertThat(defaultResponse.getBody().isDefaultTraveler()).isTrue();
 
+        PassengerTravelerRequest secondRequest = new PassengerTravelerRequest();
+        secondRequest.setPassengerName("TravelerDefault" + suffix);
+        secondRequest.setIdType("PASSPORT");
+        secondRequest.setIdNo("P" + suffix + "X");
+        secondRequest.setPhone("137" + suffix.substring(0, 8));
+        secondRequest.setDefaultTraveler(true);
+        PassengerTravelerResponse secondTraveler = restTemplate.exchange(
+                "/api/passenger/travelers",
+                HttpMethod.POST,
+                authorizedEntity(passenger, secondRequest),
+                PassengerTravelerResponse.class
+        ).getBody();
+        assertThat(secondTraveler).isNotNull();
+        assertThat(secondTraveler.isDefaultTraveler()).isTrue();
+
+        ResponseEntity<PassengerTravelerResponse[]> defaultListResponse = restTemplate.exchange(
+                "/api/passenger/travelers",
+                HttpMethod.GET,
+                authorizedEntity(passenger),
+                PassengerTravelerResponse[].class
+        );
+        assertThat(Arrays.asList(defaultListResponse.getBody()).stream()
+                .filter(PassengerTravelerResponse::isDefaultTraveler)
+                .count()).isEqualTo(1);
+
+        PassengerTravelerRequest updateRequest = new PassengerTravelerRequest();
+        updateRequest.setPassengerName(request.getPassengerName() + "Updated");
+        updateRequest.setIdType("ID_CARD");
+        updateRequest.setDefaultTraveler(false);
+        PassengerTravelerResponse updatedTraveler = restTemplate.exchange(
+                "/api/passenger/travelers/{id}",
+                HttpMethod.PUT,
+                authorizedEntity(passenger, updateRequest),
+                PassengerTravelerResponse.class,
+                traveler.getId()
+        ).getBody();
+        assertThat(updatedTraveler).isNotNull();
+        assertThat(updatedTraveler.getPassengerName()).isEqualTo(updateRequest.getPassengerName());
+        assertThat(updatedTraveler.getIdNoMasked()).isEqualTo(traveler.getIdNoMasked());
+        assertThat(updatedTraveler.getPhoneMasked()).isEqualTo(traveler.getPhoneMasked());
+        traveler = updatedTraveler;
+
+        PassengerTravelerRequest deleteRequest = new PassengerTravelerRequest();
+        deleteRequest.setPassengerName("TravelerDelete" + suffix);
+        deleteRequest.setIdType("OTHER");
+        deleteRequest.setIdNo("DEL" + suffix);
+        deleteRequest.setDefaultTraveler(false);
+        PassengerTravelerResponse deleteTarget = restTemplate.exchange(
+                "/api/passenger/travelers",
+                HttpMethod.POST,
+                authorizedEntity(passenger, deleteRequest),
+                PassengerTravelerResponse.class
+        ).getBody();
+        assertThat(deleteTarget).isNotNull();
+        restTemplate.exchange(
+                "/api/passenger/travelers/{id}",
+                HttpMethod.DELETE,
+                authorizedEntity(passenger),
+                Void.class,
+                deleteTarget.getId()
+        );
+        ResponseEntity<PassengerTravelerResponse[]> afterDeleteResponse = restTemplate.exchange(
+                "/api/passenger/travelers",
+                HttpMethod.GET,
+                authorizedEntity(passenger),
+                PassengerTravelerResponse[].class
+        );
+        assertThat(Arrays.asList(afterDeleteResponse.getBody())).extracting(PassengerTravelerResponse::getId)
+                .doesNotContain(deleteTarget.getId());
+
         PassengerTravelerRequest illegalUpdate = new PassengerTravelerRequest();
         illegalUpdate.setPassengerName("OtherUpdate");
         illegalUpdate.setIdType("ID_CARD");
@@ -451,7 +521,7 @@ class RailwayApiIntegrationTests {
         assertThat(orderResponse.getStatusCodeValue()).isEqualTo(200);
         OrderResponse order = orderResponse.getBody();
         assertThat(order).isNotNull();
-        assertThat(order.getPassengerName()).isEqualTo(request.getPassengerName());
+        assertThat(order.getPassengerName()).isEqualTo(traveler.getPassengerName());
         assertThat(order.getPassengerIdType()).isEqualTo("ID_CARD");
         assertThat(order.getPassengerIdNoMasked()).isEqualTo(traveler.getIdNoMasked());
         assertThat(order.getPassengerPhoneMasked()).isEqualTo(traveler.getPhoneMasked());

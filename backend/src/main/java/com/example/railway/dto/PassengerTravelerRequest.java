@@ -12,7 +12,6 @@ public class PassengerTravelerRequest {
     @Size(max = 32)
     private String idType;
 
-    @NotBlank
     @Size(max = 64)
     private String idNo;
 
