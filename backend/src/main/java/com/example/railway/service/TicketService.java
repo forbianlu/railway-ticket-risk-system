@@ -8,6 +8,7 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.railway.common.MaskingUtils;
 import com.example.railway.common.BusinessException;
 import com.example.railway.domain.OrderStatus;
 import com.example.railway.domain.TicketOrder;
@@ -125,7 +126,11 @@ public class TicketService {
         record.setArrivalTime(order.getTrain().getArrivalTime());
         record.setSeatType(order.getSeatType());
         record.setPassengerName(order.getPassengerName());
-        record.setPassengerIdCardMasked(maskIdCard(order.getPassengerIdCard()));
+        record.setPassengerIdCardMasked(order.getPassengerIdNoMasked() == null
+                ? MaskingUtils.maskIdNo(order.getPassengerIdCard())
+                : order.getPassengerIdNoMasked());
+        record.setPassengerIdType(order.getPassengerIdType());
+        record.setPassengerPhoneMasked(order.getPassengerPhoneMasked());
         record.setAmount(order.getAmount());
         record.setStatus(status);
         record.setCreatedAt(now);
@@ -138,13 +143,6 @@ public class TicketService {
                 ? LocalDateTime.now().format(TICKET_DATE_FORMATTER)
                 : order.getTravelDate().format(TICKET_DATE_FORMATTER);
         return String.format("ET%s%08d", date, order.getId());
-    }
-
-    private String maskIdCard(String idCard) {
-        if (idCard == null || idCard.length() <= 8) {
-            return "****";
-        }
-        return idCard.substring(0, 4) + "********" + idCard.substring(idCard.length() - 4);
     }
 
     private void publishTicketEvent(String eventType, TicketRecord record) {

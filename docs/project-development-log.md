@@ -598,3 +598,32 @@
 
 - 后续可实际启动后端和静态前端，手动验证乘客端下单、支付、退票后管理端订单和流水是否同步显示。
 - 可以在双端稳定后统一补充 README 截图和平台化说明。
+
+## 乘客常用乘车人与实名信息快照
+
+### 目标
+
+在乘客购票端增加常用乘车人资料能力，让普通乘客可以维护常用旅客、选择乘车人下单，并让订单与电子票保存脱敏实名快照。
+
+### 主要内容
+
+- 新增 `PassengerTraveler`、`PassengerIdType` 和 `passenger_profiles` 表。
+- 新增 `PassengerTravelerRepository`、`PassengerTravelerRequest`、`PassengerTravelerResponse`。
+- 新增 `/api/passenger/travelers` 查询、新增、更新、删除和设置默认接口。
+- 乘客下单接口支持 `travelerId`，后端校验乘车人归属当前 `USER`。
+- `TicketOrder` 新增证件类型、脱敏证件号、脱敏手机号快照字段。
+- `TicketRecord` 新增证件类型和脱敏手机号快照字段。
+- `OrderService` 和 `TicketService` 写入脱敏快照，避免历史订单受乘车人资料后续编辑影响。
+- 演示数据为 passenger1、passenger2、passenger3 初始化常用乘车人。
+- 乘客端前端新增常用乘车人维护区，购票弹窗支持选择常用乘车人或手动输入。
+
+### 验证结果
+
+- `node --check frontend\app.js` 通过。
+- `node --check frontend\passenger.js` 通过。
+- Maven 测试通过：`Tests run: 40, Failures: 0, Errors: 0, Skipped: 0`。
+
+### 当前提交状态
+
+- 本轮计划提交信息：`add passenger traveler profiles`。
+- 本轮提交仅保留在本地，不自动 push。

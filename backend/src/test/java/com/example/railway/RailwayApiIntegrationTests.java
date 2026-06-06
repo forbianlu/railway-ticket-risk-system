@@ -66,6 +66,8 @@ import com.example.railway.dto.OutboxEventSummaryResponse;
 import com.example.railway.dto.OutboxRetryResponse;
 import com.example.railway.dto.PassengerCreateOrderRequest;
 import com.example.railway.dto.PassengerSummaryResponse;
+import com.example.railway.dto.PassengerTravelerRequest;
+import com.example.railway.dto.PassengerTravelerResponse;
 import com.example.railway.dto.PaymentCallbackRequest;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
@@ -353,6 +355,129 @@ class RailwayApiIntegrationTests {
         assertThat(afterCreate.getRemainingSeats()).isEqualTo(before.getRemainingSeats() - 1);
         assertThat(refunded.getStatus()).isEqualTo("REFUNDED");
         assertThat(afterRefund.getRemainingSeats()).isEqualTo(before.getRemainingSeats());
+    }
+
+    @Test
+    void shouldManagePassengerTravelersAndUseTravelerSnapshotForOrderAndTicket() {
+        AuthResponse passenger = login("passenger1", "123456");
+        AuthResponse otherPassenger = login("passenger2", "123456");
+        String suffix = String.valueOf(Math.abs(System.nanoTime()));
+        suffix = suffix.substring(Math.max(0, suffix.length() - 8));
+
+        PassengerTravelerRequest request = new PassengerTravelerRequest();
+        request.setPassengerName("TravelerUser" + suffix);
+        request.setIdType("ID_CARD");
+        request.setIdNo("33010119990101" + suffix.substring(0, 4));
+        request.setPhone("136" + suffix.substring(0, 8));
+        request.setDefaultTraveler(true);
+
+        ResponseEntity<PassengerTravelerResponse> createdResponse = restTemplate.exchange(
+                "/api/passenger/travelers",
+                HttpMethod.POST,
+                authorizedEntity(passenger, request),
+                PassengerTravelerResponse.class
+        );
+        assertThat(createdResponse.getStatusCodeValue()).isEqualTo(200);
+        PassengerTravelerResponse traveler = createdResponse.getBody();
+        assertThat(traveler).isNotNull();
+        assertThat(traveler.getPassengerName()).isEqualTo(request.getPassengerName());
+        assertThat(traveler.getIdNoMasked()).contains("*");
+        assertThat(traveler.getPhoneMasked()).contains("*");
+
+        ResponseEntity<PassengerTravelerResponse[]> listResponse = restTemplate.exchange(
+                "/api/passenger/travelers",
+                HttpMethod.GET,
+                authorizedEntity(passenger),
+                PassengerTravelerResponse[].class
+        );
+        assertThat(listResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(Arrays.asList(listResponse.getBody())).extracting(PassengerTravelerResponse::getId)
+                .contains(traveler.getId());
+
+        ResponseEntity<PassengerTravelerResponse[]> otherListResponse = restTemplate.exchange(
+                "/api/passenger/travelers",
+                HttpMethod.GET,
+                authorizedEntity(otherPassenger),
+                PassengerTravelerResponse[].class
+        );
+        assertThat(Arrays.asList(otherListResponse.getBody())).extracting(PassengerTravelerResponse::getId)
+                .doesNotContain(traveler.getId());
+
+        ResponseEntity<PassengerTravelerResponse> defaultResponse = restTemplate.exchange(
+                "/api/passenger/travelers/{id}/default",
+                HttpMethod.POST,
+                authorizedEntity(passenger),
+                PassengerTravelerResponse.class,
+                traveler.getId()
+        );
+        assertThat(defaultResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(defaultResponse.getBody()).isNotNull();
+        assertThat(defaultResponse.getBody().isDefaultTraveler()).isTrue();
+
+        PassengerTravelerRequest illegalUpdate = new PassengerTravelerRequest();
+        illegalUpdate.setPassengerName("OtherUpdate");
+        illegalUpdate.setIdType("ID_CARD");
+        illegalUpdate.setIdNo("110101199001019999");
+        ResponseEntity<String> otherUpdate = restTemplate.exchange(
+                "/api/passenger/travelers/{id}",
+                HttpMethod.PUT,
+                authorizedEntity(otherPassenger, illegalUpdate),
+                String.class,
+                traveler.getId()
+        );
+        assertThat(otherUpdate.getStatusCodeValue()).isEqualTo(403);
+
+        TrainSearchResponse train = firstTrainInventory();
+        PassengerCreateOrderRequest orderRequest = new PassengerCreateOrderRequest();
+        orderRequest.setTrainId(train.getTrainId());
+        orderRequest.setInventoryId(train.getInventoryId());
+        orderRequest.setTravelerId(traveler.getId());
+        orderRequest.setRequestId("traveler-order-" + suffix);
+
+        ResponseEntity<String> otherCreate = restTemplate.exchange(
+                "/api/passenger/orders",
+                HttpMethod.POST,
+                authorizedEntity(otherPassenger, orderRequest),
+                String.class
+        );
+        assertThat(otherCreate.getStatusCodeValue()).isEqualTo(403);
+
+        ResponseEntity<OrderResponse> orderResponse = restTemplate.exchange(
+                "/api/passenger/orders",
+                HttpMethod.POST,
+                authorizedEntity(passenger, orderRequest),
+                OrderResponse.class
+        );
+        assertThat(orderResponse.getStatusCodeValue()).isEqualTo(200);
+        OrderResponse order = orderResponse.getBody();
+        assertThat(order).isNotNull();
+        assertThat(order.getPassengerName()).isEqualTo(request.getPassengerName());
+        assertThat(order.getPassengerIdType()).isEqualTo("ID_CARD");
+        assertThat(order.getPassengerIdNoMasked()).isEqualTo(traveler.getIdNoMasked());
+        assertThat(order.getPassengerPhoneMasked()).isEqualTo(traveler.getPhoneMasked());
+
+        restTemplate.exchange(
+                "/api/passenger/orders/{id}/pay",
+                HttpMethod.POST,
+                authorizedEntity(passenger),
+                OrderResponse.class,
+                order.getId()
+        );
+
+        ResponseEntity<OrderDetailResponse> detail = restTemplate.exchange(
+                "/api/passenger/orders/{id}/detail",
+                HttpMethod.GET,
+                authorizedEntity(passenger),
+                OrderDetailResponse.class,
+                order.getId()
+        );
+        assertThat(detail.getStatusCodeValue()).isEqualTo(200);
+        assertThat(detail.getBody()).isNotNull();
+        assertThat(detail.getBody().getOrder().getPassengerIdNoMasked()).isEqualTo(traveler.getIdNoMasked());
+        assertThat(detail.getBody().getTicket()).isNotNull();
+        assertThat(detail.getBody().getTicket().getPassengerIdType()).isEqualTo("ID_CARD");
+        assertThat(detail.getBody().getTicket().getPassengerIdCardMasked()).isEqualTo(traveler.getIdNoMasked());
+        assertThat(detail.getBody().getTicket().getPassengerPhoneMasked()).isEqualTo(traveler.getPhoneMasked());
     }
 
     @Test

@@ -4046,6 +4046,86 @@ body.passenger-consumer-page {
   padding: clamp(20px, 3vw, 28px);
 }
 
+.passenger-traveler-section {
+  padding: clamp(20px, 3vw, 28px);
+  border: 1px solid rgba(22, 49, 44, 0.10);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 46px rgba(21, 66, 58, 0.08);
+}
+
+.traveler-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.82fr) minmax(420px, 1.18fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.traveler-form-card,
+.traveler-card {
+  border: 1px solid rgba(22, 49, 44, 0.10);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcfb 100%);
+  box-shadow: 0 12px 30px rgba(21, 66, 58, 0.06);
+}
+
+.traveler-form-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.traveler-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #3c4d49;
+  font-size: 13px;
+}
+
+.traveler-list {
+  display: grid;
+  gap: 12px;
+}
+
+.traveler-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+}
+
+.traveler-card > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.traveler-card span {
+  color: #66736f;
+  font-size: 13px;
+}
+
+.traveler-card.default-traveler {
+  border-color: rgba(15, 107, 87, 0.28);
+  background: linear-gradient(135deg, rgba(232, 250, 244, 0.9), #ffffff 72%);
+}
+
+.buy-form > label {
+  display: grid;
+  gap: 7px;
+}
+
+.buy-form input:disabled,
+.buy-form select:disabled {
+  color: #66736f;
+  background: #f4f8f7;
+  cursor: not-allowed;
+}
+
 .journey-stat-strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -4243,6 +4323,8 @@ body.passenger-consumer-page {
   .portal-proof,
   .portal-choice-grid,
   .booking-search-card,
+  .traveler-layout,
+  .traveler-form-grid,
   .journey-board,
   .passenger-record-list {
     grid-template-columns: 1fr;

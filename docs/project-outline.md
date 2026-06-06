@@ -176,6 +176,7 @@
 - `seat_inventories`
 - `ticket_orders`
 - `ticket_records`
+- `passenger_profiles`
 - `payment_records`
 - `refund_records`
 - `risk_events`
@@ -197,6 +198,11 @@
 - `GET /api/passenger/summary`
 - `GET /api/passenger/orders`
 - `GET /api/passenger/orders/{id}/detail`
+- `GET /api/passenger/travelers`
+- `POST /api/passenger/travelers`
+- `PUT /api/passenger/travelers/{id}`
+- `DELETE /api/passenger/travelers/{id}`
+- `POST /api/passenger/travelers/{id}/default`
 - `POST /api/passenger/orders`
 - `POST /api/passenger/orders/{id}/pay`
 - `POST /api/passenger/orders/{id}/close`

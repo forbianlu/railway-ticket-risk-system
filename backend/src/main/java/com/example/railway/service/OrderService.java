@@ -21,7 +21,9 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.example.railway.common.BusinessException;
+import com.example.railway.common.MaskingUtils;
 import com.example.railway.domain.OrderStatus;
+import com.example.railway.domain.PassengerIdType;
 import com.example.railway.domain.SeatInventory;
 import com.example.railway.domain.TicketOrder;
 import com.example.railway.dto.CreateOrderRequest;
@@ -94,6 +96,9 @@ public class OrderService {
         order.setRequestId(requestId);
         order.setPassengerName(request.getPassengerName());
         order.setPassengerIdCard(request.getPassengerIdCard());
+        order.setPassengerIdType(parsePassengerIdType(request.getPassengerIdType()));
+        order.setPassengerIdNoMasked(MaskingUtils.maskIdNo(request.getPassengerIdCard()));
+        order.setPassengerPhoneMasked(MaskingUtils.maskPhone(request.getPassengerPhone()));
         order.setTrain(inventory.getTrain());
         order.setInventory(inventory);
         order.setTravelDate(inventory.getTravelDate());
@@ -350,6 +355,17 @@ public class OrderService {
         payload.put("status", order.getStatus() == null ? null : order.getStatus().name());
         payload.put("amount", order.getAmount());
         outboxEventPublisher.publish(eventType, "ORDER", String.valueOf(order.getId()), payload);
+    }
+
+    private PassengerIdType parsePassengerIdType(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return PassengerIdType.ID_CARD;
+        }
+        try {
+            return PassengerIdType.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException("Unsupported passenger id type: " + value);
+        }
     }
 
     private void evictTrainSearchCacheAfterCommit(SeatInventory inventory) {

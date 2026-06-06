@@ -11,6 +11,7 @@ erDiagram
     TICKET_ORDERS ||--o{ RISK_EVENTS : triggers
     RISK_EVENTS ||--o{ RISK_EVENT_HANDLE_RECORDS : records
     TICKET_ORDERS ||--o{ OUTBOX_EVENTS : publishes
+    APP_USERS ||--o{ PASSENGER_PROFILES : owns
 
     APP_USERS {
         bigint id PK
@@ -57,6 +58,9 @@ erDiagram
         bigint user_id
         varchar passenger_name
         varchar passenger_id_card
+        varchar passenger_id_type
+        varchar passenger_id_no_masked
+        varchar passenger_phone_masked
         bigint train_id FK
         bigint inventory_id FK
         date travel_date
@@ -68,6 +72,18 @@ erDiagram
         timestamp paid_at
         timestamp refunded_at
         timestamp closed_at
+    }
+
+    PASSENGER_PROFILES {
+        bigint id PK
+        bigint user_id
+        varchar passenger_name
+        varchar id_type
+        varchar id_no
+        varchar phone
+        boolean default_traveler
+        timestamp created_at
+        timestamp updated_at
     }
 
     RISK_EVENTS {
@@ -149,6 +165,8 @@ erDiagram
         varchar seat_type
         varchar passenger_name
         varchar passenger_id_card_masked
+        varchar passenger_id_type
+        varchar passenger_phone_masked
         decimal amount
         varchar status
         timestamp issued_at

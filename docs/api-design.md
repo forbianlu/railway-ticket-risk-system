@@ -885,3 +885,54 @@ Returns a transaction trace view for the order. The response includes the order,
 ```
 
 The ticket is issued after payment success and marked `REFUNDED` after order refund. Ticket status does not change the order state machine.
+
+## Passenger traveler profile APIs
+
+Passenger traveler APIs require a `USER` token. The server always uses the current JWT user as the traveler owner.
+
+```http
+GET /api/passenger/travelers
+POST /api/passenger/travelers
+PUT /api/passenger/travelers/{id}
+DELETE /api/passenger/travelers/{id}
+POST /api/passenger/travelers/{id}/default
+Authorization: Bearer {USER token}
+```
+
+Request body:
+
+```json
+{
+  "passengerName": "Zhang San",
+  "idType": "ID_CARD",
+  "idNo": "110101200001010011",
+  "phone": "13800010001",
+  "defaultTraveler": true
+}
+```
+
+Response masks sensitive fields:
+
+```json
+{
+  "id": 1,
+  "passengerName": "Zhang San",
+  "idType": "ID_CARD",
+  "idNoMasked": "110***********0011",
+  "phoneMasked": "138****0001",
+  "defaultTraveler": true
+}
+```
+
+`POST /api/passenger/orders` can use `travelerId` instead of manual passenger identity fields:
+
+```json
+{
+  "requestId": "passenger-order-001",
+  "trainId": 1,
+  "inventoryId": 1,
+  "travelerId": 1
+}
+```
+
+The service validates traveler ownership and writes masked passenger snapshots to the order and ticket records.

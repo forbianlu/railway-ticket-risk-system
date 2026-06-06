@@ -87,3 +87,21 @@ USER 登录 -> 查询车次 -> POST /api/passenger/orders -> 复用 OrderService
 - 我的退款流水：调用 `/api/passenger/refunds`。
 
 入口页 `frontend/index.html` 提供乘客购票服务和运营管理系统两个入口，运营管理端保留在 `frontend/admin.html`。
+
+## 常用乘车人能力
+
+乘客端新增常用乘车人管理接口，路径统一位于 `/api/passenger/travelers`。乘车人资料只归属当前 `USER`，服务端使用 JWT 中的 `userId` 进行隔离。
+
+接口列表：
+
+| 接口 | 说明 |
+| --- | --- |
+| `GET /api/passenger/travelers` | 查询我的常用乘车人 |
+| `POST /api/passenger/travelers` | 新增常用乘车人 |
+| `PUT /api/passenger/travelers/{id}` | 更新我的常用乘车人 |
+| `DELETE /api/passenger/travelers/{id}` | 删除我的常用乘车人 |
+| `POST /api/passenger/travelers/{id}/default` | 设置默认乘车人 |
+
+下单接口支持 `travelerId`。当乘客选择常用乘车人下单时，后端会校验该 `travelerId` 是否属于当前登录用户，然后把乘车人姓名、证件类型、脱敏证件号和脱敏手机号写入订单快照。支付成功生成电子票时，电子票也保存相同的脱敏快照。
+
+这样即使乘客后续修改或删除常用乘车人，历史订单和电子票仍保持当时购票使用的实名信息快照。

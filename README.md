@@ -26,7 +26,7 @@
 - 接口限流：车次查询、下单、支付回调、风险处置等高频接口支持本地 / Redis 限流，阈值通过配置文件维护。
 - Outbox 事件：核心交易事务内写入 Outbox 事件表，支持派发、失败重试、积压统计和失败率监控。
 - 权限和审计：使用 Spring Security、JWT、BCrypt、角色校验、操作日志和风险处置历史。
-- 乘客端 API：新增 `USER` 角色，支持当前乘客查询概览、我的订单、下单、支付、取消、退票、我的支付流水和我的退款流水。
+- 乘客端 API：新增 `USER` 角色，支持当前乘客查询概览、常用乘车人、我的订单、下单、支付、取消、退票、我的支付流水和我的退款流水。
 - 双端前端：入口页区分乘客购票服务与运营管理系统；乘客端接入 `/api/passenger/**`，管理端保留运营看板、交易列表、风险报表、事件中心和系统治理视图。
 - 集成测试：覆盖交易状态、幂等、并发防超卖、支付回调、风险处置、缓存和权限链路。
 
@@ -115,6 +115,11 @@ GET  /api/stations
 GET  /api/trains/search?from=BJP&to=SHH&date=2026-06-01
 GET  /api/passenger/summary
 GET  /api/passenger/orders?status=PAID&page=0&size=10
+GET  /api/passenger/travelers
+POST /api/passenger/travelers
+PUT  /api/passenger/travelers/{id}
+DELETE /api/passenger/travelers/{id}
+POST /api/passenger/travelers/{id}/default
 POST /api/passenger/orders
 POST /api/passenger/orders/{id}/pay
 POST /api/passenger/orders/{id}/close
@@ -378,6 +383,7 @@ PAID -> REFUNDED
 - [并发防超卖设计](docs/concurrency-design.md)
 - [技术设计笔记](docs/technical-design-notes.md)
 - [乘客端 API 设计](docs/passenger-api-design.md)
+- [乘客常用乘车人设计](docs/passenger-traveler-design.md)
 - [演示数据设计](docs/demo-data-design.md)
 - [前端管理台设计](docs/frontend-design.md)
 - [部署指南](docs/deployment-guide.md)

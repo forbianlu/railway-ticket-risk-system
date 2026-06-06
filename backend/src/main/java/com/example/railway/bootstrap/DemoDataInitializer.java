@@ -21,6 +21,8 @@ import com.example.railway.domain.OperationLog;
 import com.example.railway.domain.OrderStatus;
 import com.example.railway.domain.OutboxEvent;
 import com.example.railway.domain.OutboxEventStatus;
+import com.example.railway.domain.PassengerIdType;
+import com.example.railway.domain.PassengerTraveler;
 import com.example.railway.domain.PaymentRecord;
 import com.example.railway.domain.PaymentStatus;
 import com.example.railway.domain.RefundRecord;
@@ -41,6 +43,7 @@ import com.example.railway.domain.UserRole;
 import com.example.railway.repository.AppUserRepository;
 import com.example.railway.repository.OperationLogRepository;
 import com.example.railway.repository.OutboxEventRepository;
+import com.example.railway.repository.PassengerTravelerRepository;
 import com.example.railway.repository.PaymentRecordRepository;
 import com.example.railway.repository.RefundRecordRepository;
 import com.example.railway.repository.RiskEventHandleRecordRepository;
@@ -67,6 +70,7 @@ public class DemoDataInitializer implements CommandLineRunner {
     private final RiskEventHandleRecordRepository riskEventHandleRecordRepository;
     private final OperationLogRepository operationLogRepository;
     private final OutboxEventRepository outboxEventRepository;
+    private final PassengerTravelerRepository passengerTravelerRepository;
     private final PasswordService passwordService;
     private final boolean demoDataEnabled;
 
@@ -82,6 +86,7 @@ public class DemoDataInitializer implements CommandLineRunner {
                                RiskEventHandleRecordRepository riskEventHandleRecordRepository,
                                OperationLogRepository operationLogRepository,
                                OutboxEventRepository outboxEventRepository,
+                               PassengerTravelerRepository passengerTravelerRepository,
                                PasswordService passwordService,
                                @Value("${railway.demo-data.enabled:true}") boolean demoDataEnabled) {
         this.stationRepository = stationRepository;
@@ -96,6 +101,7 @@ public class DemoDataInitializer implements CommandLineRunner {
         this.riskEventHandleRecordRepository = riskEventHandleRecordRepository;
         this.operationLogRepository = operationLogRepository;
         this.outboxEventRepository = outboxEventRepository;
+        this.passengerTravelerRepository = passengerTravelerRepository;
         this.passwordService = passwordService;
         this.demoDataEnabled = demoDataEnabled;
     }
@@ -104,6 +110,7 @@ public class DemoDataInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         seedUsers();
+        seedPassengerTravelers();
         if (!demoDataEnabled) {
             return;
         }
@@ -131,6 +138,50 @@ public class DemoDataInitializer implements CommandLineRunner {
             return;
         }
         appUserRepository.save(new AppUser(username, passwordService.hash(password), displayName, role));
+    }
+
+    private void seedPassengerTravelers() {
+        saveTravelerIfMissing("passenger1", "张明远", PassengerIdType.ID_CARD, "110101199001010011", "13800010001", true);
+        saveTravelerIfMissing("passenger1", "李若晴", PassengerIdType.ID_CARD, "110101199203030022", "13800010002", false);
+        saveTravelerIfMissing("passenger2", "陈思远", PassengerIdType.ID_CARD, "310101198812120033", "13900020001", true);
+        saveTravelerIfMissing("passenger2", "WANG LIN", PassengerIdType.PASSPORT, "EJ1234567", "13900020002", false);
+        saveTravelerIfMissing("passenger3", "赵启航", PassengerIdType.ID_CARD, "440301199505050044", "13700030001", true);
+        saveTravelerIfMissing("passenger3", "孙一诺", PassengerIdType.OTHER, "STUDENT20260001", "13700030002", false);
+    }
+
+    private void saveTravelerIfMissing(String username,
+                                       String passengerName,
+                                       PassengerIdType idType,
+                                       String idNo,
+                                       String phone,
+                                       boolean defaultTraveler) {
+        AppUser user = appUserRepository.findByUsername(username).orElse(null);
+        if (user == null || passengerTravelerRepository.existsByUserIdAndPassengerNameAndIdTypeAndIdNo(
+                user.getId(),
+                passengerName,
+                idType,
+                idNo
+        )) {
+            return;
+        }
+        if (defaultTraveler) {
+            for (PassengerTraveler existing : passengerTravelerRepository.findByUserIdOrderByDefaultTravelerDescUpdatedAtDesc(user.getId())) {
+                existing.setDefaultTraveler(false);
+                existing.setUpdatedAt(LocalDateTime.now());
+                passengerTravelerRepository.save(existing);
+            }
+        }
+        LocalDateTime now = LocalDateTime.now();
+        PassengerTraveler traveler = new PassengerTraveler();
+        traveler.setUserId(user.getId());
+        traveler.setPassengerName(passengerName);
+        traveler.setIdType(idType);
+        traveler.setIdNo(idNo);
+        traveler.setPhone(phone);
+        traveler.setDefaultTraveler(defaultTraveler);
+        traveler.setCreatedAt(now);
+        traveler.setUpdatedAt(now);
+        passengerTravelerRepository.save(traveler);
     }
 
     private Map<String, Station> seedStations() {
@@ -263,6 +314,9 @@ public class DemoDataInitializer implements CommandLineRunner {
             order.setRequestId("demo-order-request-" + (i + 1));
             order.setPassengerName("演示乘客" + String.format("%02d", i + 1));
             order.setPassengerIdCard("1101011990" + String.format("%08d", i + 1));
+            order.setPassengerIdType(PassengerIdType.ID_CARD);
+            order.setPassengerIdNoMasked(maskIdCard(order.getPassengerIdCard()));
+            order.setPassengerPhoneMasked(maskPhone("138" + String.format("%08d", i + 1)));
             order.setTrain(inventory.getTrain());
             order.setInventory(inventory);
             order.setTravelDate(inventory.getTravelDate());
@@ -389,7 +443,9 @@ public class DemoDataInitializer implements CommandLineRunner {
             ticket.setArrivalTime(order.getTrain().getArrivalTime());
             ticket.setSeatType(order.getSeatType());
             ticket.setPassengerName(order.getPassengerName());
-            ticket.setPassengerIdCardMasked(maskIdCard(order.getPassengerIdCard()));
+            ticket.setPassengerIdCardMasked(order.getPassengerIdNoMasked() == null ? maskIdCard(order.getPassengerIdCard()) : order.getPassengerIdNoMasked());
+            ticket.setPassengerIdType(order.getPassengerIdType());
+            ticket.setPassengerPhoneMasked(order.getPassengerPhoneMasked());
             ticket.setAmount(order.getAmount());
             ticket.setIssuedAt(order.getPaidAt() == null ? order.getCreatedAt().plusMinutes(8) : order.getPaidAt());
             ticket.setStatus(OrderStatus.REFUNDED.equals(order.getStatus()) ? TicketStatus.REFUNDED : TicketStatus.ISSUED);
@@ -407,6 +463,13 @@ public class DemoDataInitializer implements CommandLineRunner {
             return "****";
         }
         return idCard.substring(0, 4) + "********" + idCard.substring(idCard.length() - 4);
+    }
+
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() <= 7) {
+            return "****";
+        }
+        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
     }
 
     private void seedRiskEvents() {

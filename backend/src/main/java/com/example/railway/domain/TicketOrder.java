@@ -43,6 +43,16 @@ public class TicketOrder {
     @Column(nullable = false, length = 32)
     private String passengerIdCard;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "passenger_id_type", length = 32)
+    private PassengerIdType passengerIdType;
+
+    @Column(name = "passenger_id_no_masked", length = 64)
+    private String passengerIdNoMasked;
+
+    @Column(name = "passenger_phone_masked", length = 32)
+    private String passengerPhoneMasked;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "train_id", nullable = false)
     private Train train;
@@ -117,6 +127,30 @@ public class TicketOrder {
 
     public void setPassengerIdCard(String passengerIdCard) {
         this.passengerIdCard = passengerIdCard;
+    }
+
+    public PassengerIdType getPassengerIdType() {
+        return passengerIdType;
+    }
+
+    public void setPassengerIdType(PassengerIdType passengerIdType) {
+        this.passengerIdType = passengerIdType;
+    }
+
+    public String getPassengerIdNoMasked() {
+        return passengerIdNoMasked;
+    }
+
+    public void setPassengerIdNoMasked(String passengerIdNoMasked) {
+        this.passengerIdNoMasked = passengerIdNoMasked;
+    }
+
+    public String getPassengerPhoneMasked() {
+        return passengerPhoneMasked;
+    }
+
+    public void setPassengerPhoneMasked(String passengerPhoneMasked) {
+        this.passengerPhoneMasked = passengerPhoneMasked;
     }
 
     public Train getTrain() {

@@ -5,6 +5,8 @@ const passengerState = {
   auth: loadPassengerAuth(),
   stations: [],
   trainByInventory: {},
+  travelers: [],
+  travelerById: {},
   selectedTrain: null,
   authExpiredNotified: false,
   navObserver: null,
@@ -51,6 +53,18 @@ const elements = {
   showHotRoutes: document.querySelector("#passenger-show-hot-routes"),
   hotRoutes: document.querySelector("#passenger-hot-routes"),
   trainResults: document.querySelector("#passenger-train-results"),
+  refreshTravelers: document.querySelector("#passenger-refresh-travelers"),
+  travelerForm: document.querySelector("#passenger-traveler-form"),
+  travelerId: document.querySelector("#passenger-traveler-id"),
+  travelerName: document.querySelector("#passenger-traveler-name"),
+  travelerIdType: document.querySelector("#passenger-traveler-id-type"),
+  travelerIdNo: document.querySelector("#passenger-traveler-id-no"),
+  travelerPhone: document.querySelector("#passenger-traveler-phone"),
+  travelerDefault: document.querySelector("#passenger-traveler-default"),
+  travelerError: document.querySelector("#passenger-traveler-error"),
+  travelerSubmit: document.querySelector("#passenger-traveler-submit"),
+  travelerCancel: document.querySelector("#passenger-traveler-cancel"),
+  travelerList: document.querySelector("#passenger-traveler-list"),
   orderStatus: document.querySelector("#passenger-order-status"),
   loadOrders: document.querySelector("#passenger-load-orders"),
   resetOrders: document.querySelector("#passenger-reset-orders"),
@@ -75,8 +89,11 @@ const elements = {
   buyCancel: document.querySelector("#passenger-buy-cancel"),
   buyForm: document.querySelector("#passenger-buy-form"),
   buySummary: document.querySelector("#passenger-buy-summary"),
+  buyTraveler: document.querySelector("#passenger-buy-traveler"),
   buyName: document.querySelector("#passenger-buy-name"),
+  buyIdType: document.querySelector("#passenger-buy-id-type"),
   buyIdCard: document.querySelector("#passenger-buy-id-card"),
+  buyPhone: document.querySelector("#passenger-buy-phone"),
   buyError: document.querySelector("#passenger-buy-error"),
   buyConfirm: document.querySelector("#passenger-buy-confirm"),
   toast: document.querySelector("#passenger-toast"),
@@ -97,6 +114,13 @@ elements.showHotRoutes.addEventListener("click", () => {
   renderHotRoutes(true);
   showToast("已展开热门线路");
 });
+elements.refreshTravelers.addEventListener("click", loadPassengerTravelers);
+elements.travelerForm.addEventListener("submit", event => {
+  event.preventDefault();
+  savePassengerTraveler();
+});
+elements.travelerCancel.addEventListener("click", resetTravelerForm);
+elements.buyTraveler.addEventListener("change", applySelectedTravelerToBuyForm);
 elements.loadOrders.addEventListener("click", () => {
   passengerState.orders.page = 0;
   loadPassengerOrders();
@@ -255,6 +279,7 @@ async function refreshPassengerData() {
   }
   await Promise.all([
     loadPassengerSummary(),
+    loadPassengerTravelers(),
     loadPassengerOrders(),
     loadPassengerPayments(),
     loadPassengerRefunds(),
@@ -304,6 +329,150 @@ function renderMiniOrders(container, orders, emptyText) {
       loadPassengerOrders();
     });
   });
+}
+
+async function loadPassengerTravelers() {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  try {
+    const travelers = await passengerRequest("/passenger/travelers");
+    passengerState.travelers = travelers || [];
+    passengerState.travelerById = {};
+    passengerState.travelers.forEach(traveler => {
+      passengerState.travelerById[String(traveler.id)] = traveler;
+    });
+    renderPassengerTravelers();
+    renderBuyTravelerOptions();
+  } catch (error) {
+    elements.travelerList.innerHTML = recordEmpty(error.message || "无法加载常用乘车人");
+  }
+}
+
+function renderPassengerTravelers() {
+  if (!passengerState.travelers.length) {
+    elements.travelerList.innerHTML = recordEmpty("暂无常用乘车人，可先新增一位乘车人用于购票");
+    return;
+  }
+  elements.travelerList.innerHTML = passengerState.travelers.map(traveler => `
+    <article class="traveler-card ${traveler.defaultTraveler ? "default-traveler" : ""}">
+      <div>
+        <div class="event-header">
+          <strong>${escapeHtml(traveler.passengerName)}</strong>
+          ${traveler.defaultTraveler ? `<span class="status success">默认</span>` : ""}
+        </div>
+        <span>${idTypeText(traveler.idType)} / ${escapeHtml(traveler.idNoMasked || "-")}</span>
+        <span>手机号 ${escapeHtml(traveler.phoneMasked || "-")}</span>
+      </div>
+      <div class="inline-actions">
+        <button class="secondary-button compact-button" type="button" data-edit-traveler="${traveler.id}">编辑</button>
+        <button class="ghost-button compact-button" type="button" data-default-traveler="${traveler.id}" ${traveler.defaultTraveler ? "disabled" : ""}>设默认</button>
+        <button class="danger-button compact-button" type="button" data-delete-traveler="${traveler.id}">删除</button>
+      </div>
+    </article>
+  `).join("");
+  elements.travelerList.querySelectorAll("[data-edit-traveler]").forEach(button => {
+    button.addEventListener("click", () => editTraveler(button.dataset.editTraveler));
+  });
+  elements.travelerList.querySelectorAll("[data-default-traveler]").forEach(button => {
+    button.addEventListener("click", () => setDefaultTraveler(button.dataset.defaultTraveler));
+  });
+  elements.travelerList.querySelectorAll("[data-delete-traveler]").forEach(button => {
+    button.addEventListener("click", () => deleteTraveler(button.dataset.deleteTraveler));
+  });
+}
+
+function renderBuyTravelerOptions() {
+  const options = passengerState.travelers.map(traveler => `
+    <option value="${traveler.id}" ${traveler.defaultTraveler ? "selected" : ""}>
+      ${escapeHtml(traveler.passengerName)} / ${idTypeText(traveler.idType)} / ${escapeHtml(traveler.idNoMasked || "-")}
+    </option>
+  `).join("");
+  elements.buyTraveler.innerHTML = `<option value="">手动填写乘车人</option>${options}`;
+}
+
+async function savePassengerTraveler() {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  const travelerId = elements.travelerId.value;
+  const body = {
+    passengerName: elements.travelerName.value.trim(),
+    idType: elements.travelerIdType.value,
+    idNo: elements.travelerIdNo.value.trim(),
+    phone: elements.travelerPhone.value.trim(),
+    defaultTraveler: elements.travelerDefault.checked,
+  };
+  if (!body.passengerName || !body.idNo) {
+    elements.travelerError.textContent = "请填写乘车人姓名和证件号";
+    return;
+  }
+  elements.travelerSubmit.disabled = true;
+  elements.travelerError.textContent = "";
+  try {
+    await passengerRequest(travelerId ? `/passenger/travelers/${travelerId}` : "/passenger/travelers", {
+      method: travelerId ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    resetTravelerForm();
+    await loadPassengerTravelers();
+    showToast(travelerId ? "常用乘车人已更新" : "常用乘车人已新增");
+  } catch (error) {
+    elements.travelerError.textContent = error.message || "保存乘车人失败";
+  } finally {
+    elements.travelerSubmit.disabled = false;
+  }
+}
+
+function editTraveler(travelerId) {
+  const traveler = passengerState.travelerById[String(travelerId)];
+  if (!traveler) {
+    return;
+  }
+  elements.travelerId.value = traveler.id;
+  elements.travelerName.value = traveler.passengerName || "";
+  elements.travelerIdType.value = traveler.idType || "ID_CARD";
+  elements.travelerIdNo.value = "";
+  elements.travelerIdNo.placeholder = "请重新输入证件号";
+  elements.travelerPhone.value = "";
+  elements.travelerPhone.placeholder = traveler.phoneMasked ? `当前 ${traveler.phoneMasked}，可重新输入` : "请输入手机号";
+  elements.travelerDefault.checked = Boolean(traveler.defaultTraveler);
+  elements.travelerSubmit.textContent = "保存修改";
+  elements.travelerError.textContent = "编辑时需重新输入完整证件号，用于避免前端暴露明文证件信息。";
+}
+
+function resetTravelerForm() {
+  elements.travelerId.value = "";
+  elements.travelerName.value = "";
+  elements.travelerIdType.value = "ID_CARD";
+  elements.travelerIdNo.value = "";
+  elements.travelerIdNo.placeholder = "请输入证件号";
+  elements.travelerPhone.value = "";
+  elements.travelerPhone.placeholder = "请输入手机号";
+  elements.travelerDefault.checked = false;
+  elements.travelerSubmit.textContent = "保存乘车人";
+  elements.travelerError.textContent = "";
+}
+
+async function setDefaultTraveler(travelerId) {
+  try {
+    await passengerRequest(`/passenger/travelers/${travelerId}/default`, { method: "POST" });
+    await loadPassengerTravelers();
+    showToast("默认乘车人已更新");
+  } catch (error) {
+    showToast(error.message || "设置默认乘车人失败");
+  }
+}
+
+async function deleteTraveler(travelerId) {
+  try {
+    await passengerRequest(`/passenger/travelers/${travelerId}`, { method: "DELETE" });
+    await loadPassengerTravelers();
+    showToast("常用乘车人已删除");
+  } catch (error) {
+    showToast(error.message || "删除乘车人失败");
+  }
 }
 
 async function searchPassengerTrains() {
@@ -467,15 +636,44 @@ function openBuyModal(inventoryId) {
       <div><span>剩余票数</span><strong>${train.remainingSeats}</strong></div>
     </div>
   `;
-  elements.buyName.value = passengerState.auth.displayName || "";
-  elements.buyIdCard.value = "";
+  renderBuyTravelerOptions();
+  applySelectedTravelerToBuyForm();
+  if (!elements.buyTraveler.value) {
+    elements.buyName.value = passengerState.auth.displayName || "";
+    elements.buyIdType.value = "ID_CARD";
+    elements.buyIdCard.value = "";
+    elements.buyPhone.value = "";
+  }
   elements.buyError.textContent = "";
   elements.buyConfirm.disabled = false;
   elements.buyConfirm.textContent = "确认下单";
   elements.buyModal.classList.add("show");
   elements.buyModal.setAttribute("aria-hidden", "false");
   document.body.classList.add("modal-open");
-  window.setTimeout(() => elements.buyName.focus(), 80);
+  window.setTimeout(() => (elements.buyTraveler.value ? elements.buyConfirm.focus() : elements.buyName.focus()), 80);
+}
+
+function applySelectedTravelerToBuyForm() {
+  const travelerId = elements.buyTraveler.value;
+  const traveler = passengerState.travelerById[String(travelerId)];
+  if (!traveler) {
+    elements.buyName.disabled = false;
+    elements.buyIdType.disabled = false;
+    elements.buyIdCard.disabled = false;
+    elements.buyPhone.disabled = false;
+    if (!elements.buyName.value && passengerState.auth && passengerState.auth.displayName) {
+      elements.buyName.value = passengerState.auth.displayName;
+    }
+    return;
+  }
+  elements.buyName.value = traveler.passengerName || "";
+  elements.buyIdType.value = traveler.idType || "ID_CARD";
+  elements.buyIdCard.value = traveler.idNoMasked || "";
+  elements.buyPhone.value = traveler.phoneMasked || "";
+  elements.buyName.disabled = true;
+  elements.buyIdType.disabled = true;
+  elements.buyIdCard.disabled = true;
+  elements.buyPhone.disabled = true;
 }
 
 function closeBuyModal() {
@@ -490,9 +688,10 @@ async function submitPassengerOrder() {
   if (!train) {
     return;
   }
+  const selectedTravelerId = elements.buyTraveler.value;
   const passengerName = elements.buyName.value.trim();
   const passengerIdCard = elements.buyIdCard.value.trim();
-  if (!passengerName || !passengerIdCard) {
+  if (!selectedTravelerId && (!passengerName || !passengerIdCard)) {
     elements.buyError.textContent = "请完整填写乘客姓名和证件号";
     return;
   }
@@ -500,20 +699,27 @@ async function submitPassengerOrder() {
   elements.buyConfirm.textContent = "下单中...";
   elements.buyError.textContent = "";
   try {
+    const body = {
+      requestId: generateRequestId("PAX-ORDER"),
+      trainId: Number(train.trainId),
+      inventoryId: Number(train.inventoryId),
+    };
+    if (selectedTravelerId) {
+      body.travelerId = Number(selectedTravelerId);
+    } else {
+      body.passengerName = passengerName;
+      body.passengerIdCard = passengerIdCard;
+      body.passengerIdType = elements.buyIdType.value;
+      body.passengerPhone = elements.buyPhone.value.trim();
+    }
     await passengerRequest("/passenger/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        requestId: generateRequestId("PAX-ORDER"),
-        trainId: Number(train.trainId),
-        inventoryId: Number(train.inventoryId),
-        passengerName,
-        passengerIdCard,
-      }),
+      body: JSON.stringify(body),
     });
     closeBuyModal();
     showToast("订单已创建，库存已锁定，请及时支付");
-    await Promise.all([loadPassengerSummary(), loadPassengerOrders(), loadAvailablePassengerTrains()]);
+    await Promise.all([loadPassengerSummary(), loadPassengerTravelers(), loadPassengerOrders(), loadAvailablePassengerTrains()]);
     activateSection("passenger-orders");
   } catch (error) {
     elements.buyError.textContent = error.message || "购票失败，请稍后重试";
@@ -554,7 +760,7 @@ function renderPassengerOrders(orders) {
         <div>
           <p class="eyebrow">${escapeHtml(order.orderNo)}</p>
           <h3>${escapeHtml(order.trainNo)} · ${formatDate(order.travelDate)}</h3>
-          <span>${seatTypeText(order.seatType)} / ${escapeHtml(order.passengerName)}</span>
+          <span>${seatTypeText(order.seatType)} / ${escapeHtml(order.passengerName)} / ${escapeHtml(order.passengerIdNoMasked || "-")}</span>
         </div>
         <div class="passenger-order-price">
           <strong>¥${formatAmount(order.amount)}</strong>
@@ -663,7 +869,8 @@ function renderTicketDetail(ticket) {
       <div><span>Ticket No</span><strong>${escapeHtml(ticket.ticketNo)}</strong></div>
       <div><span>Route</span><strong>${escapeHtml(ticket.departureStation)} → ${escapeHtml(ticket.arrivalStation)}</strong></div>
       <div><span>Time</span><strong>${formatTime(ticket.departureTime)} - ${formatTime(ticket.arrivalTime)}</strong></div>
-      <div><span>Passenger</span><strong>${escapeHtml(ticket.passengerName)} / ${escapeHtml(ticket.passengerIdCardMasked)}</strong></div>
+      <div><span>Passenger</span><strong>${escapeHtml(ticket.passengerName)} / ${idTypeText(ticket.passengerIdType)} / ${escapeHtml(ticket.passengerIdCardMasked)}</strong></div>
+      <div><span>Phone</span><strong>${escapeHtml(ticket.passengerPhoneMasked || "-")}</strong></div>
       <div><span>Status</span><strong>${escapeHtml(ticket.status)}</strong></div>
       <div><span>Issued At</span><strong>${formatDateTime(ticket.issuedAt) || "-"}</strong></div>
     </div>
@@ -898,6 +1105,11 @@ function renderLoggedOutPlaceholders() {
   elements.metricRefunds.textContent = "0";
   elements.latestOrders.innerHTML = emptyItem("登录后查看最近订单");
   elements.upcomingTrips.innerHTML = emptyItem("登录后查看即将出行");
+  passengerState.travelers = [];
+  passengerState.travelerById = {};
+  elements.travelerList.innerHTML = recordEmpty("登录后维护常用乘车人");
+  renderBuyTravelerOptions();
+  resetTravelerForm();
   elements.orderCards.innerHTML = emptyItem("登录后查看我的订单");
   elements.paymentResults.innerHTML = recordEmpty("登录后查看支付流水");
   elements.refundResults.innerHTML = recordEmpty("登录后查看退款流水");
@@ -1106,6 +1318,15 @@ function seatTypeText(value) {
     BUSINESS_CLASS: "商务座",
   };
   return map[value] || value;
+}
+
+function idTypeText(value) {
+  const map = {
+    ID_CARD: "居民身份证",
+    PASSPORT: "护照",
+    OTHER: "其他证件",
+  };
+  return map[value] || value || "-";
 }
 
 function statusText(value) {

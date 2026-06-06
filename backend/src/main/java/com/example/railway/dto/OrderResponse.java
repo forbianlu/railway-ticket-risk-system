@@ -14,6 +14,9 @@ public class OrderResponse {
     private String requestId;
     private String trainNo;
     private String passengerName;
+    private String passengerIdType;
+    private String passengerIdNoMasked;
+    private String passengerPhoneMasked;
     private LocalDate travelDate;
     private String seatType;
     private BigDecimal amount;
@@ -32,6 +35,9 @@ public class OrderResponse {
         response.setRequestId(order.getRequestId());
         response.setTrainNo(order.getTrain().getTrainNo());
         response.setPassengerName(order.getPassengerName());
+        response.setPassengerIdType(order.getPassengerIdType() == null ? null : order.getPassengerIdType().name());
+        response.setPassengerIdNoMasked(order.getPassengerIdNoMasked());
+        response.setPassengerPhoneMasked(order.getPassengerPhoneMasked());
         response.setTravelDate(order.getTravelDate());
         response.setSeatType(order.getSeatType());
         response.setAmount(order.getAmount());
@@ -90,6 +96,30 @@ public class OrderResponse {
 
     public void setPassengerName(String passengerName) {
         this.passengerName = passengerName;
+    }
+
+    public String getPassengerIdType() {
+        return passengerIdType;
+    }
+
+    public void setPassengerIdType(String passengerIdType) {
+        this.passengerIdType = passengerIdType;
+    }
+
+    public String getPassengerIdNoMasked() {
+        return passengerIdNoMasked;
+    }
+
+    public void setPassengerIdNoMasked(String passengerIdNoMasked) {
+        this.passengerIdNoMasked = passengerIdNoMasked;
+    }
+
+    public String getPassengerPhoneMasked() {
+        return passengerPhoneMasked;
+    }
+
+    public void setPassengerPhoneMasked(String passengerPhoneMasked) {
+        this.passengerPhoneMasked = passengerPhoneMasked;
     }
 
     public LocalDate getTravelDate() {

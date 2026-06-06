@@ -23,6 +23,8 @@ public class TicketResponse {
     private String seatType;
     private String passengerName;
     private String passengerIdCardMasked;
+    private String passengerIdType;
+    private String passengerPhoneMasked;
     private BigDecimal amount;
     private String status;
     private LocalDateTime issuedAt;
@@ -49,6 +51,8 @@ public class TicketResponse {
         response.setSeatType(record.getSeatType());
         response.setPassengerName(record.getPassengerName());
         response.setPassengerIdCardMasked(record.getPassengerIdCardMasked());
+        response.setPassengerIdType(record.getPassengerIdType() == null ? null : record.getPassengerIdType().name());
+        response.setPassengerPhoneMasked(record.getPassengerPhoneMasked());
         response.setAmount(record.getAmount());
         response.setStatus(record.getStatus() == null ? null : record.getStatus().name());
         response.setIssuedAt(record.getIssuedAt());
@@ -86,6 +90,10 @@ public class TicketResponse {
     public void setPassengerName(String passengerName) { this.passengerName = passengerName; }
     public String getPassengerIdCardMasked() { return passengerIdCardMasked; }
     public void setPassengerIdCardMasked(String passengerIdCardMasked) { this.passengerIdCardMasked = passengerIdCardMasked; }
+    public String getPassengerIdType() { return passengerIdType; }
+    public void setPassengerIdType(String passengerIdType) { this.passengerIdType = passengerIdType; }
+    public String getPassengerPhoneMasked() { return passengerPhoneMasked; }
+    public void setPassengerPhoneMasked(String passengerPhoneMasked) { this.passengerPhoneMasked = passengerPhoneMasked; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public String getStatus() { return status; }

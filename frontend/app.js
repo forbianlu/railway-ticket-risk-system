@@ -772,7 +772,8 @@ function renderTicketDetail(ticket) {
       <div><span>Ticket No</span><strong>${escapeHtml(ticket.ticketNo)}</strong></div>
       <div><span>Route</span><strong>${escapeHtml(ticket.departureStation)} → ${escapeHtml(ticket.arrivalStation)}</strong></div>
       <div><span>Time</span><strong>${formatTime(ticket.departureTime)} - ${formatTime(ticket.arrivalTime)}</strong></div>
-      <div><span>Passenger</span><strong>${escapeHtml(ticket.passengerName)} / ${escapeHtml(ticket.passengerIdCardMasked)}</strong></div>
+      <div><span>Passenger</span><strong>${escapeHtml(ticket.passengerName)} / ${idTypeText(ticket.passengerIdType)} / ${escapeHtml(ticket.passengerIdCardMasked)}</strong></div>
+      <div><span>Phone</span><strong>${escapeHtml(ticket.passengerPhoneMasked || "-")}</strong></div>
       <div><span>Status</span><strong>${escapeHtml(ticket.status)}</strong></div>
       <div><span>Issued At</span><strong>${formatDateTime(ticket.issuedAt) || "-"}</strong></div>
     </div>
@@ -1788,6 +1789,15 @@ function seatTypeText(value) {
     BUSINESS_CLASS: "商务座",
   };
   return map[value] || value;
+}
+
+function idTypeText(value) {
+  const map = {
+    ID_CARD: "居民身份证",
+    PASSPORT: "护照",
+    OTHER: "其他证件",
+  };
+  return map[value] || value || "-";
 }
 
 function statusText(value) {

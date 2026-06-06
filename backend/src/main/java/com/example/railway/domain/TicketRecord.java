@@ -65,6 +65,13 @@ public class TicketRecord {
     @Column(name = "passenger_id_card_masked", nullable = false, length = 32)
     private String passengerIdCardMasked;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "passenger_id_type", length = 32)
+    private PassengerIdType passengerIdType;
+
+    @Column(name = "passenger_phone_masked", length = 32)
+    private String passengerPhoneMasked;
+
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
@@ -189,6 +196,22 @@ public class TicketRecord {
 
     public void setPassengerIdCardMasked(String passengerIdCardMasked) {
         this.passengerIdCardMasked = passengerIdCardMasked;
+    }
+
+    public PassengerIdType getPassengerIdType() {
+        return passengerIdType;
+    }
+
+    public void setPassengerIdType(PassengerIdType passengerIdType) {
+        this.passengerIdType = passengerIdType;
+    }
+
+    public String getPassengerPhoneMasked() {
+        return passengerPhoneMasked;
+    }
+
+    public void setPassengerPhoneMasked(String passengerPhoneMasked) {
+        this.passengerPhoneMasked = passengerPhoneMasked;
     }
 
     public BigDecimal getAmount() {

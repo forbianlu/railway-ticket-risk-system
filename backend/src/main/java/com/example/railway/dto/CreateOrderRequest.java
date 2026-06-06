@@ -26,6 +26,12 @@ public class CreateOrderRequest {
     @Size(max = 32)
     private String passengerIdCard;
 
+    @Size(max = 32)
+    private String passengerIdType;
+
+    @Size(max = 32)
+    private String passengerPhone;
+
     public Long getUserId() {
         return userId;
     }
@@ -72,5 +78,21 @@ public class CreateOrderRequest {
 
     public void setPassengerIdCard(String passengerIdCard) {
         this.passengerIdCard = passengerIdCard;
+    }
+
+    public String getPassengerIdType() {
+        return passengerIdType;
+    }
+
+    public void setPassengerIdType(String passengerIdType) {
+        this.passengerIdType = passengerIdType;
+    }
+
+    public String getPassengerPhone() {
+        return passengerPhone;
+    }
+
+    public void setPassengerPhone(String passengerPhone) {
+        this.passengerPhone = passengerPhone;
     }
 }

@@ -144,6 +144,14 @@ PAID -> REFUNDED
 
 订单详情聚合由 `OrderDetailService` 负责。乘客端详情接口会先校验订单归属，只返回订单、电子票、支付流水和退款流水；管理端详情接口额外聚合风险事件、Outbox 事件和最近操作日志，形成单笔交易追踪视图。
 
+## 常用乘车人与实名快照
+
+乘客端通过 `passenger_profiles` 维护常用乘车人。资料归属当前 `USER`，接口层统一校验 JWT 中的 `userId`，避免跨用户读取或使用乘车人资料。
+
+下单时可以传入 `travelerId`。`PassengerService` 会把乘车人资料转换为内部 `CreateOrderRequest`，继续复用 `OrderService` 的库存锁定、订单状态机和 `requestId` 幂等逻辑。订单保存完整交易所需实名字段，同时对外响应只暴露 `passengerIdNoMasked` 和 `passengerPhoneMasked`。
+
+支付成功生成电子票时，`TicketService` 将订单中的实名快照写入 `ticket_records`。因此常用乘车人后续被编辑或删除时，历史订单和电子票仍保留当时购票使用的脱敏快照。
+
 ## OpenAPI 与 Docker
 
 系统通过 springdoc-openapi 暴露 `/v3/api-docs` 和 Swagger UI。Swagger 页面允许匿名访问，但业务接口仍按 JWT 和 `@RequiredRole` 校验执行。OpenAPI 配置声明 Bearer Token 安全方案，便于在 Swagger UI 中调试受保护接口。

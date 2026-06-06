@@ -1,6 +1,5 @@
 package com.example.railway.dto;
 
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 
@@ -15,13 +14,19 @@ public class PassengerCreateOrderRequest {
     @NotNull
     private Long inventoryId;
 
-    @NotBlank
+    private Long travelerId;
+
     @Size(max = 64)
     private String passengerName;
 
-    @NotBlank
     @Size(max = 32)
     private String passengerIdCard;
+
+    @Size(max = 32)
+    private String passengerIdType;
+
+    @Size(max = 32)
+    private String passengerPhone;
 
     public String getRequestId() {
         return requestId;
@@ -47,6 +52,14 @@ public class PassengerCreateOrderRequest {
         this.inventoryId = inventoryId;
     }
 
+    public Long getTravelerId() {
+        return travelerId;
+    }
+
+    public void setTravelerId(Long travelerId) {
+        this.travelerId = travelerId;
+    }
+
     public String getPassengerName() {
         return passengerName;
     }
@@ -61,5 +74,21 @@ public class PassengerCreateOrderRequest {
 
     public void setPassengerIdCard(String passengerIdCard) {
         this.passengerIdCard = passengerIdCard;
+    }
+
+    public String getPassengerIdType() {
+        return passengerIdType;
+    }
+
+    public void setPassengerIdType(String passengerIdType) {
+        this.passengerIdType = passengerIdType;
+    }
+
+    public String getPassengerPhone() {
+        return passengerPhone;
+    }
+
+    public void setPassengerPhone(String passengerPhone) {
+        this.passengerPhone = passengerPhone;
     }
 }

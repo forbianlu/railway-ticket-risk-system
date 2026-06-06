@@ -8,7 +8,7 @@
 | username | varchar | 登录账号，唯一 |
 | password_hash | varchar | 演示环境密码哈希 |
 | display_name | varchar | 展示名称 |
-| role | varchar | 角色：ADMIN、RISK_OFFICER、OPERATOR |
+| role | varchar | 角色：ADMIN、RISK_OFFICER、OPERATOR、USER |
 | enabled | boolean | 是否启用 |
 
 ## stations
@@ -201,6 +201,34 @@
 | updated_at | timestamp | Updated time |
 
 Ticket records are generated after payment success. A paid order has at most one valid ticket record. When an order is refunded, the ticket record is marked `REFUNDED` and `invalidated_at` is recorded. This table tracks itinerary validity without changing the order state machine.
+
+### Passenger snapshot fields
+
+`ticket_orders` and `ticket_records` now keep masked passenger snapshots in addition to the full identity number used inside the booking transaction.
+
+| Table | Field | Description |
+| --- | --- | --- |
+| `ticket_orders` | `passenger_id_type` | Identity type: `ID_CARD`, `PASSPORT`, `OTHER` |
+| `ticket_orders` | `passenger_id_no_masked` | Masked identity number snapshot |
+| `ticket_orders` | `passenger_phone_masked` | Masked phone snapshot |
+| `ticket_records` | `passenger_id_type` | Identity type snapshot |
+| `ticket_records` | `passenger_phone_masked` | Masked phone snapshot |
+
+## passenger_profiles
+
+| Field | Type | Description |
+| --- | --- | --- |
+| id | bigint | Primary key |
+| user_id | bigint | Owner passenger user ID |
+| passenger_name | varchar | Traveler name |
+| id_type | varchar | Identity type: ID_CARD, PASSPORT, OTHER |
+| id_no | varchar | Full identity number |
+| phone | varchar | Optional phone |
+| default_traveler | boolean | Whether this is the default traveler |
+| created_at | timestamp | Created time |
+| updated_at | timestamp | Updated time |
+
+`passenger_profiles` stores reusable traveler information for passenger booking. API responses expose only masked identity and phone values. Orders and tickets store their own masked snapshots so historical records are not affected by later traveler edits.
 
 ## outbox_events
 
