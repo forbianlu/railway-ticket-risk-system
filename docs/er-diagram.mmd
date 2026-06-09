@@ -12,6 +12,8 @@ erDiagram
     RISK_EVENTS ||--o{ RISK_EVENT_HANDLE_RECORDS : records
     TICKET_ORDERS ||--o{ OUTBOX_EVENTS : publishes
     APP_USERS ||--o{ PASSENGER_PROFILES : owns
+    APP_USERS ||--o{ NOTIFICATION_RECORDS : receives
+    TICKET_ORDERS ||--o{ NOTIFICATION_RECORDS : notifies
 
     APP_USERS {
         bigint id PK
@@ -171,6 +173,26 @@ erDiagram
         varchar status
         timestamp issued_at
         timestamp invalidated_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    NOTIFICATION_RECORDS {
+        bigint id PK
+        varchar notification_no
+        bigint user_id FK
+        varchar title
+        varchar content
+        varchar type
+        varchar status
+        varchar business_type
+        varchar business_id
+        bigint order_id FK
+        varchar order_no
+        varchar ticket_no
+        varchar payment_no
+        varchar refund_no
+        timestamp read_at
         timestamp created_at
         timestamp updated_at
     }

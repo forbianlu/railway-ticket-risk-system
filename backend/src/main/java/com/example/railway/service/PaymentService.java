@@ -48,6 +48,7 @@ public class PaymentService {
     private final CallbackSignatureService callbackSignatureService;
     private final PaymentCallbackProperties paymentCallbackProperties;
     private final OutboxEventPublisher outboxEventPublisher;
+    private final NotificationService notificationService;
 
     public PaymentService(PaymentRecordRepository paymentRecordRepository,
                           TicketOrderRepository ticketOrderRepository,
@@ -55,7 +56,8 @@ public class PaymentService {
                           OperationLogService operationLogService,
                           CallbackSignatureService callbackSignatureService,
                           PaymentCallbackProperties paymentCallbackProperties,
-                          OutboxEventPublisher outboxEventPublisher) {
+                          OutboxEventPublisher outboxEventPublisher,
+                          NotificationService notificationService) {
         this.paymentRecordRepository = paymentRecordRepository;
         this.ticketOrderRepository = ticketOrderRepository;
         this.orderService = orderService;
@@ -63,6 +65,7 @@ public class PaymentService {
         this.callbackSignatureService = callbackSignatureService;
         this.paymentCallbackProperties = paymentCallbackProperties;
         this.outboxEventPublisher = outboxEventPublisher;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -255,6 +258,7 @@ public class PaymentService {
                 "支付回调成功，订单 " + saved.getOrderNo() + " 已确认支付"
         );
         publishPaymentEvent(OutboxEventTypes.PAYMENT_SUCCEEDED, saved);
+        notificationService.notifyPaymentSucceeded(saved);
         return saved;
     }
 

@@ -230,6 +230,30 @@ Ticket records are generated after payment success. A paid order has at most one
 
 `passenger_profiles` stores reusable traveler information for passenger booking. API responses expose only masked identity and phone values. Orders and tickets store their own masked snapshots so historical records are not affected by later traveler edits.
 
+## notification_records
+
+| Field | Type | Description |
+| --- | --- | --- |
+| id | bigint | Primary key |
+| notification_no | varchar | Internal notification number |
+| user_id | bigint | Owner passenger user ID |
+| title | varchar | Notification title |
+| content | varchar | Notification content |
+| type | varchar | Notification type |
+| status | varchar | Notification status: UNREAD, READ |
+| business_type | varchar | Business aggregate type |
+| business_id | varchar | Business idempotency key |
+| order_id | bigint | Related order ID |
+| order_no | varchar | Related order number |
+| ticket_no | varchar | Related ticket number |
+| payment_no | varchar | Related payment number |
+| refund_no | varchar | Related refund number |
+| read_at | timestamp | Read time |
+| created_at | timestamp | Created time |
+| updated_at | timestamp | Updated time |
+
+`notification_records` stores in-system passenger messages. Order, payment, ticket, close, refund and refund callback events create notifications for the related passenger. Duplicate notifications are prevented by `user_id + type + business_type + business_id`.
+
 ## outbox_events
 
 | 字段 | 类型 | 说明 |

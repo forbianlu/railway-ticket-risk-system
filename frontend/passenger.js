@@ -16,6 +16,7 @@ const passengerState = {
   orders: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
   payments: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
   refunds: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
+  notifications: { page: 0, size: 8, totalPages: 0, totalElements: 0, first: true, last: true },
 };
 
 const PASSENGER_HOT_ROUTES = [
@@ -84,6 +85,17 @@ const elements = {
   refundPageInfo: document.querySelector("#passenger-refund-page-info"),
   prevRefunds: document.querySelector("#passenger-prev-refunds"),
   nextRefunds: document.querySelector("#passenger-next-refunds"),
+  navUnread: document.querySelector("#passenger-nav-unread"),
+  notificationStatus: document.querySelector("#passenger-notification-status"),
+  notificationTotal: document.querySelector("#passenger-notification-total"),
+  notificationUnread: document.querySelector("#passenger-notification-unread"),
+  loadNotifications: document.querySelector("#passenger-load-notifications"),
+  refreshNotifications: document.querySelector("#passenger-refresh-notifications"),
+  readAllNotifications: document.querySelector("#passenger-read-all-notifications"),
+  notificationResults: document.querySelector("#passenger-notification-results"),
+  notificationPageInfo: document.querySelector("#passenger-notification-page-info"),
+  prevNotifications: document.querySelector("#passenger-prev-notifications"),
+  nextNotifications: document.querySelector("#passenger-next-notifications"),
   buyModal: document.querySelector("#passenger-buy-modal"),
   buyModalClose: document.querySelector("#passenger-buy-modal-close"),
   buyCancel: document.querySelector("#passenger-buy-cancel"),
@@ -147,6 +159,14 @@ elements.loadRefunds.addEventListener("click", () => {
 });
 elements.prevRefunds.addEventListener("click", () => changePassengerPage("refunds", -1));
 elements.nextRefunds.addEventListener("click", () => changePassengerPage("refunds", 1));
+elements.loadNotifications.addEventListener("click", () => {
+  passengerState.notifications.page = 0;
+  loadPassengerNotifications();
+});
+elements.refreshNotifications.addEventListener("click", () => loadPassengerNotifications());
+elements.readAllNotifications.addEventListener("click", markAllPassengerNotificationsRead);
+elements.prevNotifications.addEventListener("click", () => changePassengerPage("notifications", -1));
+elements.nextNotifications.addEventListener("click", () => changePassengerPage("notifications", 1));
 elements.buyForm.addEventListener("submit", event => {
   event.preventDefault();
   submitPassengerOrder();
@@ -286,6 +306,8 @@ async function refreshPassengerData() {
     loadPassengerOrders(),
     loadPassengerPayments(),
     loadPassengerRefunds(),
+    loadPassengerNotifications(),
+    loadPassengerNotificationSummary(),
   ]);
 }
 
@@ -739,6 +761,8 @@ async function submitPassengerOrder() {
     closeBuyModal();
     showToast("订单已创建，库存已锁定，请及时支付");
     await Promise.all([loadPassengerSummary(), loadPassengerTravelers(), loadPassengerOrders(), loadAvailablePassengerTrains()]);
+    await loadPassengerNotifications();
+    await loadPassengerNotificationSummary();
     activateSection("passenger-orders");
   } catch (error) {
     elements.buyError.textContent = error.message || "购票失败，请稍后重试";
@@ -1084,6 +1108,101 @@ function renderPassengerRefunds(refunds) {
   `).join("");
 }
 
+async function loadPassengerNotifications() {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  try {
+    const params = new URLSearchParams();
+    if (elements.notificationStatus.value) {
+      params.set("status", elements.notificationStatus.value);
+    }
+    params.set("page", String(passengerState.notifications.page));
+    params.set("size", String(passengerState.notifications.size));
+    const page = await passengerRequest(`/passenger/notifications?${params.toString()}`);
+    passengerState.notifications = { ...passengerState.notifications, ...page };
+    renderPassengerNotifications(page.content || []);
+    renderPagination("notifications");
+    await loadPassengerNotificationSummary();
+  } catch (error) {
+    elements.notificationResults.innerHTML = recordEmpty(error.message || "无法加载消息中心");
+    renderPagination("notifications");
+  }
+}
+
+async function loadPassengerNotificationSummary() {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  try {
+    const summary = await passengerRequest("/passenger/notifications/unread-count");
+    const unread = Number(summary.unreadCount || 0);
+    elements.notificationTotal.textContent = summary.totalCount || 0;
+    elements.notificationUnread.textContent = unread;
+    elements.navUnread.textContent = unread;
+    elements.navUnread.classList.toggle("is-empty", unread === 0);
+  } catch (error) {
+    elements.notificationTotal.textContent = "0";
+    elements.notificationUnread.textContent = "0";
+    elements.navUnread.textContent = "0";
+    elements.navUnread.classList.add("is-empty");
+  }
+}
+
+function renderPassengerNotifications(notifications) {
+  if (!notifications.length) {
+    elements.notificationResults.innerHTML = recordEmpty("暂无消息提醒");
+    return;
+  }
+  elements.notificationResults.innerHTML = notifications.map(notification => `
+    <article class="money-record-card notification-record-card ${notification.status === "UNREAD" ? "unread" : ""}">
+      <div class="record-title-row">
+        <div>
+          <span>${notificationTypeText(notification.type)}</span>
+          <strong>${escapeHtml(notification.title)}</strong>
+        </div>
+        <span class="status ${notificationStatusClass(notification.status)}">${notificationStatusText(notification.status)}</span>
+      </div>
+      <p class="notification-content">${escapeHtml(notification.content)}</p>
+      <div class="record-detail-grid">
+        <div><span>订单号</span><strong>${escapeHtml(notification.orderNo || "-")}</strong></div>
+        <div><span>关联业务</span><strong>${escapeHtml(notification.businessType || "-")} / ${escapeHtml(notification.businessId || "-")}</strong></div>
+        <div><span>电子票</span><strong>${escapeHtml(notification.ticketNo || "-")}</strong></div>
+        <div><span>创建时间</span><strong>${formatDateTime(notification.createdAt) || "-"}</strong></div>
+      </div>
+      <div class="record-actions">
+        ${notification.status === "UNREAD"
+          ? `<button class="secondary-button compact-button" type="button" data-notification-read="${notification.id}">标为已读</button>`
+          : `<span class="muted-text">已读 ${formatDateTime(notification.readAt) || ""}</span>`}
+      </div>
+    </article>
+  `).join("");
+  elements.notificationResults.querySelectorAll("[data-notification-read]").forEach(button => {
+    button.addEventListener("click", () => markPassengerNotificationRead(button.dataset.notificationRead));
+  });
+}
+
+async function markPassengerNotificationRead(id) {
+  try {
+    await passengerRequest(`/passenger/notifications/${id}/read`, { method: "POST" });
+    await loadPassengerNotifications();
+    showToast("消息已标为已读");
+  } catch (error) {
+    showToast(error.message || "消息状态更新失败");
+  }
+}
+
+async function markAllPassengerNotificationsRead() {
+  try {
+    await passengerRequest("/passenger/notifications/read-all", { method: "POST" });
+    passengerState.notifications.page = 0;
+    await loadPassengerNotifications();
+    showToast("全部消息已标为已读");
+  } catch (error) {
+    showToast(error.message || "全部已读失败");
+  }
+}
+
 async function changePassengerPage(type, offset) {
   const pageState = passengerState[type];
   const nextPage = Math.max(0, pageState.page + offset);
@@ -1095,8 +1214,10 @@ async function changePassengerPage(type, offset) {
     await loadPassengerOrders();
   } else if (type === "payments") {
     await loadPassengerPayments();
-  } else {
+  } else if (type === "refunds") {
     await loadPassengerRefunds();
+  } else {
+    await loadPassengerNotifications();
   }
 }
 
@@ -1105,6 +1226,7 @@ function renderPagination(type) {
     orders: { state: passengerState.orders, info: elements.orderPageInfo, prev: elements.prevOrders, next: elements.nextOrders },
     payments: { state: passengerState.payments, info: elements.paymentPageInfo, prev: elements.prevPayments, next: elements.nextPayments },
     refunds: { state: passengerState.refunds, info: elements.refundPageInfo, prev: elements.prevRefunds, next: elements.nextRefunds },
+    notifications: { state: passengerState.notifications, info: elements.notificationPageInfo, prev: elements.prevNotifications, next: elements.nextNotifications },
   };
   const target = map[type];
   const totalPages = Math.max(1, target.state.totalPages || 0);
@@ -1132,6 +1254,11 @@ function renderLoggedOutPlaceholders() {
   elements.orderCards.innerHTML = emptyItem("登录后查看我的订单");
   elements.paymentResults.innerHTML = recordEmpty("登录后查看支付流水");
   elements.refundResults.innerHTML = recordEmpty("登录后查看退款流水");
+  elements.notificationResults.innerHTML = recordEmpty("登录后查看消息提醒");
+  elements.notificationTotal.textContent = "0";
+  elements.notificationUnread.textContent = "0";
+  elements.navUnread.textContent = "0";
+  elements.navUnread.classList.add("is-empty");
 }
 
 async function passengerRequest(path, options = {}, withAuth = true) {
@@ -1401,6 +1528,36 @@ function refundStatusClass(value) {
     PENDING: "pending",
     SUCCESS: "",
     FAILED: "closed",
+  };
+  return map[value] || "";
+}
+
+function notificationTypeText(value) {
+  const map = {
+    ORDER_CREATED: "下单提醒",
+    PAYMENT_SUCCEEDED: "支付提醒",
+    TICKET_ISSUED: "出票提醒",
+    ORDER_CLOSED: "关闭提醒",
+    ORDER_REFUNDED: "退票提醒",
+    REFUND_SUCCEEDED: "退款成功",
+    REFUND_FAILED: "退款失败",
+    RISK_ALERT: "风险提醒",
+  };
+  return map[value] || value || "-";
+}
+
+function notificationStatusText(value) {
+  const map = {
+    UNREAD: "未读",
+    READ: "已读",
+  };
+  return map[value] || value || "-";
+}
+
+function notificationStatusClass(value) {
+  const map = {
+    UNREAD: "pending",
+    READ: "",
   };
   return map[value] || "";
 }

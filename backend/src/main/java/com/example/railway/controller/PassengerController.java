@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.railway.domain.UserRole;
+import com.example.railway.dto.NotificationPageResponse;
+import com.example.railway.dto.NotificationResponse;
+import com.example.railway.dto.NotificationSummaryResponse;
 import com.example.railway.dto.OrderDetailResponse;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
@@ -27,6 +30,7 @@ import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.RefundPageResponse;
 import com.example.railway.security.AuthContext;
 import com.example.railway.security.RequiredRole;
+import com.example.railway.service.NotificationService;
 import com.example.railway.service.PassengerService;
 import com.example.railway.service.RateLimitService;
 
@@ -41,11 +45,14 @@ public class PassengerController {
 
     private final PassengerService passengerService;
     private final RateLimitService rateLimitService;
+    private final NotificationService notificationService;
 
     public PassengerController(PassengerService passengerService,
-                               RateLimitService rateLimitService) {
+                               RateLimitService rateLimitService,
+                               NotificationService notificationService) {
         this.passengerService = passengerService;
         this.rateLimitService = rateLimitService;
+        this.notificationService = notificationService;
     }
 
     @Operation(summary = "Query current passenger summary")
@@ -142,5 +149,32 @@ public class PassengerController {
                                       @RequestParam(value = "page", required = false) Integer page,
                                       @RequestParam(value = "size", required = false) Integer size) {
         return passengerService.listRefunds(status, page, size);
+    }
+
+    @Operation(summary = "Query my notifications")
+    @GetMapping("/notifications")
+    public NotificationPageResponse notifications(@RequestParam(value = "status", required = false) String status,
+                                                  @RequestParam(value = "page", required = false) Integer page,
+                                                  @RequestParam(value = "size", required = false) Integer size) {
+        return notificationService.listPassengerNotifications(AuthContext.current().getUserId(), status, page, size);
+    }
+
+    @Operation(summary = "Query my notification unread count")
+    @GetMapping("/notifications/unread-count")
+    public NotificationSummaryResponse notificationUnreadCount() {
+        return notificationService.passengerSummary(AuthContext.current().getUserId());
+    }
+
+    @Operation(summary = "Mark one notification as read")
+    @PostMapping("/notifications/{id}/read")
+    public NotificationResponse markNotificationRead(@PathVariable("id") Long id) {
+        return notificationService.markAsRead(AuthContext.current().getUserId(), id);
+    }
+
+    @Operation(summary = "Mark all notifications as read")
+    @PostMapping("/notifications/read-all")
+    public NotificationSummaryResponse markAllNotificationsRead() {
+        notificationService.markAllAsRead(AuthContext.current().getUserId());
+        return notificationService.passengerSummary(AuthContext.current().getUserId());
     }
 }

@@ -627,3 +627,29 @@
 
 - 本轮计划提交信息：`add passenger traveler profiles`。
 - 本轮提交仅保留在本地，不自动 push。
+## 站内通知中心
+
+### 目标
+
+新增系统内通知能力，让乘客能够在购票端查看订单、支付、出票、关闭、退票和退款结果消息；让运营管理端能够查看通知列表、未读数量、类型分布和状态分布。
+
+### 主要内容
+
+- 新增 `notification_records` 表、`NotificationRecord` 实体、`NotificationType` 和 `NotificationStatus`。
+- 新增 `NotificationService`，在下单、支付成功、出票成功、订单关闭、退票、退款成功回调和退款失败回调后创建通知。
+- 通知创建使用业务幂等键，避免重复业务动作产生重复通知。
+- 新增乘客通知接口：列表、未读统计、单条已读和全部已读。
+- 新增管理端通知接口：全量列表和统计概览。
+- 通知创建后写入 `NOTIFICATION_CREATED` Outbox 事件，用于后续事件观测和扩展。
+- 演示数据为 passenger 账号初始化多类型通知。
+- 乘客端新增消息中心和未读角标，管理端新增通知中心。
+
+### 验证结果
+
+- Maven 测试通过：`Tests run: 41, Failures: 0, Errors: 0, Skipped: 0`。
+- 前端脚本检查通过：`frontend/app.js`、`frontend/passenger.js`。
+
+### 当前提交状态
+
+- 本轮计划提交信息：`add passenger notification center`。
+- 本轮提交仅保留在本地，不自动 push。

@@ -81,6 +81,7 @@
         <a href="#refunds"><span class="nav-icon refund-icon"></span>退款流水</a>
         <a href="#risks"><span class="nav-icon risk-icon"></span>风险事件</a>
         <a href="#outbox"><span class="nav-icon event-icon"></span>事件中心</a>
+        <a href="#notifications"><span class="nav-icon event-icon"></span>通知中心</a>
         <a href="#logs"><span class="nav-icon log-icon"></span>审计日志</a>
       </nav>
       <div class="sidebar-footer">
@@ -553,6 +554,77 @@
           <div class="inline-actions">
             <button id="prev-outbox" class="secondary-button compact-button" type="button">上一页</button>
             <button id="next-outbox" class="secondary-button compact-button" type="button">下一页</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="notifications" class="section">
+        <div class="section-title">
+          <p class="eyebrow">Notification Center</p>
+          <h2>站内通知中心</h2>
+          <p>查看乘客侧订单、支付、出票、退票和退款消息记录。</p>
+        </div>
+        <div class="metric-grid notification-summary-grid">
+          <div class="metric compact-metric"><span>总消息</span><strong id="notification-summary-total">0</strong></div>
+          <div class="metric compact-metric"><span>未读</span><strong id="notification-summary-unread">0</strong></div>
+          <div class="metric compact-metric"><span>已读</span><strong id="notification-summary-read">0</strong></div>
+          <div class="metric compact-metric"><span>最新时间</span><strong id="notification-summary-latest">-</strong></div>
+        </div>
+        <div class="outbox-breakdown">
+          <div class="panel slim-panel">
+            <h3>按类型统计</h3>
+            <div id="notification-type-summary" class="summary-list"></div>
+          </div>
+          <div class="panel slim-panel">
+            <h3>按状态统计</h3>
+            <div id="notification-status-summary" class="summary-list"></div>
+          </div>
+        </div>
+        <div class="toolbar notification-toolbar">
+          <label>
+            消息状态
+            <select id="notification-status">
+              <option value="">全部状态</option>
+              <option value="UNREAD">未读</option>
+              <option value="READ">已读</option>
+            </select>
+          </label>
+          <label>
+            消息类型
+            <input id="notification-type" type="text" placeholder="如 ORDER_CREATED">
+          </label>
+          <label>
+            订单号
+            <input id="notification-order-no" type="text" placeholder="订单号">
+          </label>
+          <label>
+            用户 ID
+            <input id="notification-user-id" type="number" min="1" placeholder="用户 ID">
+          </label>
+          <button id="load-notifications" class="secondary-button" type="button">查询通知</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>通知编号</th>
+                <th>用户</th>
+                <th>类型</th>
+                <th>标题</th>
+                <th>状态</th>
+                <th>业务</th>
+                <th>订单号</th>
+                <th>创建时间</th>
+              </tr>
+            </thead>
+            <tbody id="notification-results"></tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="notification-page-info">第 1 / 1 页，共 0 条</span>
+          <div class="inline-actions">
+            <button id="prev-notifications" class="secondary-button compact-button" type="button">上一页</button>
+            <button id="next-notifications" class="secondary-button compact-button" type="button">下一页</button>
           </div>
         </div>
       </section>

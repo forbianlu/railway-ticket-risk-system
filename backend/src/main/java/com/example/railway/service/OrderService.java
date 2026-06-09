@@ -50,6 +50,7 @@ public class OrderService {
     private final RefundService refundService;
     private final OutboxEventPublisher outboxEventPublisher;
     private final TicketService ticketService;
+    private final NotificationService notificationService;
 
     public OrderService(TicketOrderRepository ticketOrderRepository,
                         SeatInventoryRepository seatInventoryRepository,
@@ -58,7 +59,8 @@ public class OrderService {
                         TrainSearchCacheService trainSearchCacheService,
                         RefundService refundService,
                         OutboxEventPublisher outboxEventPublisher,
-                        TicketService ticketService) {
+                        TicketService ticketService,
+                        NotificationService notificationService) {
         this.ticketOrderRepository = ticketOrderRepository;
         this.seatInventoryRepository = seatInventoryRepository;
         this.riskService = riskService;
@@ -67,6 +69,7 @@ public class OrderService {
         this.refundService = refundService;
         this.outboxEventPublisher = outboxEventPublisher;
         this.ticketService = ticketService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -110,6 +113,7 @@ public class OrderService {
         order.setPaymentDeadlineAt(now.plusMinutes(PAYMENT_TIMEOUT_MINUTES));
 
         TicketOrder saved = ticketOrderRepository.save(order);
+        notificationService.notifyOrderCreated(saved);
         evictTrainSearchCacheAfterCommit(inventory);
         operationLogService.record(
                 "USER-" + request.getUserId(),
@@ -183,6 +187,7 @@ public class OrderService {
         );
         riskService.evaluateAfterRefund(saved);
         refundService.createForRefundedOrder(saved);
+        notificationService.notifyOrderRefunded(saved, null);
         publishOrderEvent(OutboxEventTypes.ORDER_REFUNDED, saved);
         return OrderResponse.from(saved);
     }
@@ -343,6 +348,7 @@ public class OrderService {
                 String.valueOf(saved.getId()),
                 reason + " " + saved.getOrderNo()
         );
+        notificationService.notifyOrderClosed(saved, reason);
         publishOrderEvent(OutboxEventTypes.ORDER_CLOSED, saved);
         return saved;
     }

@@ -128,6 +128,28 @@ Authorization: Bearer {USER token}
 
 查询结果只包含当前乘客自己的资金流水。
 
+### 站内通知
+
+```http
+GET /api/passenger/notifications?status=UNREAD&type=ORDER_CREATED&page=0&size=10
+GET /api/passenger/notifications/unread-count
+POST /api/passenger/notifications/{id}/read
+POST /api/passenger/notifications/read-all
+Authorization: Bearer {USER token}
+```
+
+乘客通知接口只返回当前登录乘客自己的通知。`status` 和 `type` 均为可选筛选条件。单条已读和全部已读接口只会更新当前乘客名下的通知。
+
+## 管理端通知
+
+```http
+GET /api/notifications?userId=1001&status=UNREAD&type=REFUND_FAILED&page=0&size=10
+GET /api/notifications/summary
+Authorization: Bearer {ADMIN/RISK_OFFICER/OPERATOR token}
+```
+
+管理端通知接口用于查看全量站内通知和统计概览，普通 `USER` 无权访问。通知类型包括 `ORDER_CREATED`、`PAYMENT_SUCCEEDED`、`TICKET_ISSUED`、`ORDER_CLOSED`、`ORDER_REFUNDED`、`REFUND_SUCCEEDED`、`REFUND_FAILED` 和 `RISK_ALERT`；通知状态包括 `UNREAD` 和 `READ`。
+
 ## 查询车次
 
 ```http

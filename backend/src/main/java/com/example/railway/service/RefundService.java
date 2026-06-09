@@ -46,19 +46,22 @@ public class RefundService {
     private final CallbackSignatureService callbackSignatureService;
     private final RefundCallbackProperties refundCallbackProperties;
     private final OutboxEventPublisher outboxEventPublisher;
+    private final NotificationService notificationService;
 
     public RefundService(RefundRecordRepository refundRecordRepository,
                          PaymentRecordRepository paymentRecordRepository,
                          OperationLogService operationLogService,
                          CallbackSignatureService callbackSignatureService,
                          RefundCallbackProperties refundCallbackProperties,
-                         OutboxEventPublisher outboxEventPublisher) {
+                         OutboxEventPublisher outboxEventPublisher,
+                         NotificationService notificationService) {
         this.refundRecordRepository = refundRecordRepository;
         this.paymentRecordRepository = paymentRecordRepository;
         this.operationLogService = operationLogService;
         this.callbackSignatureService = callbackSignatureService;
         this.refundCallbackProperties = refundCallbackProperties;
         this.outboxEventPublisher = outboxEventPublisher;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -200,6 +203,7 @@ public class RefundService {
                 "退款回调成功，订单 " + saved.getOrderNo() + " 已完成资金退款"
         );
         publishRefundEvent(OutboxEventTypes.REFUND_SUCCEEDED, saved);
+        notificationService.notifyRefundSucceeded(saved);
         return saved;
     }
 
@@ -218,6 +222,7 @@ public class RefundService {
                 "退款回调失败，订单 " + saved.getOrderNo() + " 需要后续处理"
         );
         publishRefundEvent(OutboxEventTypes.REFUND_FAILED, saved);
+        notificationService.notifyRefundFailed(saved);
         return saved;
     }
 

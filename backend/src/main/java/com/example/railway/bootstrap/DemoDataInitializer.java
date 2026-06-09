@@ -18,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.railway.domain.AppUser;
 import com.example.railway.domain.OperationLog;
+import com.example.railway.domain.NotificationRecord;
+import com.example.railway.domain.NotificationStatus;
+import com.example.railway.domain.NotificationType;
 import com.example.railway.domain.OrderStatus;
 import com.example.railway.domain.OutboxEvent;
 import com.example.railway.domain.OutboxEventStatus;
@@ -42,6 +45,7 @@ import com.example.railway.domain.Train;
 import com.example.railway.domain.UserRole;
 import com.example.railway.repository.AppUserRepository;
 import com.example.railway.repository.OperationLogRepository;
+import com.example.railway.repository.NotificationRecordRepository;
 import com.example.railway.repository.OutboxEventRepository;
 import com.example.railway.repository.PassengerTravelerRepository;
 import com.example.railway.repository.PaymentRecordRepository;
@@ -69,6 +73,7 @@ public class DemoDataInitializer implements CommandLineRunner {
     private final RiskEventRepository riskEventRepository;
     private final RiskEventHandleRecordRepository riskEventHandleRecordRepository;
     private final OperationLogRepository operationLogRepository;
+    private final NotificationRecordRepository notificationRecordRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final PassengerTravelerRepository passengerTravelerRepository;
     private final PasswordService passwordService;
@@ -85,6 +90,7 @@ public class DemoDataInitializer implements CommandLineRunner {
                                RiskEventRepository riskEventRepository,
                                RiskEventHandleRecordRepository riskEventHandleRecordRepository,
                                OperationLogRepository operationLogRepository,
+                               NotificationRecordRepository notificationRecordRepository,
                                OutboxEventRepository outboxEventRepository,
                                PassengerTravelerRepository passengerTravelerRepository,
                                PasswordService passwordService,
@@ -100,6 +106,7 @@ public class DemoDataInitializer implements CommandLineRunner {
         this.riskEventRepository = riskEventRepository;
         this.riskEventHandleRecordRepository = riskEventHandleRecordRepository;
         this.operationLogRepository = operationLogRepository;
+        this.notificationRecordRepository = notificationRecordRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.passengerTravelerRepository = passengerTravelerRepository;
         this.passwordService = passwordService;
@@ -121,6 +128,7 @@ public class DemoDataInitializer implements CommandLineRunner {
         seedTicketRecords();
         seedRiskEvents();
         seedOperationLogs();
+        seedNotifications();
         seedOutboxEvents();
     }
 
@@ -615,6 +623,127 @@ public class DemoDataInitializer implements CommandLineRunner {
                 event.setLastError("demo handler failure for operations review");
             }
             outboxEventRepository.save(event);
+        }
+    }
+
+    private void seedNotifications() {
+        if (notificationRecordRepository.count() > 0) {
+            return;
+        }
+        List<TicketOrder> orders = ticketOrderRepository.findAll();
+        if (orders.isEmpty()) {
+            return;
+        }
+        int limit = Math.min(18, orders.size());
+        for (int i = 0; i < limit; i++) {
+            TicketOrder order = orders.get(i);
+            NotificationType type;
+            String businessType;
+            String businessId;
+            String ticketNo = null;
+            String paymentNo = null;
+            String refundNo = null;
+            if (OrderStatus.PAID.equals(order.getStatus())) {
+                type = i % 2 == 0 ? NotificationType.PAYMENT_SUCCEEDED : NotificationType.TICKET_ISSUED;
+                businessType = type == NotificationType.TICKET_ISSUED ? "TICKET" : "PAYMENT";
+                businessId = order.getOrderNo();
+                paymentNo = paymentRecordRepository.findFirstByOrderIdAndStatusOrderByCreatedAtDesc(order.getId(), PaymentStatus.SUCCESS)
+                        .map(PaymentRecord::getPaymentNo)
+                        .orElse(null);
+                ticketNo = ticketRecordRepository.findByOrderId(order.getId()).map(TicketRecord::getTicketNo).orElse(null);
+            } else if (OrderStatus.REFUNDED.equals(order.getStatus())) {
+                type = i % 2 == 0 ? NotificationType.ORDER_REFUNDED : NotificationType.REFUND_SUCCEEDED;
+                businessType = type == NotificationType.ORDER_REFUNDED ? "ORDER" : "REFUND";
+                businessId = order.getOrderNo();
+                RefundRecord refund = refundRecordRepository.findByOrderIdAndStatus(order.getId(), RefundStatus.SUCCESS).orElse(null);
+                if (refund == null) {
+                    refund = refundRecordRepository.findByOrderIdAndStatus(order.getId(), RefundStatus.PENDING).orElse(null);
+                }
+                if (refund != null) {
+                    refundNo = refund.getRefundNo();
+                    paymentNo = refund.getPaymentNo();
+                }
+            } else if (OrderStatus.CLOSED.equals(order.getStatus())) {
+                type = NotificationType.ORDER_CLOSED;
+                businessType = "ORDER";
+                businessId = String.valueOf(order.getId());
+            } else {
+                type = NotificationType.ORDER_CREATED;
+                businessType = "ORDER";
+                businessId = String.valueOf(order.getId());
+            }
+            saveNotificationIfMissing(
+                    String.format("DEMO-NT-%03d", i + 1),
+                    order.getUserId(),
+                    type,
+                    i % 3 == 0 ? NotificationStatus.READ : NotificationStatus.UNREAD,
+                    businessType,
+                    businessId,
+                    order,
+                    ticketNo,
+                    paymentNo,
+                    refundNo,
+                    i
+            );
+        }
+    }
+
+    private void saveNotificationIfMissing(String notificationNo,
+                                           Long userId,
+                                           NotificationType type,
+                                           NotificationStatus status,
+                                           String businessType,
+                                           String businessId,
+                                           TicketOrder order,
+                                           String ticketNo,
+                                           String paymentNo,
+                                           String refundNo,
+                                           int index) {
+        if (notificationRecordRepository.findByNotificationNo(notificationNo).isPresent()) {
+            return;
+        }
+        LocalDateTime createdAt = order.getCreatedAt() == null ? LocalDateTime.now().minusDays(index) : order.getCreatedAt().plusMinutes(5);
+        NotificationRecord record = new NotificationRecord();
+        record.setNotificationNo(notificationNo);
+        record.setUserId(userId);
+        record.setTitle(notificationTitle(type));
+        record.setContent("Demo message for order " + order.getOrderNo() + ", type " + type.name() + ".");
+        record.setType(type);
+        record.setStatus(status);
+        record.setBusinessType(businessType);
+        record.setBusinessId(businessId);
+        record.setOrderId(order.getId());
+        record.setOrderNo(order.getOrderNo());
+        record.setTicketNo(ticketNo);
+        record.setPaymentNo(paymentNo);
+        record.setRefundNo(refundNo);
+        record.setCreatedAt(createdAt);
+        record.setUpdatedAt(createdAt.plusMinutes(2));
+        if (NotificationStatus.READ.equals(status)) {
+            record.setReadAt(record.getUpdatedAt());
+        }
+        notificationRecordRepository.save(record);
+    }
+
+    private String notificationTitle(NotificationType type) {
+        switch (type) {
+            case PAYMENT_SUCCEEDED:
+                return "Payment confirmed";
+            case TICKET_ISSUED:
+                return "Ticket issued";
+            case ORDER_CLOSED:
+                return "Order closed";
+            case ORDER_REFUNDED:
+                return "Refund requested";
+            case REFUND_SUCCEEDED:
+                return "Refund succeeded";
+            case REFUND_FAILED:
+                return "Refund failed";
+            case RISK_ALERT:
+                return "Risk alert";
+            case ORDER_CREATED:
+            default:
+                return "Order created";
         }
     }
 }

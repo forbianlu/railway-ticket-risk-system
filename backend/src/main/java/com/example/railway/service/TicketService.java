@@ -26,13 +26,16 @@ public class TicketService {
     private final TicketRecordRepository ticketRecordRepository;
     private final OperationLogService operationLogService;
     private final OutboxEventPublisher outboxEventPublisher;
+    private final NotificationService notificationService;
 
     public TicketService(TicketRecordRepository ticketRecordRepository,
                          OperationLogService operationLogService,
-                         OutboxEventPublisher outboxEventPublisher) {
+                         OutboxEventPublisher outboxEventPublisher,
+                         NotificationService notificationService) {
         this.ticketRecordRepository = ticketRecordRepository;
         this.operationLogService = operationLogService;
         this.outboxEventPublisher = outboxEventPublisher;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -55,6 +58,7 @@ public class TicketService {
                 "Ticket " + saved.getTicketNo() + " issued for order " + order.getOrderNo()
         );
         publishTicketEvent(OutboxEventTypes.TICKET_ISSUED, saved);
+        notificationService.notifyTicketIssued(saved);
         return saved;
     }
 

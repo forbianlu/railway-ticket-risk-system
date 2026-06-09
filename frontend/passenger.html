@@ -73,6 +73,7 @@
         <a href="#passenger-orders">订单</a>
         <a href="#passenger-payments">支付</a>
         <a href="#passenger-refunds">退款</a>
+        <a href="#passenger-notifications">消息 <span id="passenger-nav-unread" class="nav-badge">0</span></a>
       </nav>
       <div class="passenger-userbar passenger-account">
         <div class="auth-summary">
@@ -317,6 +318,49 @@
           <div class="inline-actions">
             <button id="passenger-prev-refunds" class="secondary-button compact-button" type="button">上一页</button>
             <button id="passenger-next-refunds" class="secondary-button compact-button" type="button">下一页</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="passenger-notifications" class="passenger-section passenger-notification-section">
+        <div class="passenger-section-head">
+          <div>
+            <p class="eyebrow">Message Center</p>
+            <h2>消息中心</h2>
+            <p>查看订单、支付、出票、退票和退款进度提醒。</p>
+          </div>
+          <div class="inline-actions">
+            <button id="passenger-read-all-notifications" class="secondary-button compact-button" type="button">全部已读</button>
+            <button id="passenger-refresh-notifications" class="secondary-button compact-button" type="button">刷新消息</button>
+          </div>
+        </div>
+        <div class="journey-stat-strip notification-stat-strip">
+          <div class="journey-stat">
+            <span>全部消息</span>
+            <strong id="passenger-notification-total">0</strong>
+          </div>
+          <div class="journey-stat">
+            <span>未读消息</span>
+            <strong id="passenger-notification-unread">0</strong>
+          </div>
+        </div>
+        <div class="passenger-filter-bar">
+          <label>
+            消息状态
+            <select id="passenger-notification-status">
+              <option value="">全部消息</option>
+              <option value="UNREAD">未读</option>
+              <option value="READ">已读</option>
+            </select>
+          </label>
+          <button id="passenger-load-notifications" class="secondary-button" type="button">查询消息</button>
+        </div>
+        <div id="passenger-notification-results" class="passenger-record-list passenger-notification-list"></div>
+        <div class="pagination">
+          <span id="passenger-notification-page-info">第 1 / 1 页，共 0 条</span>
+          <div class="inline-actions">
+            <button id="passenger-prev-notifications" class="secondary-button compact-button" type="button">上一页</button>
+            <button id="passenger-next-notifications" class="secondary-button compact-button" type="button">下一页</button>
           </div>
         </div>
       </section>

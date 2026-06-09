@@ -35,6 +35,14 @@ const state = {
     first: true,
     last: true,
   },
+  notificationPage: {
+    page: 0,
+    size: 10,
+    totalPages: 0,
+    totalElements: 0,
+    first: true,
+    last: true,
+  },
   riskPage: {
     page: 0,
     size: 10,
@@ -127,6 +135,20 @@ const elements = {
   outboxSummaryBacklog: document.querySelector("#outbox-summary-backlog"),
   outboxTypeSummary: document.querySelector("#outbox-type-summary"),
   outboxStatusSummary: document.querySelector("#outbox-status-summary"),
+  notificationStatus: document.querySelector("#notification-status"),
+  notificationType: document.querySelector("#notification-type"),
+  notificationOrderNo: document.querySelector("#notification-order-no"),
+  notificationUserId: document.querySelector("#notification-user-id"),
+  notificationResults: document.querySelector("#notification-results"),
+  notificationPageInfo: document.querySelector("#notification-page-info"),
+  prevNotifications: document.querySelector("#prev-notifications"),
+  nextNotifications: document.querySelector("#next-notifications"),
+  notificationSummaryTotal: document.querySelector("#notification-summary-total"),
+  notificationSummaryUnread: document.querySelector("#notification-summary-unread"),
+  notificationSummaryRead: document.querySelector("#notification-summary-read"),
+  notificationSummaryLatest: document.querySelector("#notification-summary-latest"),
+  notificationTypeSummary: document.querySelector("#notification-type-summary"),
+  notificationStatusSummary: document.querySelector("#notification-status-summary"),
   riskStatus: document.querySelector("#risk-status"),
   riskScene: document.querySelector("#risk-scene"),
   riskUserId: document.querySelector("#risk-user-id"),
@@ -196,6 +218,9 @@ document.querySelector("#dispatch-outbox-events").addEventListener("click", disp
 document.querySelector("#retry-failed-outbox-events").addEventListener("click", retryFailedOutboxEvents);
 elements.prevOutbox.addEventListener("click", () => changeOutboxPage(-1));
 elements.nextOutbox.addEventListener("click", () => changeOutboxPage(1));
+document.querySelector("#load-notifications").addEventListener("click", loadNotifications);
+elements.prevNotifications.addEventListener("click", () => changeNotificationPage(-1));
+elements.nextNotifications.addEventListener("click", () => changeNotificationPage(1));
 document.querySelector("#load-risks").addEventListener("click", loadRisks);
 document.querySelector("#reset-risks").addEventListener("click", resetRiskFilters);
 elements.prevRisks.addEventListener("click", () => changeRiskPage(-1));
@@ -362,6 +387,8 @@ async function refreshAll() {
     loadRefunds(),
     loadOutboxSummary(),
     loadOutboxEvents(),
+    loadNotificationSummary(),
+    loadNotifications(),
     loadRisks(),
     loadRiskSummary(),
     loadLogs(),
@@ -1321,6 +1348,105 @@ async function changeOutboxPage(offset) {
   await loadOutboxEventsPage();
 }
 
+async function loadNotifications() {
+  state.notificationPage.page = 0;
+  await Promise.all([loadNotificationSummary(), loadNotificationsPage()]);
+}
+
+async function loadNotificationSummary() {
+  try {
+    const summary = await request("/notifications/summary");
+    renderNotificationSummary(summary);
+  } catch (error) {
+    renderNotificationSummary(null);
+  }
+}
+
+async function loadNotificationsPage() {
+  try {
+    const page = await request(buildNotificationQueryPath());
+    state.notificationPage = {
+      page: page.page,
+      size: page.size,
+      totalPages: page.totalPages,
+      totalElements: page.totalElements,
+      first: page.first,
+      last: page.last,
+    };
+    renderNotifications(page.content || []);
+    renderNotificationPagination();
+  } catch (error) {
+    elements.notificationResults.innerHTML = tableEmpty(8, error.message || "无法获取通知数据");
+    renderNotificationPagination();
+  }
+}
+
+function buildNotificationQueryPath() {
+  const params = new URLSearchParams();
+  appendParam(params, "status", elements.notificationStatus.value);
+  appendParam(params, "type", elements.notificationType.value);
+  appendParam(params, "orderNo", elements.notificationOrderNo.value);
+  appendParam(params, "userId", elements.notificationUserId.value);
+  params.set("page", String(state.notificationPage.page));
+  params.set("size", String(state.notificationPage.size));
+  return `/notifications?${params.toString()}`;
+}
+
+function renderNotifications(notifications) {
+  if (notifications.length === 0) {
+    elements.notificationResults.innerHTML = tableEmpty(8, "暂无站内通知");
+    return;
+  }
+  elements.notificationResults.innerHTML = notifications
+    .map(notification => `
+      <tr>
+        <td><span class="muted-text">${escapeHtml(notification.notificationNo)}</span></td>
+        <td>${notification.userId}</td>
+        <td>${notificationTypeText(notification.type)}</td>
+        <td><strong>${escapeHtml(notification.title)}</strong><br><span class="muted-text">${escapeHtml(notification.content)}</span></td>
+        <td><span class="status ${notificationStatusClass(notification.status)}">${notificationStatusText(notification.status)}</span></td>
+        <td>${escapeHtml(notification.businessType || "-")}<br><span class="muted-text">${escapeHtml(notification.businessId || "-")}</span></td>
+        <td>${escapeHtml(notification.orderNo || "-")}</td>
+        <td>${formatDateTime(notification.createdAt) || "-"}</td>
+      </tr>
+    `)
+    .join("");
+}
+
+function renderNotificationSummary(summary) {
+  const data = summary || {
+    totalCount: 0,
+    unreadCount: 0,
+    readCount: 0,
+    countByType: {},
+    countByStatus: {},
+    latestCreatedAt: null,
+  };
+  elements.notificationSummaryTotal.textContent = data.totalCount || 0;
+  elements.notificationSummaryUnread.textContent = data.unreadCount || 0;
+  elements.notificationSummaryRead.textContent = data.readCount || 0;
+  elements.notificationSummaryLatest.textContent = formatDateTime(data.latestCreatedAt) || "-";
+  elements.notificationTypeSummary.innerHTML = renderSummaryMap(data.countByType || {}, notificationTypeText);
+  elements.notificationStatusSummary.innerHTML = renderSummaryMap(data.countByStatus || {}, notificationStatusText);
+}
+
+function renderNotificationPagination() {
+  const totalPages = Math.max(1, state.notificationPage.totalPages || 0);
+  const currentPage = Math.min((state.notificationPage.page || 0) + 1, totalPages);
+  elements.notificationPageInfo.textContent = `第 ${currentPage} / ${totalPages} 页，共 ${state.notificationPage.totalElements || 0} 条`;
+  elements.prevNotifications.disabled = Boolean(state.notificationPage.first);
+  elements.nextNotifications.disabled = Boolean(state.notificationPage.last);
+}
+
+async function changeNotificationPage(offset) {
+  const nextPage = Math.max(0, state.notificationPage.page + offset);
+  if (nextPage === state.notificationPage.page) {
+    return;
+  }
+  state.notificationPage.page = nextPage;
+  await loadNotificationsPage();
+}
+
 function renderPaymentPagination() {
   const totalPages = Math.max(1, state.paymentPage.totalPages || 0);
   const currentPage = Math.min((state.paymentPage.page || 0) + 1, totalPages);
@@ -1919,6 +2045,36 @@ function outboxStatusClass(value) {
     PROCESSING: "pending",
     DONE: "",
     FAILED: "closed",
+  };
+  return map[value] || "";
+}
+
+function notificationTypeText(value) {
+  const map = {
+    ORDER_CREATED: "下单提醒",
+    PAYMENT_SUCCEEDED: "支付提醒",
+    TICKET_ISSUED: "出票提醒",
+    ORDER_CLOSED: "关闭提醒",
+    ORDER_REFUNDED: "退票提醒",
+    REFUND_SUCCEEDED: "退款成功",
+    REFUND_FAILED: "退款失败",
+    RISK_ALERT: "风险提醒",
+  };
+  return map[value] || value || "-";
+}
+
+function notificationStatusText(value) {
+  const map = {
+    UNREAD: "未读",
+    READ: "已读",
+  };
+  return map[value] || value || "-";
+}
+
+function notificationStatusClass(value) {
+  const map = {
+    UNREAD: "pending",
+    READ: "",
   };
   return map[value] || "";
 }

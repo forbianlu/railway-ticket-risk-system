@@ -37,6 +37,9 @@ import com.example.railway.config.PaymentCallbackProperties;
 import com.example.railway.config.RefundCallbackProperties;
 import com.example.railway.config.TrainSearchCacheProperties;
 import com.example.railway.domain.OperationLog;
+import com.example.railway.domain.NotificationRecord;
+import com.example.railway.domain.NotificationStatus;
+import com.example.railway.domain.NotificationType;
 import com.example.railway.domain.OrderStatus;
 import com.example.railway.domain.OutboxEvent;
 import com.example.railway.domain.OutboxEventStatus;
@@ -56,6 +59,9 @@ import com.example.railway.dto.CreateOrderRequest;
 import com.example.railway.dto.CreatePaymentRequest;
 import com.example.railway.dto.DashboardSummary;
 import com.example.railway.dto.LoginRequest;
+import com.example.railway.dto.NotificationPageResponse;
+import com.example.railway.dto.NotificationResponse;
+import com.example.railway.dto.NotificationSummaryResponse;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
 import com.example.railway.dto.OrderDetailResponse;
@@ -84,6 +90,7 @@ import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
 import com.example.railway.repository.AppUserRepository;
 import com.example.railway.repository.OperationLogRepository;
+import com.example.railway.repository.NotificationRecordRepository;
 import com.example.railway.repository.OutboxEventRepository;
 import com.example.railway.repository.PaymentRecordRepository;
 import com.example.railway.repository.RefundRecordRepository;
@@ -141,6 +148,9 @@ class RailwayApiIntegrationTests {
     private OperationLogRepository operationLogRepository;
 
     @Autowired
+    private NotificationRecordRepository notificationRecordRepository;
+
+    @Autowired
     private DemoDataInitializer demoDataInitializer;
 
     @Autowired
@@ -193,6 +203,7 @@ class RailwayApiIntegrationTests {
         long refundCount = refundRecordRepository.count();
         long riskCount = riskEventRepository.count();
         long logCount = operationLogRepository.count();
+        long notificationCount = notificationRecordRepository.count();
         long outboxCount = outboxEventRepository.count();
 
         assertThat(stationCount).isGreaterThanOrEqualTo(16);
@@ -204,6 +215,7 @@ class RailwayApiIntegrationTests {
         assertThat(refundCount).isGreaterThanOrEqualTo(12);
         assertThat(riskCount).isGreaterThanOrEqualTo(20);
         assertThat(logCount).isGreaterThanOrEqualTo(30);
+        assertThat(notificationCount).isGreaterThanOrEqualTo(12);
         assertThat(outboxCount).isGreaterThanOrEqualTo(10);
 
         assertThat(ticketOrderRepository.findAll()).extracting(TicketOrder::getStatus)
@@ -218,6 +230,10 @@ class RailwayApiIntegrationTests {
                 .contains(RiskStatus.PENDING, RiskStatus.CONFIRMED, RiskStatus.FALSE_POSITIVE, RiskStatus.CLOSED);
         assertThat(outboxEventRepository.findAll()).extracting(OutboxEvent::getStatus)
                 .contains(OutboxEventStatus.PENDING, OutboxEventStatus.DONE, OutboxEventStatus.FAILED);
+        assertThat(notificationRecordRepository.findAll()).extracting(NotificationRecord::getStatus)
+                .contains(NotificationStatus.UNREAD, NotificationStatus.READ);
+        assertThat(notificationRecordRepository.findAll()).extracting(NotificationRecord::getType)
+                .contains(NotificationType.ORDER_CREATED, NotificationType.PAYMENT_SUCCEEDED, NotificationType.TICKET_ISSUED);
 
         demoDataInitializer.run();
 
@@ -1547,6 +1563,114 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldCreateAndSecurePassengerNotifications() {
+        AuthResponse passenger1 = login("passenger1", "123456");
+        AuthResponse passenger2 = login("passenger2", "123456");
+        AuthResponse admin = login("admin", "admin123");
+        Long passenger1Id = appUserRepository.findByUsername("passenger1")
+                .orElseThrow(() -> new AssertionError("expected passenger1"))
+                .getId();
+        Long passenger2Id = appUserRepository.findByUsername("passenger2")
+                .orElseThrow(() -> new AssertionError("expected passenger2"))
+                .getId();
+
+        OrderResponse passenger1Order = createPassengerOrder(passenger1, firstTrainInventory(), "Notify Passenger One");
+        OrderResponse passenger2Order = createPassengerOrder(passenger2, firstTrainInventory(), "Notify Passenger Two");
+
+        NotificationPageResponse passenger1Notifications = fetchPassengerNotifications(passenger1, "/api/passenger/notifications?size=100");
+        NotificationPageResponse passenger2Notifications = fetchPassengerNotifications(passenger2, "/api/passenger/notifications?size=100");
+        NotificationResponse passenger2Notification = passenger2Notifications.getContent().stream()
+                .filter(notification -> passenger2Order.getOrderNo().equals(notification.getOrderNo()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected passenger2 notification"));
+        ResponseEntity<String> markOtherRead = restTemplate.exchange(
+                "/api/passenger/notifications/{id}/read",
+                HttpMethod.POST,
+                authorizedEntity(passenger1),
+                String.class,
+                passenger2Notification.getId()
+        );
+
+        OrderResponse paid = restTemplate.exchange(
+                "/api/passenger/orders/{id}/pay",
+                HttpMethod.POST,
+                authorizedEntity(passenger1),
+                OrderResponse.class,
+                passenger1Order.getId()
+        ).getBody();
+        OrderResponse refunded = restTemplate.exchange(
+                "/api/passenger/orders/{id}/refund",
+                HttpMethod.POST,
+                authorizedEntity(passenger1),
+                OrderResponse.class,
+                passenger1Order.getId()
+        ).getBody();
+        RefundRecord refund = refundRecordRepository.findByOrderIdAndStatus(passenger1Order.getId(), RefundStatus.PENDING)
+                .orElseThrow(() -> new AssertionError("expected pending refund"));
+        callbackRefund(refund.getRefundNo(), "notify-refund-" + System.nanoTime(), true);
+
+        NotificationPageResponse afterFlow = fetchPassengerNotifications(passenger1, "/api/passenger/notifications?size=100");
+        NotificationResponse unread = afterFlow.getContent().stream()
+                .filter(notification -> NotificationStatus.UNREAD.name().equals(notification.getStatus()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected unread notification"));
+        NotificationResponse markedRead = restTemplate.exchange(
+                "/api/passenger/notifications/{id}/read",
+                HttpMethod.POST,
+                authorizedEntity(passenger1),
+                NotificationResponse.class,
+                unread.getId()
+        ).getBody();
+        NotificationSummaryResponse readAllSummary = restTemplate.exchange(
+                "/api/passenger/notifications/read-all",
+                HttpMethod.POST,
+                authorizedEntity(passenger1),
+                NotificationSummaryResponse.class
+        ).getBody();
+        NotificationPageResponse adminNotifications = restTemplate.exchange(
+                "/api/notifications?orderNo={orderNo}&size=50",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                NotificationPageResponse.class,
+                passenger1Order.getOrderNo()
+        ).getBody();
+        NotificationSummaryResponse adminSummary = restTemplate.exchange(
+                "/api/notifications/summary",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                NotificationSummaryResponse.class
+        ).getBody();
+
+        assertThat(passenger1Notifications.getContent()).allSatisfy(notification -> assertThat(notification.getUserId()).isEqualTo(passenger1Id));
+        assertThat(passenger1Notifications.getContent()).extracting(NotificationResponse::getOrderNo).doesNotContain(passenger2Order.getOrderNo());
+        assertThat(markOtherRead.getStatusCodeValue()).isEqualTo(403);
+        assertThat(paid).isNotNull();
+        assertThat(paid.getStatus()).isEqualTo("PAID");
+        assertThat(refunded).isNotNull();
+        assertThat(refunded.getStatus()).isEqualTo("REFUNDED");
+        assertThat(afterFlow.getContent()).extracting(NotificationResponse::getType)
+                .contains(
+                        NotificationType.ORDER_CREATED.name(),
+                        NotificationType.PAYMENT_SUCCEEDED.name(),
+                        NotificationType.TICKET_ISSUED.name(),
+                        NotificationType.ORDER_REFUNDED.name(),
+                        NotificationType.REFUND_SUCCEEDED.name()
+                );
+        assertThat(afterFlow.getContent()).allSatisfy(notification -> assertThat(notification.getUserId()).isEqualTo(passenger1Id));
+        assertThat(markedRead).isNotNull();
+        assertThat(markedRead.getStatus()).isEqualTo(NotificationStatus.READ.name());
+        assertThat(readAllSummary).isNotNull();
+        assertThat(readAllSummary.getUnreadCount()).isZero();
+        assertThat(adminNotifications).isNotNull();
+        assertThat(adminNotifications.getContent()).extracting(NotificationResponse::getOrderNo).contains(passenger1Order.getOrderNo());
+        assertThat(adminSummary).isNotNull();
+        assertThat(adminSummary.getTotalCount()).isGreaterThan(0);
+        assertThat(adminSummary.getCountByType()).containsKey(NotificationType.ORDER_CREATED.name());
+        assertThat(userGetStatus(passenger1, "/api/notifications")).isEqualTo(403);
+        assertThat(passenger2Notifications.getContent()).allSatisfy(notification -> assertThat(notification.getUserId()).isEqualTo(passenger2Id));
+    }
+
+    @Test
     void shouldCacheTrainSearchAndEvictAfterInventoryChange() {
         AuthResponse admin = login("admin", "admin123");
         clearTrainSearchCache(admin);
@@ -1973,6 +2097,18 @@ class RailwayApiIntegrationTests {
                 HttpMethod.GET,
                 authorizedEntity(auth),
                 OutboxEventPageResponse.class
+        );
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getContent()).isNotNull();
+        return response.getBody();
+    }
+
+    private NotificationPageResponse fetchPassengerNotifications(AuthResponse auth, String url) {
+        ResponseEntity<NotificationPageResponse> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                authorizedEntity(auth),
+                NotificationPageResponse.class
         );
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getContent()).isNotNull();

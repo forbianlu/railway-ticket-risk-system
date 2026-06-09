@@ -126,6 +126,9 @@ POST /api/passenger/orders/{id}/close
 POST /api/passenger/orders/{id}/refund
 GET  /api/passenger/payments?status=SUCCESS&page=0&size=10
 GET  /api/passenger/refunds?status=PENDING&page=0&size=10
+GET  /api/passenger/notifications?status=UNREAD&page=0&size=10
+POST /api/passenger/notifications/{id}/read
+POST /api/passenger/notifications/read-all
 POST /api/orders
 POST /api/orders/{id}/pay
 POST /api/orders/{id}/close
@@ -147,6 +150,8 @@ GET  /api/cache/train-search
 DELETE /api/cache/train-search
 GET  /api/rate-limit/summary
 GET  /api/outbox-events?status=PENDING&page=0&size=10
+GET  /api/notifications?status=UNREAD&page=0&size=10
+GET  /api/notifications/summary
 GET  /api/outbox-events/summary
 POST /api/outbox-events/dispatch
 POST /api/outbox-events/{id}/retry

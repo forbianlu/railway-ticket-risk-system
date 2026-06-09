@@ -28,6 +28,10 @@
 | `POST /api/passenger/orders/{id}/refund` | 退当前乘客自己的已支付订单 |
 | `GET /api/passenger/payments` | 分页查询我的支付流水 |
 | `GET /api/passenger/refunds` | 分页查询我的退款流水 |
+| `GET /api/passenger/notifications` | 分页查询我的站内通知 |
+| `GET /api/passenger/notifications/unread-count` | 查询我的通知统计和未读数量 |
+| `POST /api/passenger/notifications/{id}/read` | 标记我的单条通知已读 |
+| `POST /api/passenger/notifications/read-all` | 标记我的全部通知已读 |
 
 ## 我的订单权限边界
 
@@ -87,6 +91,19 @@ USER 登录 -> 查询车次 -> POST /api/passenger/orders -> 复用 OrderService
 - 我的退款流水：调用 `/api/passenger/refunds`。
 
 入口页 `frontend/index.html` 提供乘客购票服务和运营管理系统两个入口，运营管理端保留在 `frontend/admin.html`。
+
+## 站内通知能力
+
+乘客端新增消息中心接口，路径仍位于 `/api/passenger/**`。通知只按当前 JWT 中的 `userId` 查询和更新，不接受前端传入用户 ID 覆盖归属。
+
+```http
+GET /api/passenger/notifications?status=UNREAD&type=ORDER_CREATED&page=0&size=10
+GET /api/passenger/notifications/unread-count
+POST /api/passenger/notifications/{id}/read
+POST /api/passenger/notifications/read-all
+```
+
+通知来源包括下单、支付成功、出票、关闭待支付订单、退票、退款成功回调和退款失败回调。通知创建使用业务幂等键，重复业务动作不会重复插入同一条通知。
 
 ## 常用乘车人能力
 
