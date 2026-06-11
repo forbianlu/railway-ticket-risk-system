@@ -2,8 +2,11 @@ package com.example.railway.repository;
 
 import java.util.List;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.example.railway.domain.RiskEvent;
 import com.example.railway.domain.RiskScene;
@@ -26,4 +29,13 @@ public interface RiskEventRepository extends JpaRepository<RiskEvent, Long>, Jpa
     long countByStatus(RiskStatus status);
 
     long countByScene(RiskScene scene);
+
+    @Query("select r from RiskEvent r " +
+            "left join r.order o " +
+            "where lower(r.reason) like lower(concat('%', :keyword, '%')) " +
+            "or lower(o.orderNo) like lower(concat('%', :keyword, '%')) " +
+            "order by r.createdAt desc")
+    List<RiskEvent> searchAdmin(@Param("keyword") String keyword, Pageable pageable);
+
+    List<RiskEvent> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 }

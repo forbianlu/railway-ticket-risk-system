@@ -43,6 +43,10 @@ const state = {
     first: true,
     last: true,
   },
+  globalSearch: {
+    loading: false,
+    lastKeyword: "",
+  },
   riskPage: {
     page: 0,
     size: 10,
@@ -135,6 +139,12 @@ const elements = {
   outboxSummaryBacklog: document.querySelector("#outbox-summary-backlog"),
   outboxTypeSummary: document.querySelector("#outbox-type-summary"),
   outboxStatusSummary: document.querySelector("#outbox-status-summary"),
+  globalSearchKeyword: document.querySelector("#global-search-keyword"),
+  globalSearchTypes: document.querySelector("#global-search-types"),
+  globalSearchLimit: document.querySelector("#global-search-limit"),
+  globalSearchTrace: document.querySelector("#global-search-trace"),
+  globalSearchInfo: document.querySelector("#global-search-info"),
+  globalSearchResults: document.querySelector("#global-search-results"),
   notificationStatus: document.querySelector("#notification-status"),
   notificationType: document.querySelector("#notification-type"),
   notificationOrderNo: document.querySelector("#notification-order-no"),
@@ -218,6 +228,14 @@ document.querySelector("#dispatch-outbox-events").addEventListener("click", disp
 document.querySelector("#retry-failed-outbox-events").addEventListener("click", retryFailedOutboxEvents);
 elements.prevOutbox.addEventListener("click", () => changeOutboxPage(-1));
 elements.nextOutbox.addEventListener("click", () => changeOutboxPage(1));
+document.querySelector("#run-global-search").addEventListener("click", runGlobalSearch);
+document.querySelector("#clear-global-search").addEventListener("click", clearGlobalSearch);
+elements.globalSearchKeyword.addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    runGlobalSearch();
+  }
+});
 document.querySelector("#load-notifications").addEventListener("click", loadNotifications);
 elements.prevNotifications.addEventListener("click", () => changeNotificationPage(-1));
 elements.nextNotifications.addEventListener("click", () => changeNotificationPage(1));
@@ -1346,6 +1364,127 @@ async function changeOutboxPage(offset) {
   }
   state.outboxPage.page = nextPage;
   await loadOutboxEventsPage();
+}
+
+async function runGlobalSearch() {
+  const keyword = (elements.globalSearchKeyword.value || "").trim();
+  if (keyword.length < 2) {
+    elements.globalSearchInfo.textContent = "请输入至少 2 个字符进行查询";
+    elements.globalSearchResults.innerHTML = emptyItem("关键词太短，请输入订单号、票号、流水号或乘车人等信息");
+    return;
+  }
+  state.globalSearch.loading = true;
+  state.globalSearch.lastKeyword = keyword;
+  elements.globalSearchInfo.textContent = "综合查询中...";
+  elements.globalSearchResults.innerHTML = `<div class="search-loading">正在检索订单、票据、流水、通知和事件链路...</div>`;
+  try {
+    const result = await request(buildGlobalSearchPath(keyword));
+    renderGlobalSearch(result);
+  } catch (error) {
+    elements.globalSearchInfo.textContent = "综合查询失败";
+    elements.globalSearchResults.innerHTML = emptyItem(error.message || "综合查询失败，请稍后重试");
+  } finally {
+    state.globalSearch.loading = false;
+  }
+}
+
+function buildGlobalSearchPath(keyword) {
+  const params = new URLSearchParams();
+  params.set("keyword", keyword);
+  const selectedTypes = Array.from(elements.globalSearchTypes.selectedOptions || [])
+    .map(option => option.value)
+    .filter(Boolean);
+  if (selectedTypes.length > 0) {
+    params.set("types", selectedTypes.join(","));
+  }
+  appendParam(params, "limitPerType", elements.globalSearchLimit.value);
+  if (elements.globalSearchTrace.checked) {
+    params.set("includeTrace", "true");
+  }
+  return `/search?${params.toString()}`;
+}
+
+function renderGlobalSearch(result) {
+  const groups = result.groups || [];
+  const totalCount = result.totalCount || 0;
+  elements.globalSearchInfo.textContent = `关键词“${result.keyword || state.globalSearch.lastKeyword}”共命中 ${totalCount} 条记录`;
+  if (totalCount === 0) {
+    elements.globalSearchResults.innerHTML = emptyItem("未找到相关记录，请更换订单号、票号或流水号再试");
+    return;
+  }
+  elements.globalSearchResults.innerHTML = groups
+    .filter(group => (group.items || []).length > 0)
+    .map(group => `
+      <article class="search-result-group">
+        <div class="search-group-head">
+          <div>
+            <p class="eyebrow">${escapeHtml(group.type || "")}</p>
+            <h3>${escapeHtml(group.typeName || group.type || "结果")}</h3>
+          </div>
+          <span>${group.count || 0} 条</span>
+        </div>
+        <div class="search-result-list">
+          ${(group.items || []).map(renderGlobalSearchItem).join("")}
+        </div>
+      </article>
+    `)
+    .join("");
+  elements.globalSearchResults.querySelectorAll("[data-search-order-detail]").forEach(button => {
+    button.addEventListener("click", () => openAdminOrderDetail(button.dataset.searchOrderDetail));
+  });
+}
+
+function renderGlobalSearchItem(item) {
+  const fields = (item.matchedFields || []).map(field => `<span>${escapeHtml(field)}</span>`).join("");
+  const trace = (item.trace || []).length > 0
+    ? `<div class="search-trace">${item.trace.map(text => `<span>${escapeHtml(text)}</span>`).join("")}</div>`
+    : "";
+  const action = item.orderId
+    ? `<button class="secondary-button compact-button" type="button" data-search-order-detail="${escapeHtml(String(item.orderId))}">打开订单详情</button>`
+    : `<span class="muted-text">暂无可打开链路</span>`;
+  return `
+    <div class="search-result-card">
+      <div class="search-result-main">
+        <div>
+          <strong>${escapeHtml(item.title || "-")}</strong>
+          <p>${escapeHtml(item.subtitle || "-")}</p>
+        </div>
+        <span class="status ${searchStatusClass(item.status)}">${escapeHtml(item.status || item.businessType || "-")}</span>
+      </div>
+      <div class="search-result-meta">
+        <span>${escapeHtml(item.orderNo || item.ticketNo || item.paymentNo || item.refundNo || item.notificationNo || item.businessId || "-")}</span>
+        <span>${formatDateTime(item.createdAt) || "-"}</span>
+      </div>
+      <div class="search-matched-fields">${fields || "<span>related</span>"}</div>
+      ${trace}
+      <div class="search-result-actions">${action}</div>
+    </div>
+  `;
+}
+
+function clearGlobalSearch() {
+  elements.globalSearchKeyword.value = "";
+  Array.from(elements.globalSearchTypes.options || []).forEach(option => {
+    option.selected = false;
+  });
+  elements.globalSearchLimit.value = "5";
+  elements.globalSearchTrace.checked = false;
+  elements.globalSearchInfo.textContent = "请输入至少 2 个字符进行查询";
+  elements.globalSearchResults.innerHTML = "";
+}
+
+function searchStatusClass(value) {
+  const status = String(value || "").toUpperCase();
+  if (["SUCCESS", "DONE", "PAID", "ISSUED", "READ", "CLOSED"].includes(status)) {
+    return "success";
+  }
+  if (["FAILED", "REFUND_FAILED", "CANCELLED"].includes(status)) {
+    return "danger";
+  }
+  if (["PENDING", "PENDING_PAYMENT", "UNREAD", "PROCESSING"].includes(status)) {
+    return "pending";
+  }
+  return "neutral";
 }
 
 async function loadNotifications() {

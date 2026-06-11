@@ -4,8 +4,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.example.railway.domain.NotificationRecord;
 import com.example.railway.domain.NotificationStatus;
@@ -33,4 +36,14 @@ public interface NotificationRecordRepository extends JpaRepository<Notification
     List<NotificationRecord> findByUserId(Long userId);
 
     List<NotificationRecord> findByCreatedAtBetween(LocalDateTime from, LocalDateTime to);
+
+    @Query("select n from NotificationRecord n " +
+            "where lower(n.notificationNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(n.title) like lower(concat('%', :keyword, '%')) " +
+            "or lower(n.orderNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(n.ticketNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(n.paymentNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(n.refundNo) like lower(concat('%', :keyword, '%')) " +
+            "order by n.createdAt desc")
+    List<NotificationRecord> searchAdmin(@Param("keyword") String keyword, Pageable pageable);
 }

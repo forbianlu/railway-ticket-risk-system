@@ -47,4 +47,20 @@ public interface TicketOrderRepository extends JpaRepository<TicketOrder, Long>,
 
     @Query("select o.train.trainNo, count(o.id) from TicketOrder o where o.status in (com.example.railway.domain.OrderStatus.PAID, com.example.railway.domain.OrderStatus.REFUNDED) group by o.train.trainNo order by count(o.id) desc")
     List<Object[]> findPopularTrainStats(Pageable pageable);
+
+    @Query("select o from TicketOrder o " +
+            "join o.train t " +
+            "join t.departureStation ds " +
+            "join t.arrivalStation asn " +
+            "where lower(o.orderNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(o.passengerName) like lower(concat('%', :keyword, '%')) " +
+            "or lower(t.trainNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(ds.name) like lower(concat('%', :keyword, '%')) " +
+            "or lower(asn.name) like lower(concat('%', :keyword, '%')) " +
+            "or lower(ds.city) like lower(concat('%', :keyword, '%')) " +
+            "or lower(asn.city) like lower(concat('%', :keyword, '%')) " +
+            "order by o.createdAt desc")
+    List<TicketOrder> searchAdmin(@Param("keyword") String keyword, Pageable pageable);
+
+    List<TicketOrder> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 }

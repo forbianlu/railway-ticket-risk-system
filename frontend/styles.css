@@ -5085,3 +5085,145 @@ body.passenger-consumer-page {
     padding: 18px !important;
   }
 }
+
+.global-search-section {
+  scroll-margin-top: 24px;
+}
+
+.global-search-toolbar {
+  align-items: end;
+}
+
+.global-search-keyword {
+  min-width: min(100%, 360px);
+  flex: 1 1 360px;
+}
+
+.global-search-toolbar select[multiple] {
+  min-width: 180px;
+  min-height: 112px;
+  padding: 8px;
+}
+
+.inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.inline-check input {
+  width: 16px;
+  height: 16px;
+}
+
+.global-search-meta {
+  margin: 14px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.global-search-results {
+  display: grid;
+  gap: 14px;
+}
+
+.search-loading {
+  padding: 18px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.search-result-group {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  overflow: hidden;
+}
+
+.search-group-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.92), rgba(255, 255, 255, 0.86));
+}
+
+.search-group-head h3 {
+  margin: 2px 0 0;
+}
+
+.search-group-head > span {
+  align-self: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.search-result-list {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.search-result-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.search-result-main,
+.search-result-meta,
+.search-result-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.search-result-main strong {
+  color: var(--text);
+}
+
+.search-result-main p,
+.search-result-meta {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.search-matched-fields,
+.search-trace {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.search-matched-fields span,
+.search-trace span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.08);
+  color: #0f766e;
+  font-size: 12px;
+}
+
+.search-trace span {
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+}
+
+@media (max-width: 760px) {
+  .search-result-main,
+  .search-result-meta,
+  .search-result-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

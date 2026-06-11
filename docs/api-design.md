@@ -958,3 +958,41 @@ Response masks sensitive fields:
 ```
 
 The service validates traveler ownership and writes masked passenger snapshots to the order and ticket records.
+## 管理端综合查询
+
+```http
+GET /api/search?keyword=RT202606120001&types=ORDER,TICKET,PAYMENT&limitPerType=5&includeTrace=true
+Authorization: Bearer {ADMIN/RISK_OFFICER/OPERATOR token}
+```
+
+`keyword` 为必填且至少 2 个字符。`types` 可选，支持 `ORDER`、`TICKET`、`PAYMENT`、`REFUND`、`TRAVELER`、`RISK`、`OUTBOX`、`NOTIFICATION`、`OPERATION_LOG`。`limitPerType` 默认 5，最大 20。`includeTrace=true` 时返回轻量链路提示。
+
+响应示例：
+
+```json
+{
+  "keyword": "RT202606120001",
+  "totalCount": 2,
+  "groups": [
+    {
+      "type": "ORDER",
+      "typeName": "Order",
+      "count": 1,
+      "items": [
+        {
+          "id": "ORDER-1",
+          "title": "RT202606120001",
+          "businessType": "ORDER",
+          "orderId": 1,
+          "orderNo": "RT202606120001",
+          "detailAction": "ORDER_DETAIL",
+          "matchedFields": ["orderNo"],
+          "trace": ["ORDER -> PAYMENT/REFUND/TICKET/RISK/OUTBOX/LOG"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+该接口仅面向管理端角色开放。常用乘车人结果只返回脱敏证件号和手机号，不返回密码、JWT、签名密钥或完整个人敏感字段。

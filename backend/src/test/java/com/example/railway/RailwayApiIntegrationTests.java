@@ -55,6 +55,7 @@ import com.example.railway.domain.TicketRecord;
 import com.example.railway.domain.TicketStatus;
 import com.example.railway.domain.Train;
 import com.example.railway.dto.AuthResponse;
+import com.example.railway.dto.AdminGlobalSearchResponse;
 import com.example.railway.dto.CreateOrderRequest;
 import com.example.railway.dto.CreatePaymentRequest;
 import com.example.railway.dto.DashboardSummary;
@@ -85,6 +86,8 @@ import com.example.railway.dto.RiskEventHandleRecordResponse;
 import com.example.railway.dto.RiskEventPageResponse;
 import com.example.railway.dto.RiskEventResponse;
 import com.example.railway.dto.RiskHandleRequest;
+import com.example.railway.dto.SearchResultGroupResponse;
+import com.example.railway.dto.SearchResultItemResponse;
 import com.example.railway.dto.RiskSummaryResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
@@ -1671,6 +1674,114 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
+    void shouldSearchAdminBusinessLinksAndProtectSensitivePassengerData() {
+        AuthResponse passenger = login("passenger1", "123456");
+        AuthResponse admin = login("admin", "admin123");
+        AuthResponse operator = login("ops", "ops123");
+        String suffix = String.valueOf(Math.abs(System.nanoTime()));
+        suffix = suffix.substring(Math.max(0, suffix.length() - 8));
+
+        PassengerTravelerRequest travelerRequest = new PassengerTravelerRequest();
+        travelerRequest.setPassengerName("Search Traveler " + suffix);
+        travelerRequest.setIdType("ID_CARD");
+        travelerRequest.setIdNo("33010119990101" + suffix.substring(0, 4));
+        travelerRequest.setPhone("139" + suffix.substring(0, 8));
+        travelerRequest.setDefaultTraveler(true);
+        PassengerTravelerResponse traveler = restTemplate.exchange(
+                "/api/passenger/travelers",
+                HttpMethod.POST,
+                authorizedEntity(passenger, travelerRequest),
+                PassengerTravelerResponse.class
+        ).getBody();
+
+        OrderResponse order = createPassengerOrder(passenger, firstTrainInventory(), travelerRequest.getPassengerName());
+        OrderResponse paid = restTemplate.exchange(
+                "/api/passenger/orders/{id}/pay",
+                HttpMethod.POST,
+                authorizedEntity(passenger),
+                OrderResponse.class,
+                order.getId()
+        ).getBody();
+        TicketRecord ticket = ticketRecordRepository.findByOrderId(order.getId())
+                .orElseThrow(() -> new AssertionError("expected ticket"));
+        PaymentRecord payment = paymentRecordRepository.findByOrderIdOrderByCreatedAtDesc(order.getId()).stream()
+                .filter(record -> PaymentStatus.SUCCESS.equals(record.getStatus()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected payment"));
+        OrderResponse refunded = restTemplate.exchange(
+                "/api/passenger/orders/{id}/refund",
+                HttpMethod.POST,
+                authorizedEntity(passenger),
+                OrderResponse.class,
+                order.getId()
+        ).getBody();
+        RefundRecord refund = refundRecordRepository.findByOrderIdAndStatus(order.getId(), RefundStatus.PENDING)
+                .orElseThrow(() -> new AssertionError("expected refund"));
+        NotificationRecord notification = notificationRecordRepository.findAll().stream()
+                .filter(record -> order.getOrderNo().equals(record.getOrderNo()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected notification"));
+
+        AdminGlobalSearchResponse orderSearch = search(admin,
+                "/api/search?keyword={keyword}&types=ORDER&limitPerType=3&includeTrace=true",
+                order.getOrderNo());
+        AdminGlobalSearchResponse ticketSearch = search(admin,
+                "/api/search?keyword={keyword}&types=TICKET&limitPerType=3",
+                ticket.getTicketNo());
+        AdminGlobalSearchResponse paymentSearch = search(admin,
+                "/api/search?keyword={keyword}&types=PAYMENT&limitPerType=3",
+                payment.getPaymentNo());
+        AdminGlobalSearchResponse refundSearch = search(admin,
+                "/api/search?keyword={keyword}&types=REFUND&limitPerType=3",
+                refund.getRefundNo());
+        AdminGlobalSearchResponse notificationSearch = search(operator,
+                "/api/search?keyword={keyword}&types=NOTIFICATION&limitPerType=3",
+                notification.getNotificationNo());
+        ResponseEntity<String> travelerSearch = restTemplate.exchange(
+                "/api/search?keyword={keyword}&types=TRAVELER&limitPerType=3",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                String.class,
+                travelerRequest.getPassengerName()
+        );
+        ResponseEntity<String> invalidKeyword = restTemplate.exchange(
+                "/api/search?keyword=A",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                String.class
+        );
+        ResponseEntity<String> noToken = restTemplate.getForEntity("/api/search?keyword={keyword}", String.class, order.getOrderNo());
+
+        SearchResultGroupResponse orderGroup = group(orderSearch, "ORDER");
+        SearchResultItemResponse orderItem = orderGroup.getItems().get(0);
+
+        assertThat(traveler).isNotNull();
+        assertThat(paid).isNotNull();
+        assertThat(paid.getStatus()).isEqualTo("PAID");
+        assertThat(refunded).isNotNull();
+        assertThat(refunded.getStatus()).isEqualTo("REFUNDED");
+        assertThat(orderSearch.getKeyword()).isEqualTo(order.getOrderNo());
+        assertThat(orderSearch.getTotalCount()).isGreaterThan(0);
+        assertThat(orderSearch.getGroups()).hasSize(1);
+        assertThat(orderGroup.getCount()).isGreaterThan(0);
+        assertThat(orderGroup.getItems()).extracting(SearchResultItemResponse::getOrderNo).contains(order.getOrderNo());
+        assertThat(orderItem.getOrderId()).isEqualTo(order.getId());
+        assertThat(orderItem.getDetailAction()).isEqualTo("ORDER_DETAIL");
+        assertThat(orderItem.getTrace()).isNotEmpty();
+        assertThat(group(ticketSearch, "TICKET").getItems()).extracting(SearchResultItemResponse::getTicketNo).contains(ticket.getTicketNo());
+        assertThat(group(paymentSearch, "PAYMENT").getItems()).extracting(SearchResultItemResponse::getPaymentNo).contains(payment.getPaymentNo());
+        assertThat(group(refundSearch, "REFUND").getItems()).extracting(SearchResultItemResponse::getRefundNo).contains(refund.getRefundNo());
+        assertThat(group(notificationSearch, "NOTIFICATION").getItems()).extracting(SearchResultItemResponse::getNotificationNo)
+                .contains(notification.getNotificationNo());
+        assertThat(travelerSearch.getStatusCodeValue()).isEqualTo(200);
+        assertThat(travelerSearch.getBody()).doesNotContain(travelerRequest.getIdNo());
+        assertThat(travelerSearch.getBody()).doesNotContain(travelerRequest.getPhone());
+        assertThat(invalidKeyword.getStatusCodeValue()).isEqualTo(400);
+        assertThat(noToken.getStatusCodeValue()).isEqualTo(401);
+        assertThat(userGetStatus(passenger, "/api/search?keyword=" + order.getOrderNo())).isEqualTo(403);
+    }
+
+    @Test
     void shouldCacheTrainSearchAndEvictAfterInventoryChange() {
         AuthResponse admin = login("admin", "admin123");
         clearTrainSearchCache(admin);
@@ -2113,6 +2224,26 @@ class RailwayApiIntegrationTests {
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getContent()).isNotNull();
         return response.getBody();
+    }
+
+    private AdminGlobalSearchResponse search(AuthResponse auth, String url, Object... uriVariables) {
+        ResponseEntity<AdminGlobalSearchResponse> response = restTemplate.exchange(
+                url,
+                HttpMethod.GET,
+                authorizedEntity(auth),
+                AdminGlobalSearchResponse.class,
+                uriVariables
+        );
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getGroups()).isNotNull();
+        return response.getBody();
+    }
+
+    private SearchResultGroupResponse group(AdminGlobalSearchResponse response, String type) {
+        return response.getGroups().stream()
+                .filter(group -> type.equals(group.getType()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected search group " + type));
     }
 
     private RiskEventResponse createPendingRisk(long userId, TrainSearchResponse train, String passengerPrefix) {

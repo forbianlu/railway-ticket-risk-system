@@ -75,6 +75,7 @@
       </div>
       <nav class="nav" aria-label="主导航">
         <a href="#dashboard"><span class="nav-icon rail-icon"></span>运营看板</a>
+        <a href="#global-search"><span class="nav-icon query-icon"></span>综合查询</a>
         <a href="#search"><span class="nav-icon query-icon"></span>车次查询</a>
         <a href="#orders"><span class="nav-icon order-icon"></span>订单管理</a>
         <a href="#payments"><span class="nav-icon pay-icon"></span>支付流水</a>
@@ -188,6 +189,48 @@
             <div class="event-list compact-list rule-list" id="rate-limit-rules"></div>
           </div>
         </div>
+      </section>
+
+      <section id="global-search" class="section global-search-section">
+        <div class="section-title">
+          <p class="eyebrow">Global Lookup</p>
+          <h2>综合查询中心</h2>
+          <p>输入订单号、票号、支付/退款流水、乘车人、通知编号或事件关键字，快速定位业务记录并追踪订单链路。</p>
+        </div>
+        <div class="toolbar global-search-toolbar">
+          <label class="global-search-keyword">
+            查询关键词
+            <input id="global-search-keyword" type="text" placeholder="输入订单号 / 票号 / 支付流水 / 退款流水 / 乘车人 / 通知编号">
+          </label>
+          <label>
+            查询类型
+            <select id="global-search-types" multiple size="4">
+              <option value="ORDER">订单</option>
+              <option value="TICKET">电子票</option>
+              <option value="PAYMENT">支付</option>
+              <option value="REFUND">退款</option>
+              <option value="TRAVELER">乘车人</option>
+              <option value="RISK">风险</option>
+              <option value="OUTBOX">Outbox</option>
+              <option value="NOTIFICATION">通知</option>
+              <option value="OPERATION_LOG">日志</option>
+            </select>
+          </label>
+          <label>
+            每类上限
+            <input id="global-search-limit" type="number" min="1" max="20" value="5">
+          </label>
+          <label class="inline-check">
+            <input id="global-search-trace" type="checkbox">
+            返回链路摘要
+          </label>
+          <button id="run-global-search" class="primary-button" type="button">开始查询</button>
+          <button id="clear-global-search" class="secondary-button" type="button">清空</button>
+        </div>
+        <div class="global-search-meta">
+          <span id="global-search-info">请输入至少 2 个字符进行查询</span>
+        </div>
+        <div id="global-search-results" class="global-search-results"></div>
       </section>
 
       <section id="search" class="section">
