@@ -62,6 +62,7 @@ public class AuthInterceptor implements HandlerInterceptor {
                 || uri.startsWith("/api/risks")
                 || uri.startsWith("/api/logs")
                 || uri.startsWith("/api/notifications")
+                || uri.startsWith("/api/ticket-changes")
                 || uri.startsWith("/api/search")
                 || uri.startsWith("/api/outbox-events")
                 || uri.startsWith("/api/cache")

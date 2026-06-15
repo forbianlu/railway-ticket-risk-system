@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>乘客购票服务 - 铁路客运票务与风控运营平台</title>
-  <link rel="stylesheet" href="./styles.css?v=20260616-ticket-detail">
+  <link rel="stylesheet" href="./styles.css?v=20260616-ticket-change">
 </head>
 <body class="passenger-page passenger-consumer-page">
   <section class="passenger-login passenger-gateway" aria-label="乘客登录">
@@ -74,6 +74,8 @@
         <a href="#passenger-summary">行程</a>
         <a href="#passenger-travelers">乘车人</a>
         <a href="#passenger-orders">订单</a>
+        <a href="#passenger-transactions">状态</a>
+        <a href="#passenger-changes">改签</a>
         <a href="#passenger-tickets">车票</a>
         <a href="#passenger-payments">支付</a>
         <a href="#passenger-refunds">退款</a>
@@ -188,6 +190,38 @@
         </div>
       </section>
 
+      <section id="passenger-transactions" class="passenger-section passenger-transaction-section">
+        <div class="passenger-section-head">
+          <div>
+            <p class="eyebrow">Transaction Center</p>
+            <h2>交易状态中心</h2>
+            <p>集中查看待支付、有效车票、改签、退款和未读提醒，帮助你判断下一步该做什么。</p>
+          </div>
+          <button id="passenger-refresh-transactions" class="secondary-button" type="button">刷新状态</button>
+        </div>
+        <div id="passenger-transaction-stats" class="transaction-status-grid"></div>
+        <div class="transaction-flow-board">
+          <article>
+            <div class="panel-head">
+              <div>
+                <h3>最近订单动态</h3>
+                <p>订单、支付、退票会同步影响电子票和流水。</p>
+              </div>
+            </div>
+            <div id="passenger-transaction-orders" class="event-list compact-list"></div>
+          </article>
+          <article>
+            <div class="panel-head">
+              <div>
+                <h3>最近改签动态</h3>
+                <p>查看原订单、新订单和补退差价状态。</p>
+              </div>
+            </div>
+            <div id="passenger-transaction-changes" class="event-list compact-list"></div>
+          </article>
+        </div>
+      </section>
+
       <section id="passenger-travelers" class="passenger-section passenger-traveler-section">
         <div class="passenger-section-head">
           <div>
@@ -264,6 +298,37 @@
           <div class="inline-actions">
             <button id="passenger-prev-orders" class="secondary-button compact-button" type="button">上一页</button>
             <button id="passenger-next-orders" class="secondary-button compact-button" type="button">下一页</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="passenger-changes" class="passenger-section passenger-change-section">
+        <div class="passenger-section-head">
+          <div>
+            <p class="eyebrow">Ticket Change</p>
+            <h2>我的改签</h2>
+            <p>追踪原票失效、新票生成、补差支付和差额退款。</p>
+          </div>
+          <button id="passenger-load-changes" class="secondary-button" type="button">刷新改签</button>
+        </div>
+        <div class="passenger-filter-bar">
+          <label>
+            改签状态
+            <select id="passenger-change-status">
+              <option value="">全部改签</option>
+              <option value="PENDING_PAYMENT">待支付</option>
+              <option value="SUCCESS">改签成功</option>
+              <option value="FAILED">改签失败</option>
+              <option value="CANCELLED">已取消</option>
+            </select>
+          </label>
+        </div>
+        <div id="passenger-change-results" class="passenger-record-list passenger-change-list"></div>
+        <div class="pagination">
+          <span id="passenger-change-page-info">第 1 / 1 页，共 0 条</span>
+          <div class="inline-actions">
+            <button id="passenger-prev-changes" class="secondary-button compact-button" type="button">上一页</button>
+            <button id="passenger-next-changes" class="secondary-button compact-button" type="button">下一页</button>
           </div>
         </div>
       </section>
@@ -448,7 +513,40 @@
     </div>
   </div>
 
+  <div id="passenger-change-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="purchase-modal passenger-change-modal" role="dialog" aria-modal="true" aria-labelledby="passenger-change-modal-title">
+      <button id="passenger-change-modal-close" class="modal-close" type="button" aria-label="关闭改签弹窗"></button>
+      <div class="modal-head">
+        <p class="eyebrow">Ticket Change</p>
+        <h2 id="passenger-change-modal-title">选择新的车次</h2>
+        <p>改签会锁定新车次库存。若新票更贵，需要完成新票支付；若新票更便宜，系统会生成差额退款流水。</p>
+      </div>
+      <div id="passenger-change-summary" class="buy-summary"></div>
+      <form id="passenger-change-form" class="buy-form">
+        <div class="form-grid">
+          <label>
+            新乘车日期
+            <input id="passenger-change-date" type="date">
+          </label>
+          <label>
+            改签原因
+            <input id="passenger-change-reason" type="text" maxlength="120" placeholder="例如：行程调整">
+          </label>
+        </div>
+        <div class="inline-actions">
+          <button id="passenger-change-load-trains" class="secondary-button" type="button">加载可改签车次</button>
+        </div>
+        <div id="passenger-change-candidates" class="change-candidate-list"></div>
+        <div id="passenger-change-error" class="form-error" aria-live="polite"></div>
+        <div class="modal-actions">
+          <button id="passenger-change-cancel" class="ghost-button" type="button">取消</button>
+          <button id="passenger-change-confirm" class="primary-button" type="submit">提交改签</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="passenger-toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./passenger.js?v=20260616-ticket-detail"></script>
+  <script src="./passenger.js?v=20260616-ticket-change"></script>
 </body>
 </html>

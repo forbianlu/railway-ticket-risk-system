@@ -22,18 +22,23 @@ import com.example.railway.dto.NotificationSummaryResponse;
 import com.example.railway.dto.OrderDetailResponse;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
+import com.example.railway.dto.PassengerChangeTicketRequest;
 import com.example.railway.dto.PassengerCreateOrderRequest;
 import com.example.railway.dto.PassengerSummaryResponse;
+import com.example.railway.dto.PassengerTransactionSummaryResponse;
 import com.example.railway.dto.PassengerTravelerRequest;
 import com.example.railway.dto.PassengerTravelerResponse;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.RefundPageResponse;
+import com.example.railway.dto.TicketChangePageResponse;
+import com.example.railway.dto.TicketChangeResponse;
 import com.example.railway.dto.TicketPageResponse;
 import com.example.railway.security.AuthContext;
 import com.example.railway.security.RequiredRole;
 import com.example.railway.service.NotificationService;
 import com.example.railway.service.PassengerService;
 import com.example.railway.service.RateLimitService;
+import com.example.railway.service.TicketChangeService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -47,13 +52,16 @@ public class PassengerController {
     private final PassengerService passengerService;
     private final RateLimitService rateLimitService;
     private final NotificationService notificationService;
+    private final TicketChangeService ticketChangeService;
 
     public PassengerController(PassengerService passengerService,
                                RateLimitService rateLimitService,
-                               NotificationService notificationService) {
+                               NotificationService notificationService,
+                               TicketChangeService ticketChangeService) {
         this.passengerService = passengerService;
         this.rateLimitService = rateLimitService;
         this.notificationService = notificationService;
+        this.ticketChangeService = ticketChangeService;
     }
 
     @Operation(summary = "Query current passenger summary")
@@ -142,6 +150,39 @@ public class PassengerController {
     @PostMapping("/orders/{id}/refund")
     public OrderResponse refund(@PathVariable("id") Long orderId) {
         return passengerService.refundOrder(orderId);
+    }
+
+    @Operation(summary = "Create ticket change request for my paid order")
+    @PostMapping("/orders/{id}/change")
+    public TicketChangeResponse changeTicket(@PathVariable("id") Long orderId,
+                                             @Valid @RequestBody PassengerChangeTicketRequest request) {
+        return passengerService.changeTicket(orderId, request);
+    }
+
+    @Operation(summary = "Pay my pending ticket change")
+    @PostMapping("/changes/{id}/pay")
+    public TicketChangeResponse payChange(@PathVariable("id") Long changeId) {
+        return passengerService.payChange(changeId);
+    }
+
+    @Operation(summary = "Query my ticket changes")
+    @GetMapping("/changes")
+    public TicketChangePageResponse changes(@RequestParam(value = "status", required = false) String status,
+                                            @RequestParam(value = "page", required = false) Integer page,
+                                            @RequestParam(value = "size", required = false) Integer size) {
+        return passengerService.listChanges(status, page, size);
+    }
+
+    @Operation(summary = "Query my ticket change detail")
+    @GetMapping("/changes/{id}")
+    public TicketChangeResponse changeDetail(@PathVariable("id") Long changeId) {
+        return passengerService.changeDetail(changeId);
+    }
+
+    @Operation(summary = "Query my transaction status center")
+    @GetMapping("/transactions/summary")
+    public PassengerTransactionSummaryResponse transactionSummary() {
+        return ticketChangeService.passengerTransactionSummary(AuthContext.current().getUserId());
     }
 
     @Operation(summary = "Query my payment records")

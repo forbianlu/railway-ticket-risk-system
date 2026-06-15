@@ -24,6 +24,7 @@ import com.example.railway.dto.CreatePaymentRequest;
 import com.example.railway.dto.OrderDetailResponse;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
+import com.example.railway.dto.PassengerChangeTicketRequest;
 import com.example.railway.dto.PassengerCreateOrderRequest;
 import com.example.railway.dto.PassengerSummaryResponse;
 import com.example.railway.dto.PassengerTravelerRequest;
@@ -31,6 +32,8 @@ import com.example.railway.dto.PassengerTravelerResponse;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
 import com.example.railway.dto.RefundPageResponse;
+import com.example.railway.dto.TicketChangePageResponse;
+import com.example.railway.dto.TicketChangeResponse;
 import com.example.railway.dto.TicketPageResponse;
 import com.example.railway.repository.PassengerTravelerRepository;
 import com.example.railway.repository.PaymentRecordRepository;
@@ -57,6 +60,7 @@ public class PassengerService {
     private final RefundService refundService;
     private final OrderDetailService orderDetailService;
     private final PassengerTravelerRepository passengerTravelerRepository;
+    private final TicketChangeService ticketChangeService;
 
     public PassengerService(TicketOrderRepository ticketOrderRepository,
                             TicketRecordRepository ticketRecordRepository,
@@ -66,7 +70,8 @@ public class PassengerService {
                             PaymentService paymentService,
                             RefundService refundService,
                             OrderDetailService orderDetailService,
-                            PassengerTravelerRepository passengerTravelerRepository) {
+                            PassengerTravelerRepository passengerTravelerRepository,
+                            TicketChangeService ticketChangeService) {
         this.ticketOrderRepository = ticketOrderRepository;
         this.ticketRecordRepository = ticketRecordRepository;
         this.paymentRecordRepository = paymentRecordRepository;
@@ -76,6 +81,7 @@ public class PassengerService {
         this.refundService = refundService;
         this.orderDetailService = orderDetailService;
         this.passengerTravelerRepository = passengerTravelerRepository;
+        this.ticketChangeService = ticketChangeService;
     }
 
     @Transactional(readOnly = true)
@@ -208,6 +214,7 @@ public class PassengerService {
                 "CH_PASS_" + payment.getPaymentNo(),
                 "passenger mock payment success"
         ));
+        ticketChangeService.completeChangeIfNewOrderPaid(orderId);
         return OrderResponse.from(ticketOrderRepository.findById(orderId)
                 .orElseThrow(() -> new BusinessException("Order not found")));
     }
@@ -232,6 +239,26 @@ public class PassengerService {
     @Transactional(readOnly = true)
     public RefundPageResponse listRefunds(String status, Integer page, Integer size) {
         return refundService.listRefundsForUser(currentUserId(), status, page, size);
+    }
+
+    @Transactional
+    public TicketChangeResponse changeTicket(Long orderId, PassengerChangeTicketRequest request) {
+        return ticketChangeService.createPassengerChange(orderId, currentUserId(), request);
+    }
+
+    @Transactional
+    public TicketChangeResponse payChange(Long changeId) {
+        return ticketChangeService.payPassengerChange(changeId, currentUserId());
+    }
+
+    @Transactional(readOnly = true)
+    public TicketChangePageResponse listChanges(String status, Integer page, Integer size) {
+        return ticketChangeService.listPassengerChanges(currentUserId(), status, page, size);
+    }
+
+    @Transactional(readOnly = true)
+    public TicketChangeResponse changeDetail(Long changeId) {
+        return ticketChangeService.passengerChangeDetail(changeId, currentUserId());
     }
 
     private TicketOrder ownedOrder(Long orderId, Long userId) {

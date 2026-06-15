@@ -9,6 +9,7 @@ public class OrderDetailResponse {
     private TicketResponse ticket;
     private List<PaymentResponse> payments = new ArrayList<PaymentResponse>();
     private List<RefundResponse> refunds = new ArrayList<RefundResponse>();
+    private List<TicketChangeResponse> ticketChanges = new ArrayList<TicketChangeResponse>();
     private List<RiskEventResponse> risks = new ArrayList<RiskEventResponse>();
     private List<OutboxEventResponse> outboxEvents = new ArrayList<OutboxEventResponse>();
     private List<OperationLogItemResponse> operationLogs = new ArrayList<OperationLogItemResponse>();
@@ -43,6 +44,14 @@ public class OrderDetailResponse {
 
     public void setRefunds(List<RefundResponse> refunds) {
         this.refunds = refunds;
+    }
+
+    public List<TicketChangeResponse> getTicketChanges() {
+        return ticketChanges;
+    }
+
+    public void setTicketChanges(List<TicketChangeResponse> ticketChanges) {
+        this.ticketChanges = ticketChanges;
     }
 
     public List<RiskEventResponse> getRisks() {

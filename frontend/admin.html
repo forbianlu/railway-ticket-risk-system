@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>铁路客运票务与风控运营管理端</title>
-  <link rel="stylesheet" href="./styles.css?v=20260616-ticket-detail">
+  <link rel="stylesheet" href="./styles.css?v=20260616-ticket-change">
 </head>
 <body>
   <section class="login-screen" aria-label="系统登录">
@@ -83,6 +83,7 @@
         <a href="#orders"><span class="nav-icon order-icon"></span>订单管理</a>
         <a href="#payments"><span class="nav-icon pay-icon"></span>支付流水</a>
         <a href="#refunds"><span class="nav-icon refund-icon"></span>退款流水</a>
+        <a href="#ticket-changes"><span class="nav-icon event-icon"></span>改签追踪</a>
         <a href="#risks"><span class="nav-icon risk-icon"></span>风险事件</a>
         <a href="#outbox"><span class="nav-icon event-icon"></span>事件中心</a>
         <a href="#notifications"><span class="nav-icon event-icon"></span>通知中心</a>
@@ -450,6 +451,61 @@
         </div>
       </section>
 
+      <section id="ticket-changes" class="section">
+        <div class="section-title">
+          <p class="eyebrow">Ticket Change Tracking</p>
+          <h2>改签追踪</h2>
+          <p>查看乘客改签申请、原订单与新订单关系、补差支付和差额退款状态。</p>
+        </div>
+        <div class="toolbar ticket-change-toolbar">
+          <label>
+            改签状态
+            <select id="ticket-change-status">
+              <option value="">全部状态</option>
+              <option value="PENDING_PAYMENT">待补差支付</option>
+              <option value="SUCCESS">改签成功</option>
+              <option value="FAILED">改签失败</option>
+              <option value="CANCELLED">已取消</option>
+            </select>
+          </label>
+          <label>
+            改签单号
+            <input id="ticket-change-no" type="text" placeholder="支持模糊查询">
+          </label>
+          <label>
+            用户 ID
+            <input id="ticket-change-user-id" type="number" min="1" placeholder="全部用户">
+          </label>
+          <button id="load-ticket-changes" class="secondary-button" type="button">查询改签</button>
+          <button id="reset-ticket-changes" class="ghost-button" type="button">重置</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>改签单号</th>
+                <th>用户</th>
+                <th>原订单</th>
+                <th>新订单</th>
+                <th>差额</th>
+                <th>状态</th>
+                <th>创建时间</th>
+                <th>完成时间</th>
+                <th>原因 / 失败原因</th>
+              </tr>
+            </thead>
+            <tbody id="ticket-change-results"></tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="ticket-change-page-info">第 1 / 1 页，共 0 条</span>
+          <div class="inline-actions">
+            <button id="prev-ticket-changes" class="secondary-button compact-button" type="button">上一页</button>
+            <button id="next-ticket-changes" class="secondary-button compact-button" type="button">下一页</button>
+          </div>
+        </div>
+      </section>
+
       <section id="risks" class="section split">
         <div>
           <div class="section-title">
@@ -723,6 +779,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./app.js?v=20260616-ticket-detail"></script>
+  <script src="./app.js?v=20260616-ticket-change"></script>
 </body>
 </html>

@@ -24,6 +24,7 @@ import com.example.railway.domain.NotificationType;
 import com.example.railway.domain.PaymentRecord;
 import com.example.railway.domain.RefundRecord;
 import com.example.railway.domain.TicketOrder;
+import com.example.railway.domain.TicketChangeRecord;
 import com.example.railway.domain.TicketRecord;
 import com.example.railway.dto.NotificationPageResponse;
 import com.example.railway.dto.NotificationResponse;
@@ -151,6 +152,66 @@ public class NotificationService {
                 null,
                 refund.getPaymentNo(),
                 refund.getRefundNo());
+    }
+
+    public void notifyTicketChangeCreated(TicketChangeRecord change) {
+        createSafely(NotificationType.TICKET_CHANGE_CREATED,
+                "TICKET_CHANGE",
+                change.getChangeNo(),
+                change.getUserId(),
+                "Ticket change submitted",
+                "Ticket change " + change.getChangeNo() + " has been submitted from "
+                        + change.getOriginalTrainNo() + " to " + change.getNewTrainNo() + ".",
+                change.getOriginalOrderId(),
+                change.getOriginalOrderNo(),
+                change.getOriginalTicketNo(),
+                null,
+                null);
+    }
+
+    public void notifyTicketChangePendingPayment(TicketChangeRecord change) {
+        createSafely(NotificationType.TICKET_CHANGE_PENDING_PAYMENT,
+                "TICKET_CHANGE",
+                change.getChangeNo() + "-PAY",
+                change.getUserId(),
+                "Ticket change payment required",
+                "Ticket change " + change.getChangeNo() + " requires payment for the new ticket. New amount "
+                        + change.getNewAmount() + ".",
+                change.getNewOrderId(),
+                change.getNewOrderNo(),
+                change.getNewTicketNo(),
+                null,
+                null);
+    }
+
+    public void notifyTicketChangeSucceeded(TicketChangeRecord change) {
+        createSafely(NotificationType.TICKET_CHANGE_SUCCEEDED,
+                "TICKET_CHANGE",
+                change.getChangeNo() + "-DONE",
+                change.getUserId(),
+                "Ticket change completed",
+                "Ticket change " + change.getChangeNo() + " completed. New train "
+                        + change.getNewTrainNo() + ", new order " + change.getNewOrderNo() + ".",
+                change.getNewOrderId(),
+                change.getNewOrderNo(),
+                change.getNewTicketNo(),
+                null,
+                null);
+    }
+
+    public void notifyTicketChangeFailed(TicketChangeRecord change) {
+        createSafely(NotificationType.TICKET_CHANGE_FAILED,
+                "TICKET_CHANGE",
+                change.getChangeNo() + "-FAILED",
+                change.getUserId(),
+                "Ticket change failed",
+                "Ticket change " + change.getChangeNo() + " failed. "
+                        + normalizeText(change.getFailureReason(), "Please try again or choose another train."),
+                change.getOriginalOrderId(),
+                change.getOriginalOrderNo(),
+                change.getOriginalTicketNo(),
+                null,
+                null);
     }
 
     @Transactional

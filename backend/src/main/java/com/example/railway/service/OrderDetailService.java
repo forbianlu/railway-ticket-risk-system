@@ -40,6 +40,7 @@ public class OrderDetailService {
     private final OutboxEventRepository outboxEventRepository;
     private final OperationLogRepository operationLogRepository;
     private final TicketService ticketService;
+    private final TicketChangeService ticketChangeService;
 
     public OrderDetailService(TicketOrderRepository ticketOrderRepository,
                               PaymentRecordRepository paymentRecordRepository,
@@ -47,7 +48,8 @@ public class OrderDetailService {
                               RiskEventRepository riskEventRepository,
                               OutboxEventRepository outboxEventRepository,
                               OperationLogRepository operationLogRepository,
-                              TicketService ticketService) {
+                              TicketService ticketService,
+                              TicketChangeService ticketChangeService) {
         this.ticketOrderRepository = ticketOrderRepository;
         this.paymentRecordRepository = paymentRecordRepository;
         this.refundRecordRepository = refundRecordRepository;
@@ -55,6 +57,7 @@ public class OrderDetailService {
         this.outboxEventRepository = outboxEventRepository;
         this.operationLogRepository = operationLogRepository;
         this.ticketService = ticketService;
+        this.ticketChangeService = ticketChangeService;
     }
 
     @Transactional(readOnly = true)
@@ -113,6 +116,7 @@ public class OrderDetailService {
         response.setTicket(TicketResponse.from(ticketService.findByOrderId(order.getId())));
         response.setPayments(toPaymentResponses(paymentRecordRepository.findByOrderIdOrderByCreatedAtDesc(order.getId())));
         response.setRefunds(toRefundResponses(refundRecordRepository.findByOrderIdOrderByCreatedAtDesc(order.getId())));
+        response.setTicketChanges(ticketChangeService.findOrderChanges(order.getId()));
         return response;
     }
 

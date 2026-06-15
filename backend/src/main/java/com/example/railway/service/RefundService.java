@@ -109,6 +109,44 @@ public class RefundService {
     }
 
     @Transactional
+    public RefundResponse createForTicketChange(TicketOrder order, java.math.BigDecimal amount, String requestId) {
+        if (amount == null || amount.compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+        String normalizedRequestId = normalizeText(requestId);
+        RefundRecord existing = normalizedRequestId == null ? null : refundRecordRepository.findByRequestId(normalizedRequestId).orElse(null);
+        if (existing != null) {
+            return RefundResponse.from(existing);
+        }
+        PaymentRecord payment = paymentRecordRepository
+                .findFirstByOrderIdAndStatusOrderByCreatedAtDesc(order.getId(), PaymentStatus.SUCCESS)
+                .orElse(null);
+        LocalDateTime now = LocalDateTime.now();
+        RefundRecord refund = new RefundRecord();
+        refund.setRefundNo(generateRefundNo());
+        refund.setPaymentNo(payment == null ? null : payment.getPaymentNo());
+        refund.setOrderId(order.getId());
+        refund.setOrderNo(order.getOrderNo());
+        refund.setUserId(order.getUserId());
+        refund.setAmount(amount);
+        refund.setStatus(RefundStatus.PENDING);
+        refund.setChannel(MOCK_CHANNEL);
+        refund.setRequestId(normalizedRequestId);
+        refund.setCreatedAt(now);
+        refund.setUpdatedAt(now);
+        RefundRecord saved = refundRecordRepository.save(refund);
+        operationLogService.record(
+                "USER-" + order.getUserId(),
+                "CREATE_CHANGE_REFUND",
+                "REFUND",
+                saved.getRefundNo(),
+                "Ticket change refund created for order " + order.getOrderNo()
+        );
+        publishRefundEvent(OutboxEventTypes.REFUND_CREATED, saved);
+        return RefundResponse.from(saved);
+    }
+
+    @Transactional
     public RefundResponse handleCallback(RefundCallbackRequest request) {
         String callbackRequestId = normalizeText(request.getCallbackRequestId());
         RefundRecord existingCallback = refundRecordRepository.findByCallbackRequestId(callbackRequestId).orElse(null);

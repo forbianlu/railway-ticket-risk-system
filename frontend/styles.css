@@ -2904,11 +2904,211 @@ body.passenger-consumer-page {
   gap: 8px;
 }
 
+.transaction-status-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.transaction-stat-card {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(15, 107, 87, 0.14);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(239, 253, 249, 0.78));
+  color: var(--ink-strong);
+  text-align: left;
+  box-shadow: 0 12px 30px rgba(15, 107, 87, 0.06);
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.transaction-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(15, 107, 87, 0.28);
+  box-shadow: 0 18px 36px rgba(15, 107, 87, 0.10);
+}
+
+.transaction-stat-card span {
+  color: #62736e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.transaction-stat-card strong {
+  color: #0f332d;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.transaction-flow-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.transaction-flow-board > article,
+.ticket-change-card {
+  border: 1px solid rgba(100, 116, 139, 0.14);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 16px 36px rgba(22, 49, 44, 0.06);
+}
+
+.transaction-flow-board > article {
+  padding: 16px;
+}
+
+.change-mini-card {
+  border-color: rgba(15, 107, 87, 0.12);
+}
+
+.passenger-change-list {
+  display: grid;
+  gap: 12px;
+}
+
+.ticket-change-card {
+  padding: 16px;
+}
+
+.ticket-change-card.pending {
+  border-color: rgba(234, 179, 8, 0.30);
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.72), rgba(255, 255, 255, 0.96));
+}
+
+.ticket-change-card.issued,
+.ticket-change-card.success {
+  border-color: rgba(15, 107, 87, 0.24);
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.74), rgba(255, 255, 255, 0.96));
+}
+
+.ticket-change-card.closed,
+.ticket-change-card.failed {
+  border-color: rgba(100, 116, 139, 0.22);
+  background: rgba(248, 250, 252, 0.92);
+}
+
+.change-route-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.84);
+}
+
+.change-route-panel span,
+.change-route-panel small {
+  display: block;
+  color: #64716d;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.change-route-panel strong {
+  display: block;
+  margin: 4px 0;
+  color: #143b34;
+  overflow-wrap: anywhere;
+}
+
+.change-arrow {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #0f8f75;
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.passenger-change-modal {
+  max-width: 760px;
+}
+
+.change-candidate-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-height: min(360px, 48vh);
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.change-candidate-card {
+  display: grid;
+  gap: 9px;
+  padding: 13px;
+  border: 1px solid rgba(100, 116, 139, 0.16);
+  border-radius: 18px;
+  background: #ffffff;
+  color: #143b34;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(22, 49, 44, 0.055);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.change-candidate-card:hover,
+.change-candidate-card.selected {
+  transform: translateY(-2px);
+  border-color: rgba(15, 143, 117, 0.38);
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.80), #ffffff);
+  box-shadow: 0 16px 30px rgba(15, 107, 87, 0.10);
+}
+
+.change-route,
+.change-candidate-price {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.change-route strong {
+  flex: 0 0 auto;
+  color: #0f6b57;
+  font-size: 16px;
+}
+
+.change-route span,
+.change-candidate-meta span,
+.change-candidate-price span {
+  min-width: 0;
+  color: #64716d;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.change-candidate-meta {
+  display: grid;
+  gap: 5px;
+}
+
+.change-candidate-price strong {
+  color: #123a32;
+  font-size: 18px;
+}
+
 .notification-toolbar {
   grid-template-columns: repeat(4, minmax(140px, 1fr)) auto;
 }
 
 @media (max-width: 860px) {
+  .transaction-status-grid,
+  .transaction-flow-board,
+  .change-candidate-list {
+    grid-template-columns: 1fr;
+  }
+
   .notification-summary-grid,
   .notification-toolbar {
     grid-template-columns: 1fr;

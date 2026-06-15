@@ -52,6 +52,7 @@ import com.example.railway.domain.SeatInventory;
 import com.example.railway.domain.Station;
 import com.example.railway.domain.TicketOrder;
 import com.example.railway.domain.TicketRecord;
+import com.example.railway.domain.TicketChangeRecord;
 import com.example.railway.domain.TicketStatus;
 import com.example.railway.domain.Train;
 import com.example.railway.dto.AuthResponse;
@@ -72,7 +73,9 @@ import com.example.railway.dto.OutboxEventResponse;
 import com.example.railway.dto.OutboxEventSummaryResponse;
 import com.example.railway.dto.OutboxRetryResponse;
 import com.example.railway.dto.PassengerCreateOrderRequest;
+import com.example.railway.dto.PassengerChangeTicketRequest;
 import com.example.railway.dto.PassengerSummaryResponse;
+import com.example.railway.dto.PassengerTransactionSummaryResponse;
 import com.example.railway.dto.PassengerTravelerRequest;
 import com.example.railway.dto.PassengerTravelerResponse;
 import com.example.railway.dto.PaymentCallbackRequest;
@@ -90,6 +93,8 @@ import com.example.railway.dto.SearchResultGroupResponse;
 import com.example.railway.dto.SearchResultItemResponse;
 import com.example.railway.dto.RiskSummaryResponse;
 import com.example.railway.dto.TicketPageResponse;
+import com.example.railway.dto.TicketChangePageResponse;
+import com.example.railway.dto.TicketChangeResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
 import com.example.railway.repository.AppUserRepository;
@@ -103,6 +108,7 @@ import com.example.railway.repository.SeatInventoryRepository;
 import com.example.railway.repository.StationRepository;
 import com.example.railway.repository.TicketOrderRepository;
 import com.example.railway.repository.TicketRecordRepository;
+import com.example.railway.repository.TicketChangeRecordRepository;
 import com.example.railway.repository.TrainRepository;
 import com.example.railway.service.CallbackSignatureService;
 import com.example.railway.service.outbox.OutboxEventDispatcher;
@@ -132,6 +138,9 @@ class RailwayApiIntegrationTests {
 
     @Autowired
     private TicketRecordRepository ticketRecordRepository;
+
+    @Autowired
+    private TicketChangeRecordRepository ticketChangeRecordRepository;
 
     @Autowired
     private AppUserRepository appUserRepository;
@@ -647,6 +656,157 @@ class RailwayApiIntegrationTests {
                 pending.getId()
         );
         assertThat(otherDetail.getStatusCodeValue()).isEqualTo(403);
+    }
+
+    @Test
+    void shouldChangePassengerTicketAndExposeTrackingToAdmin() {
+        AuthResponse passenger = login("passenger1", "123456");
+        AuthResponse otherPassenger = login("passenger2", "123456");
+        AuthResponse admin = login("admin", "admin123");
+        TrainSearchResponse oldTrain = createTicketChangeInventory(new BigDecimal("80.00"), "OLD");
+        TrainSearchResponse newTrain = createTicketChangeInventory(new BigDecimal("120.00"), "NEW");
+
+        OrderResponse pending = createPassengerOrder(passenger, oldTrain, "PassengerChangeUser");
+        ResponseEntity<OrderResponse> paidResponse = restTemplate.exchange(
+                "/api/passenger/orders/{id}/pay",
+                HttpMethod.POST,
+                authorizedEntity(passenger),
+                OrderResponse.class,
+                pending.getId()
+        );
+        assertThat(paidResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(paidResponse.getBody()).isNotNull();
+        assertThat(paidResponse.getBody().getStatus()).isEqualTo("PAID");
+
+        PassengerChangeTicketRequest request = new PassengerChangeTicketRequest();
+        request.setTrainId(newTrain.getTrainId());
+        request.setInventoryId(newTrain.getInventoryId());
+        request.setRequestId("ticket-change-" + System.nanoTime());
+        request.setReason("schedule changed");
+
+        ResponseEntity<TicketChangeResponse> createdResponse = restTemplate.exchange(
+                "/api/passenger/orders/{id}/change",
+                HttpMethod.POST,
+                authorizedEntity(passenger, request),
+                TicketChangeResponse.class,
+                pending.getId()
+        );
+        assertThat(createdResponse.getStatusCodeValue()).isEqualTo(200);
+        TicketChangeResponse created = createdResponse.getBody();
+        assertThat(created).isNotNull();
+        assertThat(created.getStatus()).isEqualTo("PENDING_PAYMENT");
+        assertThat(created.getOriginalOrderId()).isEqualTo(pending.getId());
+        assertThat(created.getNewOrderId()).isNotNull();
+        assertThat(created.getPriceDifference()).isEqualByComparingTo("40.00");
+        assertThat(ticketOrderRepository.findById(pending.getId()).orElseThrow(() -> new AssertionError("expected order")).getStatus())
+                .isEqualTo(OrderStatus.PAID);
+
+        ResponseEntity<String> otherChangeResponse = restTemplate.exchange(
+                "/api/passenger/orders/{id}/change",
+                HttpMethod.POST,
+                authorizedEntity(otherPassenger, request),
+                String.class,
+                pending.getId()
+        );
+        assertThat(otherChangeResponse.getStatusCodeValue()).isEqualTo(403);
+
+        ResponseEntity<TicketChangePageResponse> passengerChanges = restTemplate.exchange(
+                "/api/passenger/changes?status=PENDING_PAYMENT&size=50",
+                HttpMethod.GET,
+                authorizedEntity(passenger),
+                TicketChangePageResponse.class
+        );
+        assertThat(passengerChanges.getStatusCodeValue()).isEqualTo(200);
+        assertThat(passengerChanges.getBody()).isNotNull();
+        assertThat(passengerChanges.getBody().getContent()).extracting(TicketChangeResponse::getChangeNo)
+                .contains(created.getChangeNo());
+
+        ResponseEntity<TicketChangePageResponse> adminChanges = restTemplate.exchange(
+                "/api/ticket-changes?changeNo={changeNo}",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                TicketChangePageResponse.class,
+                created.getChangeNo()
+        );
+        assertThat(adminChanges.getStatusCodeValue()).isEqualTo(200);
+        assertThat(adminChanges.getBody()).isNotNull();
+        assertThat(adminChanges.getBody().getContent()).extracting(TicketChangeResponse::getChangeNo)
+                .contains(created.getChangeNo());
+
+        ResponseEntity<String> userAdminAccess = restTemplate.exchange(
+                "/api/ticket-changes",
+                HttpMethod.GET,
+                authorizedEntity(passenger),
+                String.class
+        );
+        assertThat(userAdminAccess.getStatusCodeValue()).isEqualTo(403);
+
+        ResponseEntity<PassengerTransactionSummaryResponse> summaryResponse = restTemplate.exchange(
+                "/api/passenger/transactions/summary",
+                HttpMethod.GET,
+                authorizedEntity(passenger),
+                PassengerTransactionSummaryResponse.class
+        );
+        assertThat(summaryResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(summaryResponse.getBody()).isNotNull();
+        assertThat(summaryResponse.getBody().getPendingChangeCount()).isGreaterThanOrEqualTo(1);
+        assertThat(summaryResponse.getBody().getLatestChanges()).extracting(TicketChangeResponse::getChangeNo)
+                .contains(created.getChangeNo());
+
+        ResponseEntity<TicketChangeResponse> paidChangeResponse = restTemplate.exchange(
+                "/api/passenger/changes/{id}/pay",
+                HttpMethod.POST,
+                authorizedEntity(passenger),
+                TicketChangeResponse.class,
+                created.getId()
+        );
+        assertThat(paidChangeResponse.getStatusCodeValue()).isEqualTo(200);
+        TicketChangeResponse success = paidChangeResponse.getBody();
+        assertThat(success).isNotNull();
+        assertThat(success.getStatus()).isEqualTo("SUCCESS");
+        assertThat(success.getNewTicketNo()).isNotBlank();
+
+        TicketOrder originalOrder = ticketOrderRepository.findById(pending.getId())
+                .orElseThrow(() -> new AssertionError("expected original order"));
+        TicketOrder newOrder = ticketOrderRepository.findById(success.getNewOrderId())
+                .orElseThrow(() -> new AssertionError("expected new order"));
+        TicketRecord originalTicket = ticketRecordRepository.findByOrderId(originalOrder.getId())
+                .orElseThrow(() -> new AssertionError("expected original ticket"));
+        TicketRecord newTicket = ticketRecordRepository.findByOrderId(newOrder.getId())
+                .orElseThrow(() -> new AssertionError("expected new ticket"));
+
+        assertThat(originalOrder.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(newOrder.getStatus()).isEqualTo(OrderStatus.PAID);
+        assertThat(originalTicket.getStatus()).isEqualTo(TicketStatus.CANCELLED);
+        assertThat(newTicket.getStatus()).isEqualTo(TicketStatus.ISSUED);
+        assertThat(refundRecordRepository.findByOrderIdOrderByCreatedAtDesc(originalOrder.getId())).isNotEmpty();
+        assertThat(notificationRecordRepository.findAll()).extracting(NotificationRecord::getType)
+                .contains(NotificationType.TICKET_CHANGE_CREATED, NotificationType.TICKET_CHANGE_SUCCEEDED);
+        assertThat(outboxEventRepository.findAll()).extracting(OutboxEvent::getEventType)
+                .contains(OutboxEventTypes.TICKET_CHANGE_CREATED, OutboxEventTypes.TICKET_CHANGE_SUCCEEDED);
+
+        ResponseEntity<OrderDetailResponse> originalDetail = restTemplate.exchange(
+                "/api/passenger/orders/{id}/detail",
+                HttpMethod.GET,
+                authorizedEntity(passenger),
+                OrderDetailResponse.class,
+                originalOrder.getId()
+        );
+        ResponseEntity<OrderDetailResponse> newDetail = restTemplate.exchange(
+                "/api/orders/{id}/detail",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                OrderDetailResponse.class,
+                newOrder.getId()
+        );
+        assertThat(originalDetail.getStatusCodeValue()).isEqualTo(200);
+        assertThat(newDetail.getStatusCodeValue()).isEqualTo(200);
+        assertThat(originalDetail.getBody()).isNotNull();
+        assertThat(newDetail.getBody()).isNotNull();
+        assertThat(originalDetail.getBody().getTicketChanges()).extracting(TicketChangeResponse::getChangeNo)
+                .contains(created.getChangeNo());
+        assertThat(newDetail.getBody().getTicketChanges()).extracting(TicketChangeResponse::getChangeNo)
+                .contains(created.getChangeNo());
     }
 
     @Test
@@ -2342,6 +2502,30 @@ class RailwayApiIntegrationTests {
                 1,
                 new BigDecimal("88.00")
         ));
+    }
+
+    private TrainSearchResponse createTicketChangeInventory(BigDecimal price, String label) {
+        String suffix = Long.toString(System.nanoTime(), 36);
+        if (suffix.length() > 7) {
+            suffix = suffix.substring(suffix.length() - 7);
+        }
+        Station departure = stationRepository.save(new Station("TCF" + suffix + label.charAt(0), "改签测试始发" + label, "测试"));
+        Station arrival = stationRepository.save(new Station("TCT" + suffix + label.charAt(0), "改签测试到达" + label, "测试"));
+        Train train = trainRepository.save(new Train(
+                "TC" + label + suffix,
+                departure,
+                arrival,
+                LocalTime.of("OLD".equals(label) ? 8 : 10, 0),
+                LocalTime.of("OLD".equals(label) ? 9 : 11, 20)
+        ));
+        SeatInventory inventory = seatInventoryRepository.save(new SeatInventory(
+                train,
+                LocalDate.now().plusDays(10),
+                "SECOND_CLASS",
+                8,
+                price
+        ));
+        return TrainSearchResponse.from(inventory);
     }
 
     private AuthResponse login(String username, String password) {

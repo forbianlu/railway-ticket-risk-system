@@ -8,6 +8,9 @@ const passengerState = {
   travelers: [],
   travelerById: {},
   selectedTrain: null,
+  selectedChangeOrder: null,
+  selectedChangeTrain: null,
+  changeCandidates: [],
   authExpiredNotified: false,
   navObserver: null,
   scrollTicking: false,
@@ -17,6 +20,7 @@ const passengerState = {
   tickets: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
   payments: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
   refunds: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
+  changes: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
   notifications: { page: 0, size: 8, totalPages: 0, totalElements: 0, first: true, last: true },
 };
 
@@ -47,6 +51,10 @@ const elements = {
   metricRefunds: document.querySelector("#passenger-metric-refunds"),
   latestOrders: document.querySelector("#passenger-latest-orders"),
   upcomingTrips: document.querySelector("#passenger-upcoming-trips"),
+  refreshTransactions: document.querySelector("#passenger-refresh-transactions"),
+  transactionStats: document.querySelector("#passenger-transaction-stats"),
+  transactionOrders: document.querySelector("#passenger-transaction-orders"),
+  transactionChanges: document.querySelector("#passenger-transaction-changes"),
   searchForm: document.querySelector("#passenger-search-form"),
   fromStation: document.querySelector("#passenger-from-station"),
   toStation: document.querySelector("#passenger-to-station"),
@@ -92,6 +100,12 @@ const elements = {
   refundPageInfo: document.querySelector("#passenger-refund-page-info"),
   prevRefunds: document.querySelector("#passenger-prev-refunds"),
   nextRefunds: document.querySelector("#passenger-next-refunds"),
+  changeStatus: document.querySelector("#passenger-change-status"),
+  loadChanges: document.querySelector("#passenger-load-changes"),
+  changeResults: document.querySelector("#passenger-change-results"),
+  changePageInfo: document.querySelector("#passenger-change-page-info"),
+  prevChanges: document.querySelector("#passenger-prev-changes"),
+  nextChanges: document.querySelector("#passenger-next-changes"),
   navUnread: document.querySelector("#passenger-nav-unread"),
   notificationStatus: document.querySelector("#passenger-notification-status"),
   notificationTotal: document.querySelector("#passenger-notification-total"),
@@ -115,6 +129,17 @@ const elements = {
   buyPhone: document.querySelector("#passenger-buy-phone"),
   buyError: document.querySelector("#passenger-buy-error"),
   buyConfirm: document.querySelector("#passenger-buy-confirm"),
+  changeModal: document.querySelector("#passenger-change-modal"),
+  changeModalClose: document.querySelector("#passenger-change-modal-close"),
+  changeCancel: document.querySelector("#passenger-change-cancel"),
+  changeForm: document.querySelector("#passenger-change-form"),
+  changeSummary: document.querySelector("#passenger-change-summary"),
+  changeDate: document.querySelector("#passenger-change-date"),
+  changeReason: document.querySelector("#passenger-change-reason"),
+  changeLoadTrains: document.querySelector("#passenger-change-load-trains"),
+  changeCandidates: document.querySelector("#passenger-change-candidates"),
+  changeError: document.querySelector("#passenger-change-error"),
+  changeConfirm: document.querySelector("#passenger-change-confirm"),
   toast: document.querySelector("#passenger-toast"),
 };
 
@@ -124,6 +149,7 @@ elements.loginForm.addEventListener("submit", event => {
 });
 elements.logoutButton.addEventListener("click", logoutPassenger);
 elements.refreshPassenger.addEventListener("click", refreshPassengerData);
+elements.refreshTransactions.addEventListener("click", loadPassengerTransactionSummary);
 elements.searchForm.addEventListener("submit", event => {
   event.preventDefault();
   searchPassengerTrains();
@@ -176,6 +202,16 @@ elements.loadRefunds.addEventListener("click", () => {
 });
 elements.prevRefunds.addEventListener("click", () => changePassengerPage("refunds", -1));
 elements.nextRefunds.addEventListener("click", () => changePassengerPage("refunds", 1));
+elements.loadChanges.addEventListener("click", () => {
+  passengerState.changes.page = 0;
+  loadPassengerChanges();
+});
+elements.changeStatus.addEventListener("change", () => {
+  passengerState.changes.page = 0;
+  loadPassengerChanges();
+});
+elements.prevChanges.addEventListener("click", () => changePassengerPage("changes", -1));
+elements.nextChanges.addEventListener("click", () => changePassengerPage("changes", 1));
 elements.loadNotifications.addEventListener("click", () => {
   passengerState.notifications.page = 0;
   loadPassengerNotifications();
@@ -195,9 +231,24 @@ elements.buyModal.addEventListener("click", event => {
     closeBuyModal();
   }
 });
+elements.changeLoadTrains.addEventListener("click", loadChangeCandidates);
+elements.changeForm.addEventListener("submit", event => {
+  event.preventDefault();
+  submitTicketChange();
+});
+elements.changeCancel.addEventListener("click", closeChangeModal);
+elements.changeModalClose.addEventListener("click", closeChangeModal);
+elements.changeModal.addEventListener("click", event => {
+  if (event.target === elements.changeModal) {
+    closeChangeModal();
+  }
+});
 window.addEventListener("keydown", event => {
   if (event.key === "Escape" && elements.buyModal.classList.contains("show")) {
     closeBuyModal();
+  }
+  if (event.key === "Escape" && elements.changeModal.classList.contains("show")) {
+    closeChangeModal();
   }
 });
 
@@ -324,6 +375,8 @@ async function refreshPassengerData() {
     loadPassengerTickets(),
     loadPassengerPayments(),
     loadPassengerRefunds(),
+    loadPassengerChanges(),
+    loadPassengerTransactionSummary(),
     loadPassengerNotifications(),
     loadPassengerNotificationSummary(),
   ]);
@@ -348,6 +401,58 @@ async function loadPassengerSummary() {
   } catch (error) {
     showToast(error.message || "无法加载乘客概览");
   }
+}
+
+async function loadPassengerTransactionSummary() {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  try {
+    const summary = await passengerRequest("/passenger/transactions/summary");
+    renderPassengerTransactionSummary(summary);
+  } catch (error) {
+    elements.transactionStats.innerHTML = recordEmpty(error.message || "无法加载交易状态中心");
+    elements.transactionOrders.innerHTML = emptyItem("暂无订单动态");
+    elements.transactionChanges.innerHTML = emptyItem("暂无改签动态");
+  }
+}
+
+function renderPassengerTransactionSummary(summary) {
+  const stats = [
+    { label: "待支付订单", value: summary.pendingPaymentOrderCount || 0, target: "passenger-orders" },
+    { label: "有效电子票", value: summary.activeTicketCount || 0, target: "passenger-tickets" },
+    { label: "待处理改签", value: summary.pendingChangeCount || 0, target: "passenger-changes" },
+    { label: "退票车票", value: summary.refundedTicketCount || 0, target: "passenger-tickets" },
+    { label: "退款处理中", value: summary.pendingRefundCount || 0, target: "passenger-refunds" },
+    { label: "未读消息", value: summary.unreadNotificationCount || 0, target: "passenger-notifications" },
+  ];
+  elements.transactionStats.innerHTML = stats.map(item => `
+    <button class="transaction-stat-card clickable-card" type="button" data-transaction-target="${item.target}">
+      <span>${escapeHtml(item.label)}</span>
+      <strong>${item.value}</strong>
+    </button>
+  `).join("");
+  elements.transactionStats.querySelectorAll("[data-transaction-target]").forEach(button => {
+    button.addEventListener("click", () => activateSection(button.dataset.transactionTarget));
+  });
+  renderMiniOrders(elements.transactionOrders, summary.latestOrders || [], "暂无订单动态");
+  renderMiniChanges(elements.transactionChanges, summary.latestChanges || [], "暂无改签动态");
+}
+
+function renderMiniChanges(container, changes, emptyText) {
+  if (!changes.length) {
+    container.innerHTML = emptyItem(emptyText);
+    return;
+  }
+  container.innerHTML = changes.map(change => `
+    <article class="mini-order change-mini-card">
+      <div>
+        <strong>${escapeHtml(change.changeNo || "-")}</strong>
+        <span>${escapeHtml(change.originalTrainNo || "-")} → ${escapeHtml(change.newTrainNo || "-")} / ${changeStatusText(change.status)}</span>
+      </div>
+      <small>${formatDateTime(change.completedAt || change.createdAt) || "-"}</small>
+    </article>
+  `).join("");
 }
 
 function renderMiniOrders(container, orders, emptyText) {
@@ -845,6 +950,10 @@ function renderPassengerOrders(orders) {
   elements.orderCards.querySelectorAll("[data-refund-order]").forEach(button => {
     button.addEventListener("click", () => refundPassengerOrder(button.dataset.refundOrder));
   });
+  elements.orderCards.querySelectorAll("[data-change-order]").forEach(button => {
+    const order = orders.find(item => String(item.id) === String(button.dataset.changeOrder));
+    button.addEventListener("click", () => openChangeModal(order));
+  });
   elements.orderCards.querySelectorAll("[data-jump-refunds]").forEach(button => {
     button.addEventListener("click", () => {
       activateSection("passenger-refunds");
@@ -886,6 +995,7 @@ function showPassengerOrderDetail(detail) {
   const ticket = detail.ticket;
   const payments = detail.payments || [];
   const refunds = detail.refunds || [];
+  const ticketChanges = detail.ticketChanges || [];
   modal.querySelector(".order-detail-body").innerHTML = `
     <div class="detail-hero">
       <div>
@@ -925,6 +1035,15 @@ function showPassengerOrderDetail(detail) {
           <span>${refundStatusText(refund.status)} · ¥${formatAmount(refund.amount)} · ${formatDateTime(refund.refundedAt) || "-"}</span>
         </div>
       `, "暂无退款记录")}
+    </section>
+    <section class="detail-section">
+      <h3>改签记录</h3>
+      ${renderDetailRecords(ticketChanges, change => `
+        <div class="detail-record ticket-change-detail-record">
+          <strong>${escapeHtml(change.changeNo)}</strong>
+          <span>${escapeHtml(change.originalTrainNo || "-")} → ${escapeHtml(change.newTrainNo || "-")} · ${changeStatusText(change.status)} · 差额 ¥${formatAmount(change.priceDifference)}</span>
+        </div>
+      `, "暂无改签记录")}
     </section>
   `;
   bindOrderDetailActions(modal);
@@ -999,6 +1118,7 @@ function renderOrderDetailActions(order) {
     actions.push(`<button class="secondary-button compact-button" type="button" data-detail-close-order="${order.id}">取消订单</button>`);
   }
   if (order.status === "PAID") {
+    actions.push(`<button class="secondary-button compact-button" type="button" data-detail-change-order="${order.id}">申请改签</button>`);
     actions.push(`<button class="secondary-button compact-button danger-soft" type="button" data-detail-refund-order="${order.id}">申请退票</button>`);
   }
   actions.push(`<button class="secondary-button compact-button" type="button" data-detail-refresh-order="${order.id}">刷新详情</button>`);
@@ -1022,6 +1142,13 @@ function bindOrderDetailActions(modal) {
   });
   modal.querySelectorAll("[data-detail-refund-order]").forEach(button => {
     button.addEventListener("click", () => runOrderDetailAction(button.dataset.detailRefundOrder, "refund"));
+  });
+  modal.querySelectorAll("[data-detail-change-order]").forEach(button => {
+    button.addEventListener("click", () => {
+      const orderId = button.dataset.detailChangeOrder;
+      closeDetailModal(modal);
+      openChangeFromOrderId(orderId);
+    });
   });
   modal.querySelectorAll("[data-detail-refresh-order]").forEach(button => {
     button.addEventListener("click", () => openPassengerOrderDetail(button.dataset.detailRefreshOrder));
@@ -1187,7 +1314,10 @@ function renderOrderActions(order) {
     `;
   }
   if (order.status === "PAID") {
-    return `<button class="danger-button compact-button" type="button" data-refund-order="${order.id}">申请退票</button>`;
+    return `
+      <button class="secondary-button compact-button" type="button" data-change-order="${order.id}">申请改签</button>
+      <button class="danger-button compact-button" type="button" data-refund-order="${order.id}">申请退票</button>
+    `;
   }
   if (order.status === "REFUNDED") {
     return `<button class="secondary-button compact-button" type="button" data-jump-refunds>查看退款</button>`;
@@ -1264,6 +1394,8 @@ async function payPassengerOrder(orderId) {
     await refreshPassengerData();
     passengerState.tickets.page = 0;
     await loadPassengerTickets();
+    await loadPassengerChanges();
+    await loadPassengerTransactionSummary();
     activateSection("passenger-orders");
   } catch (error) {
     showToast(error.message || "支付失败");
@@ -1384,6 +1516,248 @@ function renderPassengerRefunds(refunds) {
   `).join("");
 }
 
+async function openChangeFromOrderId(orderId) {
+  try {
+    const detail = await passengerRequest(`/passenger/orders/${orderId}/detail`);
+    openChangeModal(detail.order || { id: orderId });
+  } catch (error) {
+    showToast(error.message || "无法打开改签窗口");
+  }
+}
+
+async function openChangeModal(order) {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  if (!order || !order.id) {
+    showToast("未找到可改签订单");
+    return;
+  }
+  passengerState.selectedChangeOrder = order;
+  passengerState.selectedChangeTrain = null;
+  passengerState.changeCandidates = [];
+  const date = formatDate(order.travelDate);
+  elements.changeDate.value = date && date !== "-" ? date : new Date().toISOString().slice(0, 10);
+  elements.changeReason.value = "";
+  elements.changeError.textContent = "";
+  elements.changeConfirm.disabled = true;
+  elements.changeConfirm.textContent = "提交改签";
+  elements.changeSummary.innerHTML = `
+    <div class="buy-route">
+      <strong>${escapeHtml(order.trainNo || "-")}</strong>
+      <span>原订单 ${escapeHtml(order.orderNo || "-")}</span>
+    </div>
+    <div class="buy-detail-grid">
+      <div><span>乘车日期</span><strong>${formatDate(order.travelDate)}</strong></div>
+      <div><span>席别</span><strong>${seatTypeText(order.seatType)}</strong></div>
+      <div><span>乘车人</span><strong>${escapeHtml(order.passengerName || "-")}</strong></div>
+      <div><span>原票金额</span><strong class="money">¥${formatAmount(order.amount)}</strong></div>
+    </div>
+  `;
+  elements.changeCandidates.innerHTML = recordEmpty("请选择日期后加载可改签车次");
+  elements.changeModal.classList.add("show");
+  elements.changeModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+  await loadChangeCandidates();
+}
+
+function closeChangeModal() {
+  elements.changeModal.classList.remove("show");
+  elements.changeModal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+  passengerState.selectedChangeOrder = null;
+  passengerState.selectedChangeTrain = null;
+  passengerState.changeCandidates = [];
+}
+
+async function loadChangeCandidates() {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  const order = passengerState.selectedChangeOrder;
+  if (!order) {
+    return;
+  }
+  try {
+    elements.changeCandidates.innerHTML = recordEmpty("正在加载可改签车次");
+    passengerState.selectedChangeTrain = null;
+    elements.changeConfirm.disabled = true;
+    const params = new URLSearchParams();
+    if (elements.changeDate.value) {
+      params.set("travelDate", elements.changeDate.value);
+    }
+    params.set("page", "0");
+    params.set("size", "40");
+    const trains = await passengerRequest(`/trains/available?${params.toString()}`);
+    passengerState.changeCandidates = (trains || []).filter(train => !(
+      String(train.trainNo) === String(order.trainNo)
+      && formatDate(train.travelDate) === formatDate(order.travelDate)
+      && String(train.seatType) === String(order.seatType)
+    ));
+    renderChangeCandidates(passengerState.changeCandidates);
+  } catch (error) {
+    elements.changeCandidates.innerHTML = recordEmpty(error.message || "无法加载可改签车次");
+  }
+}
+
+function renderChangeCandidates(candidates) {
+  if (!candidates.length) {
+    elements.changeCandidates.innerHTML = recordEmpty("当前日期暂无可改签车次，可调整日期后重试");
+    return;
+  }
+  const orderAmount = Number((passengerState.selectedChangeOrder && passengerState.selectedChangeOrder.amount) || 0);
+  elements.changeCandidates.innerHTML = candidates.slice(0, 12).map(train => {
+    const diff = Number(train.price || 0) - orderAmount;
+    const diffText = diff > 0 ? `补差 ¥${formatAmount(diff)}` : (diff < 0 ? `退差 ¥${formatAmount(Math.abs(diff))}` : "无需补差");
+    return `
+      <button class="change-candidate-card" type="button" data-change-inventory="${train.inventoryId}">
+        <div class="change-route">
+          <strong>${escapeHtml(train.trainNo)}</strong>
+          <span>${escapeHtml(train.departureStation)} → ${escapeHtml(train.arrivalStation)}</span>
+        </div>
+        <div class="change-candidate-meta">
+          <span>${formatDate(train.travelDate)} ${formatTime(train.departureTime)} - ${formatTime(train.arrivalTime)}</span>
+          <span>${seatTypeText(train.seatType)} · 余票 ${train.remainingSeats}</span>
+        </div>
+        <div class="change-candidate-price">
+          <strong>¥${formatAmount(train.price)}</strong>
+          <span>${diffText}</span>
+        </div>
+      </button>
+    `;
+  }).join("");
+  elements.changeCandidates.querySelectorAll("[data-change-inventory]").forEach(button => {
+    button.addEventListener("click", () => {
+      const train = passengerState.changeCandidates.find(item => String(item.inventoryId) === String(button.dataset.changeInventory));
+      passengerState.selectedChangeTrain = train || null;
+      elements.changeCandidates.querySelectorAll(".change-candidate-card").forEach(card => {
+        card.classList.toggle("selected", card === button);
+      });
+      elements.changeConfirm.disabled = !passengerState.selectedChangeTrain;
+    });
+  });
+}
+
+async function submitTicketChange() {
+  const order = passengerState.selectedChangeOrder;
+  const train = passengerState.selectedChangeTrain;
+  if (!order || !train) {
+    elements.changeError.textContent = "请先选择新的车次";
+    return;
+  }
+  elements.changeError.textContent = "";
+  elements.changeConfirm.disabled = true;
+  elements.changeConfirm.textContent = "提交中...";
+  try {
+    const body = {
+      trainId: train.trainId,
+      inventoryId: train.inventoryId,
+      requestId: generateRequestId("PAX-CHANGE"),
+      reason: elements.changeReason.value.trim(),
+    };
+    const result = await passengerRequest(`/passenger/orders/${order.id}/change`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    closeChangeModal();
+    passengerState.changes.page = 0;
+    passengerState.tickets.page = 0;
+    showToast(result.status === "PENDING_PAYMENT" ? "改签已提交，请完成新票支付" : "改签成功，电子票已更新");
+    await refreshPassengerData();
+    activateSection("passenger-changes");
+  } catch (error) {
+    elements.changeError.textContent = error.message || "提交改签失败";
+    elements.changeConfirm.disabled = false;
+    elements.changeConfirm.textContent = "提交改签";
+  }
+}
+
+async function loadPassengerChanges() {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  try {
+    const params = new URLSearchParams();
+    if (elements.changeStatus.value) {
+      params.set("status", elements.changeStatus.value);
+    }
+    params.set("page", String(passengerState.changes.page));
+    params.set("size", String(passengerState.changes.size));
+    const page = await passengerRequest(`/passenger/changes?${params.toString()}`);
+    passengerState.changes = { ...passengerState.changes, ...page };
+    renderPassengerChanges(page.content || []);
+    renderPagination("changes");
+  } catch (error) {
+    elements.changeResults.innerHTML = recordEmpty(error.message || "无法加载改签记录");
+    renderPagination("changes");
+  }
+}
+
+function renderPassengerChanges(changes) {
+  if (!changes.length) {
+    elements.changeResults.innerHTML = recordEmpty("暂无改签记录。已支付订单可在订单中心发起改签。");
+    return;
+  }
+  elements.changeResults.innerHTML = changes.map(change => `
+    <article class="ticket-change-card ${changeStatusClass(change.status)}">
+      <div class="record-title-row">
+        <div>
+          <span>改签单</span>
+          <strong>${escapeHtml(change.changeNo)}</strong>
+        </div>
+        <span class="status ${changeStatusClass(change.status)}">${changeStatusText(change.status)}</span>
+      </div>
+      <div class="change-route-panel">
+        <div>
+          <span>原订单</span>
+          <strong>${escapeHtml(change.originalOrderNo || "-")}</strong>
+          <small>${escapeHtml(change.originalTrainNo || "-")} / ${escapeHtml(change.originalTicketNo || "-")}</small>
+        </div>
+        <div class="change-arrow">→</div>
+        <div>
+          <span>新订单</span>
+          <strong>${escapeHtml(change.newOrderNo || "-")}</strong>
+          <small>${escapeHtml(change.newTrainNo || "-")} / ${escapeHtml(change.newTicketNo || "-")}</small>
+        </div>
+      </div>
+      <div class="record-detail-grid">
+        <div><span>原票金额</span><strong class="money">¥${formatAmount(change.oldAmount)}</strong></div>
+        <div><span>新票金额</span><strong class="money">¥${formatAmount(change.newAmount)}</strong></div>
+        <div><span>差额</span><strong class="money">${formatSignedAmount(change.priceDifference)}</strong></div>
+        <div><span>完成时间</span><strong>${formatDateTime(change.completedAt) || "-"}</strong></div>
+      </div>
+      <div class="record-actions">
+        ${change.status === "PENDING_PAYMENT"
+          ? `<button class="primary-button compact-button" type="button" data-pay-change="${change.id}">支付新票</button>`
+          : `<span class="muted-text">${change.failureReason ? escapeHtml(change.failureReason) : "状态已同步"}</span>`}
+        ${change.newOrderId ? `<button class="secondary-button compact-button" type="button" data-change-new-order="${change.newOrderId}">新订单详情</button>` : ""}
+        ${change.originalOrderId ? `<button class="ghost-button compact-button" type="button" data-change-original-order="${change.originalOrderId}">原订单详情</button>` : ""}
+      </div>
+    </article>
+  `).join("");
+  elements.changeResults.querySelectorAll("[data-pay-change]").forEach(button => {
+    button.addEventListener("click", () => payPassengerChange(button.dataset.payChange));
+  });
+  elements.changeResults.querySelectorAll("[data-change-new-order],[data-change-original-order]").forEach(button => {
+    const orderId = button.dataset.changeNewOrder || button.dataset.changeOriginalOrder;
+    button.addEventListener("click", () => openPassengerOrderDetail(orderId));
+  });
+}
+
+async function payPassengerChange(changeId) {
+  try {
+    await passengerRequest(`/passenger/changes/${changeId}/pay`, { method: "POST" });
+    showToast("改签补差支付完成，电子票已更新");
+    passengerState.changes.page = 0;
+    passengerState.tickets.page = 0;
+    await refreshPassengerData();
+    activateSection("passenger-changes");
+  } catch (error) {
+    showToast(error.message || "改签支付失败");
+  }
+}
+
 async function loadPassengerNotifications() {
   if (!ensureSignedIn()) {
     return;
@@ -1494,6 +1868,8 @@ async function changePassengerPage(type, offset) {
     await loadPassengerPayments();
   } else if (type === "refunds") {
     await loadPassengerRefunds();
+  } else if (type === "changes") {
+    await loadPassengerChanges();
   } else {
     await loadPassengerNotifications();
   }
@@ -1505,6 +1881,7 @@ function renderPagination(type) {
     tickets: { state: passengerState.tickets, info: elements.ticketPageInfo, prev: elements.prevTickets, next: elements.nextTickets },
     payments: { state: passengerState.payments, info: elements.paymentPageInfo, prev: elements.prevPayments, next: elements.nextPayments },
     refunds: { state: passengerState.refunds, info: elements.refundPageInfo, prev: elements.prevRefunds, next: elements.nextRefunds },
+    changes: { state: passengerState.changes, info: elements.changePageInfo, prev: elements.prevChanges, next: elements.nextChanges },
     notifications: { state: passengerState.notifications, info: elements.notificationPageInfo, prev: elements.prevNotifications, next: elements.nextNotifications },
   };
   const target = map[type];
@@ -1531,6 +1908,10 @@ function renderLoggedOutPlaceholders() {
   renderBuyTravelerOptions();
   resetTravelerForm();
   elements.orderCards.innerHTML = emptyItem("登录后查看我的订单");
+  elements.transactionStats.innerHTML = recordEmpty("登录后查看交易状态中心");
+  elements.transactionOrders.innerHTML = emptyItem("登录后查看订单动态");
+  elements.transactionChanges.innerHTML = emptyItem("登录后查看改签动态");
+  elements.changeResults.innerHTML = recordEmpty("登录后查看改签记录");
   elements.ticketResults.innerHTML = recordEmpty("登录后查看我的电子票");
   elements.paymentResults.innerHTML = recordEmpty("登录后查看支付流水");
   elements.refundResults.innerHTML = recordEmpty("登录后查看退款流水");
@@ -1738,6 +2119,14 @@ function formatAmount(value) {
   return Number.isFinite(number) ? number.toFixed(2) : String(value || "-");
 }
 
+function formatSignedAmount(value) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number) || number === 0) {
+    return "¥0.00";
+  }
+  return `${number > 0 ? "+" : "-"}¥${formatAmount(Math.abs(number))}`;
+}
+
 function seatTypeText(value) {
   const map = {
     SECOND_CLASS: "二等座",
@@ -1813,6 +2202,26 @@ function refundStatusClass(value) {
   return map[value] || "";
 }
 
+function changeStatusText(value) {
+  const map = {
+    PENDING_PAYMENT: "待补差支付",
+    SUCCESS: "改签成功",
+    FAILED: "改签失败",
+    CANCELLED: "已取消",
+  };
+  return map[value] || value || "-";
+}
+
+function changeStatusClass(value) {
+  const map = {
+    PENDING_PAYMENT: "pending",
+    SUCCESS: "issued",
+    FAILED: "closed",
+    CANCELLED: "closed",
+  };
+  return map[value] || "";
+}
+
 function ticketStatusText(value) {
   const map = {
     ISSUED: "有效票",
@@ -1840,6 +2249,10 @@ function notificationTypeText(value) {
     ORDER_REFUNDED: "退票提醒",
     REFUND_SUCCEEDED: "退款成功",
     REFUND_FAILED: "退款失败",
+    TICKET_CHANGE_CREATED: "改签提醒",
+    TICKET_CHANGE_PENDING_PAYMENT: "改签待支付",
+    TICKET_CHANGE_SUCCEEDED: "改签成功",
+    TICKET_CHANGE_FAILED: "改签失败",
     RISK_ALERT: "风险提醒",
   };
   return map[value] || value || "-";

@@ -27,6 +27,14 @@ const state = {
     first: true,
     last: true,
   },
+  ticketChangePage: {
+    page: 0,
+    size: 10,
+    totalPages: 0,
+    totalElements: 0,
+    first: true,
+    last: true,
+  },
   outboxPage: {
     page: 0,
     size: 10,
@@ -124,6 +132,13 @@ const elements = {
   refundPageInfo: document.querySelector("#refund-page-info"),
   prevRefunds: document.querySelector("#prev-refunds"),
   nextRefunds: document.querySelector("#next-refunds"),
+  ticketChangeStatus: document.querySelector("#ticket-change-status"),
+  ticketChangeNo: document.querySelector("#ticket-change-no"),
+  ticketChangeUserId: document.querySelector("#ticket-change-user-id"),
+  ticketChangeResults: document.querySelector("#ticket-change-results"),
+  ticketChangePageInfo: document.querySelector("#ticket-change-page-info"),
+  prevTicketChanges: document.querySelector("#prev-ticket-changes"),
+  nextTicketChanges: document.querySelector("#next-ticket-changes"),
   outboxStatus: document.querySelector("#outbox-status"),
   outboxEventType: document.querySelector("#outbox-event-type"),
   outboxResults: document.querySelector("#outbox-results"),
@@ -223,6 +238,10 @@ document.querySelector("#load-refunds").addEventListener("click", loadRefunds);
 document.querySelector("#reset-refunds").addEventListener("click", resetRefundFilters);
 elements.prevRefunds.addEventListener("click", () => changeRefundPage(-1));
 elements.nextRefunds.addEventListener("click", () => changeRefundPage(1));
+document.querySelector("#load-ticket-changes").addEventListener("click", loadTicketChanges);
+document.querySelector("#reset-ticket-changes").addEventListener("click", resetTicketChangeFilters);
+elements.prevTicketChanges.addEventListener("click", () => changeTicketChangePage(-1));
+elements.nextTicketChanges.addEventListener("click", () => changeTicketChangePage(1));
 document.querySelector("#load-outbox-events").addEventListener("click", loadOutboxEvents);
 document.querySelector("#dispatch-outbox-events").addEventListener("click", dispatchOutboxEvents);
 document.querySelector("#retry-failed-outbox-events").addEventListener("click", retryFailedOutboxEvents);
@@ -403,6 +422,7 @@ async function refreshAll() {
     loadOrders(),
     loadPayments(),
     loadRefunds(),
+    loadTicketChanges(),
     loadOutboxSummary(),
     loadOutboxEvents(),
     loadNotificationSummary(),
@@ -760,6 +780,7 @@ function showAdminOrderDetail(detail) {
   const ticket = detail.ticket;
   const payments = detail.payments || [];
   const refunds = detail.refunds || [];
+  const ticketChanges = detail.ticketChanges || [];
   const risks = detail.risks || [];
   const outboxEvents = detail.outboxEvents || [];
   const logs = detail.operationLogs || [];
@@ -789,6 +810,15 @@ function showAdminOrderDetail(detail) {
           <div class="detail-record"><strong>${escapeHtml(refund.refundNo)}</strong><span>${refundStatusText(refund.status)} · ¥${formatAmount(refund.amount)}</span></div>
         `, "暂无退款记录")}</div>
       </div>
+    </section>
+    <section class="detail-section">
+      <h3>改签链路</h3>
+      ${renderDetailRecords(ticketChanges, change => `
+        <div class="detail-record ticket-change-detail-record">
+          <strong>${escapeHtml(change.changeNo)}</strong>
+          <span>${escapeHtml(change.originalTrainNo || "-")} → ${escapeHtml(change.newTrainNo || "-")} · ${changeStatusText(change.status)} · ${formatSignedAmount(change.priceDifference)}</span>
+        </div>
+      `, "暂无改签记录")}
     </section>
     <section class="detail-section">
       <h3>风险与事件链路</h3>
@@ -1211,6 +1241,87 @@ async function resetRefundFilters() {
   elements.refundNoFilter.value = "";
   state.refundPage.page = 0;
   await loadRefundsPage();
+}
+
+async function loadTicketChanges() {
+  state.ticketChangePage.page = 0;
+  await loadTicketChangesPage();
+}
+
+async function loadTicketChangesPage() {
+  try {
+    const page = await request(buildTicketChangeQueryPath());
+    state.ticketChangePage = {
+      page: page.page,
+      size: page.size,
+      totalPages: page.totalPages,
+      totalElements: page.totalElements,
+      first: page.first,
+      last: page.last,
+    };
+    renderTicketChanges(page.content || []);
+    renderTicketChangePagination();
+  } catch (error) {
+    elements.ticketChangeResults.innerHTML = tableEmpty(9, error.message || "无法获取改签记录");
+    renderTicketChangePagination();
+  }
+}
+
+function buildTicketChangeQueryPath() {
+  const params = new URLSearchParams();
+  appendParam(params, "status", elements.ticketChangeStatus.value);
+  appendParam(params, "changeNo", elements.ticketChangeNo.value);
+  appendParam(params, "userId", elements.ticketChangeUserId.value);
+  params.set("page", String(state.ticketChangePage.page));
+  params.set("size", String(state.ticketChangePage.size));
+  return `/ticket-changes?${params.toString()}`;
+}
+
+function renderTicketChanges(changes) {
+  if (changes.length === 0) {
+    elements.ticketChangeResults.innerHTML = tableEmpty(9, "暂无改签记录");
+    return;
+  }
+  elements.ticketChangeResults.innerHTML = changes
+    .map(change => `
+      <tr>
+        <td><strong>${escapeHtml(change.changeNo)}</strong></td>
+        <td>${change.userId || "-"}</td>
+        <td>${escapeHtml(change.originalOrderNo || "-")}<br><span class="muted-text">${escapeHtml(change.originalTrainNo || "-")} / ${escapeHtml(change.originalTicketNo || "-")}</span></td>
+        <td>${escapeHtml(change.newOrderNo || "-")}<br><span class="muted-text">${escapeHtml(change.newTrainNo || "-")} / ${escapeHtml(change.newTicketNo || "-")}</span></td>
+        <td><span class="money">${formatSignedAmount(change.priceDifference)}</span><br><span class="muted-text">新票 ¥${formatAmount(change.newAmount)}</span></td>
+        <td><span class="status ${changeStatusClass(change.status)}">${changeStatusText(change.status)}</span></td>
+        <td>${formatDateTime(change.createdAt) || "-"}</td>
+        <td>${formatDateTime(change.completedAt) || "-"}</td>
+        <td>${escapeHtml(change.failureReason || change.reason || "-")}</td>
+      </tr>
+    `)
+    .join("");
+}
+
+function renderTicketChangePagination() {
+  const totalPages = Math.max(1, state.ticketChangePage.totalPages || 0);
+  const currentPage = Math.min((state.ticketChangePage.page || 0) + 1, totalPages);
+  elements.ticketChangePageInfo.textContent = `第 ${currentPage} / ${totalPages} 页，共 ${state.ticketChangePage.totalElements || 0} 条`;
+  elements.prevTicketChanges.disabled = Boolean(state.ticketChangePage.first);
+  elements.nextTicketChanges.disabled = Boolean(state.ticketChangePage.last);
+}
+
+async function changeTicketChangePage(offset) {
+  const nextPage = Math.max(0, state.ticketChangePage.page + offset);
+  if (nextPage === state.ticketChangePage.page) {
+    return;
+  }
+  state.ticketChangePage.page = nextPage;
+  await loadTicketChangesPage();
+}
+
+async function resetTicketChangeFilters() {
+  elements.ticketChangeStatus.value = "";
+  elements.ticketChangeNo.value = "";
+  elements.ticketChangeUserId.value = "";
+  state.ticketChangePage.page = 0;
+  await loadTicketChangesPage();
 }
 
 async function loadOutboxEvents() {
@@ -2042,6 +2153,14 @@ function formatAmount(value) {
   return Number.isFinite(number) ? number.toFixed(2) : String(value || "-");
 }
 
+function formatSignedAmount(value) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number) || number === 0) {
+    return "¥0.00";
+  }
+  return `${number > 0 ? "+" : "-"}¥${formatAmount(Math.abs(number))}`;
+}
+
 function formatPercent(value) {
   const number = Number(value || 0);
   return `${(number * 100).toFixed(1)}%`;
@@ -2122,6 +2241,26 @@ function refundStatusClass(value) {
   return map[value] || "";
 }
 
+function changeStatusText(value) {
+  const map = {
+    PENDING_PAYMENT: "待补差支付",
+    SUCCESS: "改签成功",
+    FAILED: "改签失败",
+    CANCELLED: "已取消",
+  };
+  return map[value] || value || "-";
+}
+
+function changeStatusClass(value) {
+  const map = {
+    PENDING_PAYMENT: "pending",
+    SUCCESS: "",
+    FAILED: "closed",
+    CANCELLED: "closed",
+  };
+  return map[value] || "";
+}
+
 function riskTypeText(value) {
   const map = {
     RAPID_PURCHASE: "短时多次购票",
@@ -2197,6 +2336,10 @@ function notificationTypeText(value) {
     ORDER_REFUNDED: "退票提醒",
     REFUND_SUCCEEDED: "退款成功",
     REFUND_FAILED: "退款失败",
+    TICKET_CHANGE_CREATED: "改签提醒",
+    TICKET_CHANGE_PENDING_PAYMENT: "改签待支付",
+    TICKET_CHANGE_SUCCEEDED: "改签成功",
+    TICKET_CHANGE_FAILED: "改签失败",
     RISK_ALERT: "风险提醒",
   };
   return map[value] || value || "-";

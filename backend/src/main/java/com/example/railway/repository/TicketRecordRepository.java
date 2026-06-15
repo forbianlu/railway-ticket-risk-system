@@ -19,6 +19,8 @@ public interface TicketRecordRepository extends JpaRepository<TicketRecord, Long
 
     long countByStatus(TicketStatus status);
 
+    long countByUserIdAndStatus(Long userId, TicketStatus status);
+
     Page<TicketRecord> findByUserIdOrderByTravelDateDescCreatedAtDesc(Long userId, Pageable pageable);
 
     Page<TicketRecord> findByUserIdAndStatusOrderByTravelDateDescCreatedAtDesc(Long userId, TicketStatus status, Pageable pageable);

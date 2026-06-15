@@ -15,6 +15,9 @@ public final class OutboxEventTypes {
     public static final String TICKET_ISSUED = "TICKET_ISSUED";
     public static final String TICKET_REFUNDED = "TICKET_REFUNDED";
     public static final String TICKET_CANCELLED = "TICKET_CANCELLED";
+    public static final String TICKET_CHANGE_CREATED = "TICKET_CHANGE_CREATED";
+    public static final String TICKET_CHANGE_SUCCEEDED = "TICKET_CHANGE_SUCCEEDED";
+    public static final String TICKET_CHANGE_FAILED = "TICKET_CHANGE_FAILED";
     public static final String NOTIFICATION_CREATED = "NOTIFICATION_CREATED";
 
     private OutboxEventTypes() {
