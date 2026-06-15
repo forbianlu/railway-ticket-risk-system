@@ -89,6 +89,7 @@ import com.example.railway.dto.RiskHandleRequest;
 import com.example.railway.dto.SearchResultGroupResponse;
 import com.example.railway.dto.SearchResultItemResponse;
 import com.example.railway.dto.RiskSummaryResponse;
+import com.example.railway.dto.TicketPageResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
 import com.example.railway.repository.AppUserRepository;
@@ -617,6 +618,26 @@ class RailwayApiIntegrationTests {
         assertThat(detail.getBody().getPayments()).isNotEmpty();
         assertThat(detail.getBody().getRisks()).isEmpty();
         assertThat(detail.getBody().getOutboxEvents()).isEmpty();
+
+        TicketPageResponse ticketPage = restTemplate.exchange(
+                "/api/passenger/tickets?status=ISSUED&size=50",
+                HttpMethod.GET,
+                authorizedEntity(passenger),
+                TicketPageResponse.class
+        ).getBody();
+        TicketPageResponse otherTicketPage = restTemplate.exchange(
+                "/api/passenger/tickets?size=50",
+                HttpMethod.GET,
+                authorizedEntity(otherPassenger),
+                TicketPageResponse.class
+        ).getBody();
+        assertThat(ticketPage).isNotNull();
+        assertThat(ticketPage.getContent()).extracting(ticketResponse -> ticketResponse.getTicketNo())
+                .contains(ticket.getTicketNo());
+        assertThat(ticketPage.getContent()).allSatisfy(ticketResponse -> assertThat(ticketResponse.getUserId()).isEqualTo(pending.getUserId()));
+        assertThat(otherTicketPage).isNotNull();
+        assertThat(otherTicketPage.getContent()).extracting(ticketResponse -> ticketResponse.getTicketNo())
+                .doesNotContain(ticket.getTicketNo());
 
         ResponseEntity<String> otherDetail = restTemplate.exchange(
                 "/api/passenger/orders/{id}/detail",

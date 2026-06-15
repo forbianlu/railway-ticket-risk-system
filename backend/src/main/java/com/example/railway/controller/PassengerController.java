@@ -28,6 +28,7 @@ import com.example.railway.dto.PassengerTravelerRequest;
 import com.example.railway.dto.PassengerTravelerResponse;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.RefundPageResponse;
+import com.example.railway.dto.TicketPageResponse;
 import com.example.railway.security.AuthContext;
 import com.example.railway.security.RequiredRole;
 import com.example.railway.service.NotificationService;
@@ -73,6 +74,14 @@ public class PassengerController {
     @GetMapping("/orders/{id}/detail")
     public OrderDetailResponse orderDetail(@PathVariable("id") Long orderId) {
         return passengerService.orderDetail(orderId);
+    }
+
+    @Operation(summary = "Query my electronic tickets")
+    @GetMapping("/tickets")
+    public TicketPageResponse tickets(@RequestParam(value = "status", required = false) String status,
+                                      @RequestParam(value = "page", required = false) Integer page,
+                                      @RequestParam(value = "size", required = false) Integer size) {
+        return passengerService.listTickets(status, page, size);
     }
 
     @Operation(summary = "Query my traveler profiles")

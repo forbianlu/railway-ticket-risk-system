@@ -14,6 +14,7 @@ const passengerState = {
   lastScrollY: 0,
   trains: { items: [], page: 0, size: 5 },
   orders: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
+  tickets: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
   payments: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
   refunds: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
   notifications: { page: 0, size: 8, totalPages: 0, totalElements: 0, first: true, last: true },
@@ -73,6 +74,12 @@ const elements = {
   orderPageInfo: document.querySelector("#passenger-order-page-info"),
   prevOrders: document.querySelector("#passenger-prev-orders"),
   nextOrders: document.querySelector("#passenger-next-orders"),
+  ticketStatus: document.querySelector("#passenger-ticket-status"),
+  loadTickets: document.querySelector("#passenger-load-tickets"),
+  ticketResults: document.querySelector("#passenger-ticket-results"),
+  ticketPageInfo: document.querySelector("#passenger-ticket-page-info"),
+  prevTickets: document.querySelector("#passenger-prev-tickets"),
+  nextTickets: document.querySelector("#passenger-next-tickets"),
   paymentStatus: document.querySelector("#passenger-payment-status"),
   loadPayments: document.querySelector("#passenger-load-payments"),
   paymentResults: document.querySelector("#passenger-payment-results"),
@@ -147,6 +154,16 @@ elements.resetOrders.addEventListener("click", () => {
 });
 elements.prevOrders.addEventListener("click", () => changePassengerPage("orders", -1));
 elements.nextOrders.addEventListener("click", () => changePassengerPage("orders", 1));
+elements.loadTickets.addEventListener("click", () => {
+  passengerState.tickets.page = 0;
+  loadPassengerTickets();
+});
+elements.ticketStatus.addEventListener("change", () => {
+  passengerState.tickets.page = 0;
+  loadPassengerTickets();
+});
+elements.prevTickets.addEventListener("click", () => changePassengerPage("tickets", -1));
+elements.nextTickets.addEventListener("click", () => changePassengerPage("tickets", 1));
 elements.loadPayments.addEventListener("click", () => {
   passengerState.payments.page = 0;
   loadPassengerPayments();
@@ -304,6 +321,7 @@ async function refreshPassengerData() {
     loadPassengerSummary(),
     loadPassengerTravelers(),
     loadPassengerOrders(),
+    loadPassengerTickets(),
     loadPassengerPayments(),
     loadPassengerRefunds(),
     loadPassengerNotifications(),
@@ -881,6 +899,10 @@ function showPassengerOrderDetail(detail) {
       </div>
     </div>
     <section class="detail-section">
+      <h3>订单进度</h3>
+      ${renderOrderTimeline(order, ticket, payments, refunds)}
+    </section>
+    <section class="detail-section">
       <h3>电子票 / 行程单</h3>
       ${ticket ? renderTicketDetail(ticket) : `<div class="detail-empty">订单支付成功后自动生成电子票。</div>`}
     </section>
@@ -908,15 +930,83 @@ function showPassengerOrderDetail(detail) {
 
 function renderTicketDetail(ticket) {
   return `
-    <div class="ticket-itinerary">
-      <div><span>Ticket No</span><strong>${escapeHtml(ticket.ticketNo)}</strong></div>
-      <div><span>Route</span><strong>${escapeHtml(ticket.departureStation)} → ${escapeHtml(ticket.arrivalStation)}</strong></div>
-      <div><span>Time</span><strong>${formatTime(ticket.departureTime)} - ${formatTime(ticket.arrivalTime)}</strong></div>
-      <div><span>Passenger</span><strong>${escapeHtml(ticket.passengerName)} / ${idTypeText(ticket.passengerIdType)} / ${escapeHtml(ticket.passengerIdCardMasked)}</strong></div>
-      <div><span>Phone</span><strong>${escapeHtml(ticket.passengerPhoneMasked || "-")}</strong></div>
-      <div><span>Status</span><strong>${escapeHtml(ticket.status)}</strong></div>
-      <div><span>Issued At</span><strong>${formatDateTime(ticket.issuedAt) || "-"}</strong></div>
+    <div class="ticket-itinerary ticket-detail-card ${ticketStatusClass(ticket.status)}">
+      <div class="ticket-detail-main">
+        <div>
+          <span>Ticket No</span>
+          <strong>${escapeHtml(ticket.ticketNo)}</strong>
+        </div>
+        <span class="status ${ticketStatusClass(ticket.status)}">${ticketStatusText(ticket.status)}</span>
+      </div>
+      <div class="ticket-detail-route">
+        <strong>${escapeHtml(ticket.departureStation)}</strong>
+        <span></span>
+        <strong>${escapeHtml(ticket.arrivalStation)}</strong>
+      </div>
+      <div class="ticket-detail-grid">
+        <div><span>车次</span><strong>${escapeHtml(ticket.trainNo || "-")}</strong></div>
+        <div><span>乘车日期</span><strong>${formatDate(ticket.travelDate) || "-"}</strong></div>
+        <div><span>出发 / 到达</span><strong>${formatTime(ticket.departureTime)} - ${formatTime(ticket.arrivalTime)}</strong></div>
+        <div><span>席别</span><strong>${seatTypeText(ticket.seatType)}</strong></div>
+        <div><span>乘车人</span><strong>${escapeHtml(ticket.passengerName)} / ${idTypeText(ticket.passengerIdType)}</strong></div>
+        <div><span>证件</span><strong>${escapeHtml(ticket.passengerIdCardMasked || "-")}</strong></div>
+        <div><span>手机号</span><strong>${escapeHtml(ticket.passengerPhoneMasked || "-")}</strong></div>
+        <div><span>出票时间</span><strong>${formatDateTime(ticket.issuedAt) || "-"}</strong></div>
+      </div>
+      ${ticket.invalidatedAt ? `<div class="ticket-detail-note">票面失效时间：${formatDateTime(ticket.invalidatedAt)}</div>` : ""}
     </div>
+  `;
+}
+
+function renderOrderTimeline(order, ticket, payments, refunds) {
+  const successPayment = payments.find(payment => payment.status === "SUCCESS");
+  const latestPayment = payments[0];
+  const latestRefund = refunds[0];
+  const steps = [
+    {
+      label: "创建订单",
+      time: order.createdAt,
+      done: Boolean(order.createdAt),
+      detail: order.orderNo || "-",
+    },
+    {
+      label: "完成支付",
+      time: order.paidAt || (successPayment && successPayment.paidAt),
+      done: ["PAID", "REFUNDED"].includes(order.status),
+      detail: successPayment ? successPayment.paymentNo : (latestPayment ? paymentStatusText(latestPayment.status) : "等待支付"),
+    },
+    {
+      label: "生成电子票",
+      time: ticket && ticket.issuedAt,
+      done: Boolean(ticket && ticket.issuedAt),
+      detail: ticket ? ticket.ticketNo : "支付成功后生成",
+    },
+    {
+      label: "退票处理",
+      time: order.refundedAt,
+      done: order.status === "REFUNDED",
+      detail: order.status === "REFUNDED" ? "订单已退票" : "未退票",
+    },
+    {
+      label: "退款结果",
+      time: latestRefund && (latestRefund.refundedAt || latestRefund.createdAt),
+      done: Boolean(latestRefund && latestRefund.status === "SUCCESS"),
+      detail: latestRefund ? `${refundStatusText(latestRefund.status)} / ${latestRefund.refundNo}` : "暂无退款记录",
+    },
+  ];
+  return `
+    <ol class="order-progress-timeline">
+      ${steps.map(step => `
+        <li class="${step.done ? "done" : ""}">
+          <span class="timeline-dot"></span>
+          <div>
+            <strong>${escapeHtml(step.label)}</strong>
+            <small>${escapeHtml(step.detail || "-")}</small>
+            <time>${formatDateTime(step.time) || "-"}</time>
+          </div>
+        </li>
+      `).join("")}
+    </ol>
   `;
 }
 
@@ -983,6 +1073,67 @@ function renderOrderActions(order) {
     return `<button class="secondary-button compact-button" type="button" data-jump-refunds>查看退款</button>`;
   }
   return `<span class="muted-text">无需操作</span>`;
+}
+
+async function loadPassengerTickets() {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  try {
+    const params = new URLSearchParams();
+    if (elements.ticketStatus.value) {
+      params.set("status", elements.ticketStatus.value);
+    }
+    params.set("page", String(passengerState.tickets.page));
+    params.set("size", String(passengerState.tickets.size));
+    const page = await passengerRequest(`/passenger/tickets?${params.toString()}`);
+    passengerState.tickets = { ...passengerState.tickets, ...page };
+    renderPassengerTickets(page.content || []);
+    renderPagination("tickets");
+  } catch (error) {
+    elements.ticketResults.innerHTML = recordEmpty(error.message || "无法加载我的电子票");
+    renderPagination("tickets");
+  }
+}
+
+function renderPassengerTickets(tickets) {
+  if (!tickets.length) {
+    elements.ticketResults.innerHTML = recordEmpty("暂无电子票，支付成功后会自动生成");
+    return;
+  }
+  elements.ticketResults.innerHTML = tickets.map(ticket => `
+    <article class="passenger-ticket-card ${ticketStatusClass(ticket.status)}">
+      <div class="ticket-wallet-route">
+        <div>
+          <p class="eyebrow">${escapeHtml(ticket.ticketNo || "-")}</p>
+          <h3>${escapeHtml(ticket.trainNo || "-")}</h3>
+        </div>
+        <span class="status ${ticketStatusClass(ticket.status)}">${ticketStatusText(ticket.status)}</span>
+      </div>
+      <div class="ticket-wallet-line">
+        <strong>${escapeHtml(ticket.departureStation || "-")}</strong>
+        <span></span>
+        <strong>${escapeHtml(ticket.arrivalStation || "-")}</strong>
+      </div>
+      <div class="ticket-wallet-meta">
+        <div><span>乘车日期</span><strong>${formatDate(ticket.travelDate) || "-"}</strong></div>
+        <div><span>出发 / 到达</span><strong>${formatTime(ticket.departureTime) || "-"} - ${formatTime(ticket.arrivalTime) || "-"}</strong></div>
+        <div><span>席别</span><strong>${seatTypeText(ticket.seatType)}</strong></div>
+        <div><span>票价</span><strong class="money">¥${formatAmount(ticket.amount)}</strong></div>
+      </div>
+      <div class="ticket-wallet-passenger">
+        <span>${escapeHtml(ticket.passengerName || "-")}</span>
+        <small>${idTypeText(ticket.passengerIdType)} / ${escapeHtml(ticket.passengerIdCardMasked || "-")}</small>
+      </div>
+      <div class="ticket-wallet-footer">
+        <span>出票 ${formatDateTime(ticket.issuedAt) || "-"}</span>
+        <button class="secondary-button compact-button" type="button" data-ticket-order-detail="${ticket.orderId}">查看订单详情</button>
+      </div>
+    </article>
+  `).join("");
+  elements.ticketResults.querySelectorAll("[data-ticket-order-detail]").forEach(button => {
+    button.addEventListener("click", () => openPassengerOrderDetail(button.dataset.ticketOrderDetail));
+  });
 }
 
 async function payPassengerOrder(orderId) {
@@ -1212,6 +1363,8 @@ async function changePassengerPage(type, offset) {
   pageState.page = nextPage;
   if (type === "orders") {
     await loadPassengerOrders();
+  } else if (type === "tickets") {
+    await loadPassengerTickets();
   } else if (type === "payments") {
     await loadPassengerPayments();
   } else if (type === "refunds") {
@@ -1224,6 +1377,7 @@ async function changePassengerPage(type, offset) {
 function renderPagination(type) {
   const map = {
     orders: { state: passengerState.orders, info: elements.orderPageInfo, prev: elements.prevOrders, next: elements.nextOrders },
+    tickets: { state: passengerState.tickets, info: elements.ticketPageInfo, prev: elements.prevTickets, next: elements.nextTickets },
     payments: { state: passengerState.payments, info: elements.paymentPageInfo, prev: elements.prevPayments, next: elements.nextPayments },
     refunds: { state: passengerState.refunds, info: elements.refundPageInfo, prev: elements.prevRefunds, next: elements.nextRefunds },
     notifications: { state: passengerState.notifications, info: elements.notificationPageInfo, prev: elements.prevNotifications, next: elements.nextNotifications },
@@ -1252,6 +1406,7 @@ function renderLoggedOutPlaceholders() {
   renderBuyTravelerOptions();
   resetTravelerForm();
   elements.orderCards.innerHTML = emptyItem("登录后查看我的订单");
+  elements.ticketResults.innerHTML = recordEmpty("登录后查看我的电子票");
   elements.paymentResults.innerHTML = recordEmpty("登录后查看支付流水");
   elements.refundResults.innerHTML = recordEmpty("登录后查看退款流水");
   elements.notificationResults.innerHTML = recordEmpty("登录后查看消息提醒");
@@ -1528,6 +1683,24 @@ function refundStatusClass(value) {
     PENDING: "pending",
     SUCCESS: "",
     FAILED: "closed",
+  };
+  return map[value] || "";
+}
+
+function ticketStatusText(value) {
+  const map = {
+    ISSUED: "有效票",
+    REFUNDED: "已退票",
+    CANCELLED: "已取消",
+  };
+  return map[value] || value || "-";
+}
+
+function ticketStatusClass(value) {
+  const map = {
+    ISSUED: "",
+    REFUNDED: "refunded",
+    CANCELLED: "closed",
   };
   return map[value] || "";
 }

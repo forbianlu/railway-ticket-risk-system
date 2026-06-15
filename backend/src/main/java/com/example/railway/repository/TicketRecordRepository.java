@@ -2,6 +2,7 @@ package com.example.railway.repository;
 
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -17,6 +18,10 @@ public interface TicketRecordRepository extends JpaRepository<TicketRecord, Long
     Optional<TicketRecord> findByOrderId(Long orderId);
 
     long countByStatus(TicketStatus status);
+
+    Page<TicketRecord> findByUserIdOrderByTravelDateDescCreatedAtDesc(Long userId, Pageable pageable);
+
+    Page<TicketRecord> findByUserIdAndStatusOrderByTravelDateDescCreatedAtDesc(Long userId, TicketStatus status, Pageable pageable);
 
     @Query("select t from TicketRecord t " +
             "where lower(t.ticketNo) like lower(concat('%', :keyword, '%')) " +

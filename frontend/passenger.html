@@ -71,6 +71,7 @@
         <a href="#passenger-summary">行程</a>
         <a href="#passenger-travelers">乘车人</a>
         <a href="#passenger-orders">订单</a>
+        <a href="#passenger-tickets">车票</a>
         <a href="#passenger-payments">支付</a>
         <a href="#passenger-refunds">退款</a>
         <a href="#passenger-notifications">消息 <span id="passenger-nav-unread" class="nav-badge">0</span></a>
@@ -260,6 +261,36 @@
           <div class="inline-actions">
             <button id="passenger-prev-orders" class="secondary-button compact-button" type="button">上一页</button>
             <button id="passenger-next-orders" class="secondary-button compact-button" type="button">下一页</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="passenger-tickets" class="passenger-section passenger-ticket-wallet-section">
+        <div class="passenger-section-head">
+          <div>
+            <p class="eyebrow">Ticket Wallet</p>
+            <h2>我的电子票</h2>
+            <p>支付成功后自动生成电子票，退票后票面状态会同步更新。</p>
+          </div>
+          <button id="passenger-load-tickets" class="secondary-button" type="button">刷新车票</button>
+        </div>
+        <div class="passenger-filter-bar">
+          <label>
+            车票状态
+            <select id="passenger-ticket-status">
+              <option value="">全部车票</option>
+              <option value="ISSUED">有效票</option>
+              <option value="REFUNDED">已退票</option>
+              <option value="CANCELLED">已取消</option>
+            </select>
+          </label>
+        </div>
+        <div id="passenger-ticket-results" class="passenger-ticket-wallet"></div>
+        <div class="pagination">
+          <span id="passenger-ticket-page-info">第 1 / 1 页，共 0 条</span>
+          <div class="inline-actions">
+            <button id="passenger-prev-tickets" class="secondary-button compact-button" type="button">上一页</button>
+            <button id="passenger-next-tickets" class="secondary-button compact-button" type="button">下一页</button>
           </div>
         </div>
       </section>

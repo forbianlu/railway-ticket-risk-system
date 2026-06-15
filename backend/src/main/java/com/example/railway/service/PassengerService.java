@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +16,8 @@ import com.example.railway.domain.OrderStatus;
 import com.example.railway.domain.PassengerIdType;
 import com.example.railway.domain.PassengerTraveler;
 import com.example.railway.domain.TicketOrder;
+import com.example.railway.domain.TicketRecord;
+import com.example.railway.domain.TicketStatus;
 import com.example.railway.domain.UserRole;
 import com.example.railway.dto.CreateOrderRequest;
 import com.example.railway.dto.CreatePaymentRequest;
@@ -26,10 +31,12 @@ import com.example.railway.dto.PassengerTravelerResponse;
 import com.example.railway.dto.PaymentPageResponse;
 import com.example.railway.dto.PaymentResponse;
 import com.example.railway.dto.RefundPageResponse;
+import com.example.railway.dto.TicketPageResponse;
 import com.example.railway.repository.PassengerTravelerRepository;
 import com.example.railway.repository.PaymentRecordRepository;
 import com.example.railway.repository.RefundRecordRepository;
 import com.example.railway.repository.TicketOrderRepository;
+import com.example.railway.repository.TicketRecordRepository;
 import com.example.railway.security.AuthContext;
 import com.example.railway.security.AuthPrincipal;
 import com.example.railway.security.AuthorizationException;
@@ -37,7 +44,12 @@ import com.example.railway.security.AuthorizationException;
 @Service
 public class PassengerService {
 
+    private static final int DEFAULT_PAGE = 0;
+    private static final int DEFAULT_PAGE_SIZE = 6;
+    private static final int MAX_PAGE_SIZE = 50;
+
     private final TicketOrderRepository ticketOrderRepository;
+    private final TicketRecordRepository ticketRecordRepository;
     private final PaymentRecordRepository paymentRecordRepository;
     private final RefundRecordRepository refundRecordRepository;
     private final OrderService orderService;
@@ -47,6 +59,7 @@ public class PassengerService {
     private final PassengerTravelerRepository passengerTravelerRepository;
 
     public PassengerService(TicketOrderRepository ticketOrderRepository,
+                            TicketRecordRepository ticketRecordRepository,
                             PaymentRecordRepository paymentRecordRepository,
                             RefundRecordRepository refundRecordRepository,
                             OrderService orderService,
@@ -55,6 +68,7 @@ public class PassengerService {
                             OrderDetailService orderDetailService,
                             PassengerTravelerRepository passengerTravelerRepository) {
         this.ticketOrderRepository = ticketOrderRepository;
+        this.ticketRecordRepository = ticketRecordRepository;
         this.paymentRecordRepository = paymentRecordRepository;
         this.refundRecordRepository = refundRecordRepository;
         this.orderService = orderService;
@@ -91,6 +105,21 @@ public class PassengerService {
     @Transactional(readOnly = true)
     public OrderDetailResponse orderDetail(Long orderId) {
         return orderDetailService.passengerDetail(orderId, currentUserId());
+    }
+
+    @Transactional(readOnly = true)
+    public TicketPageResponse listTickets(String status, Integer page, Integer size) {
+        Long userId = currentUserId();
+        TicketStatus ticketStatus = parseTicketStatus(status);
+        PageRequest pageRequest = PageRequest.of(
+                normalizePage(page),
+                normalizeSize(size),
+                Sort.by(Sort.Direction.DESC, "travelDate", "createdAt", "id")
+        );
+        Page<TicketRecord> ticketPage = ticketStatus == null
+                ? ticketRecordRepository.findByUserIdOrderByTravelDateDescCreatedAtDesc(userId, pageRequest)
+                : ticketRecordRepository.findByUserIdAndStatusOrderByTravelDateDescCreatedAtDesc(userId, ticketStatus, pageRequest);
+        return TicketPageResponse.from(ticketPage);
     }
 
     @Transactional(readOnly = true)
@@ -288,6 +317,37 @@ public class PassengerService {
         } catch (IllegalArgumentException ex) {
             throw new BusinessException("Unsupported passenger id type: " + value);
         }
+    }
+
+    private TicketStatus parseTicketStatus(String value) {
+        if (isBlank(value)) {
+            return null;
+        }
+        try {
+            return TicketStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new BusinessException("Unsupported ticket status: " + value);
+        }
+    }
+
+    private int normalizePage(Integer page) {
+        if (page == null) {
+            return DEFAULT_PAGE;
+        }
+        if (page < 0) {
+            throw new BusinessException("Page must be greater than or equal to 0");
+        }
+        return page;
+    }
+
+    private int normalizeSize(Integer size) {
+        if (size == null) {
+            return DEFAULT_PAGE_SIZE;
+        }
+        if (size <= 0) {
+            throw new BusinessException("Page size must be greater than 0");
+        }
+        return Math.min(size, MAX_PAGE_SIZE);
     }
 
     private String normalizeRequired(String value, String message) {

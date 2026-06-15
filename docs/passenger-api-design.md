@@ -26,6 +26,7 @@
 | `POST /api/passenger/orders/{id}/pay` | 支付当前乘客自己的待支付订单 |
 | `POST /api/passenger/orders/{id}/close` | 取消当前乘客自己的待支付订单 |
 | `POST /api/passenger/orders/{id}/refund` | 退当前乘客自己的已支付订单 |
+| `GET /api/passenger/tickets` | 分页查询我的电子票，可按票面状态筛选 |
 | `GET /api/passenger/payments` | 分页查询我的支付流水 |
 | `GET /api/passenger/refunds` | 分页查询我的退款流水 |
 | `GET /api/passenger/notifications` | 分页查询我的站内通知 |
@@ -87,6 +88,7 @@ USER 登录 -> 查询车次 -> POST /api/passenger/orders -> 复用 OrderService
 - 乘客概览：调用 `/api/passenger/summary`，展示订单状态、支付流水、退款流水、最近订单和即将出行。
 - 查票购票：调用 `/api/trains/search` 和 `/api/trains/available`，购票弹窗提交到 `/api/passenger/orders`。
 - 我的订单：调用 `/api/passenger/orders`，支持状态筛选和分页，并提供支付、取消和退票操作。
+- 我的电子票：调用 `/api/passenger/tickets`，展示当前乘客自己的有效票、已退票和已取消票面，并可进入订单详情。
 - 我的支付流水：调用 `/api/passenger/payments`。
 - 我的退款流水：调用 `/api/passenger/refunds`。
 
