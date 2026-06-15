@@ -898,6 +898,8 @@ function showPassengerOrderDetail(detail) {
         <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
       </div>
     </div>
+    ${renderOrderDetailSummary(order, ticket, payments, refunds)}
+    ${renderOrderDetailActions(order)}
     <section class="detail-section">
       <h3>订单进度</h3>
       ${renderOrderTimeline(order, ticket, payments, refunds)}
@@ -925,6 +927,7 @@ function showPassengerOrderDetail(detail) {
       `, "暂无退款记录")}
     </section>
   `;
+  bindOrderDetailActions(modal);
   openDetailModal(modal);
 }
 
@@ -953,9 +956,126 @@ function renderTicketDetail(ticket) {
         <div><span>手机号</span><strong>${escapeHtml(ticket.passengerPhoneMasked || "-")}</strong></div>
         <div><span>出票时间</span><strong>${formatDateTime(ticket.issuedAt) || "-"}</strong></div>
       </div>
+      ${renderTicketStateNote(ticket)}
       ${ticket.invalidatedAt ? `<div class="ticket-detail-note">票面失效时间：${formatDateTime(ticket.invalidatedAt)}</div>` : ""}
     </div>
   `;
+}
+
+function renderOrderDetailSummary(order, ticket, payments, refunds) {
+  const successPayment = payments.find(payment => payment.status === "SUCCESS");
+  const latestPayment = payments[0];
+  const latestRefund = refunds[0];
+  return `
+    <section class="detail-status-grid" aria-label="订单状态总览">
+      <article>
+        <span>订单状态</span>
+        <strong>${statusText(order.status)}</strong>
+        <small>${order.updatedAt ? `更新于 ${formatDateTime(order.updatedAt)}` : "跟随订单实时更新"}</small>
+      </article>
+      <article class="${ticketStatusClass(ticket && ticket.status)}">
+        <span>电子票</span>
+        <strong>${ticket ? ticketStatusText(ticket.status) : "未出票"}</strong>
+        <small>${ticket ? ticket.ticketNo : "支付成功后自动生成"}</small>
+      </article>
+      <article>
+        <span>支付状态</span>
+        <strong>${successPayment ? "已支付" : (latestPayment ? paymentStatusText(latestPayment.status) : "暂无支付")}</strong>
+        <small>${successPayment ? successPayment.paymentNo : "待支付订单可继续完成支付"}</small>
+      </article>
+      <article class="${latestRefund ? refundStatusClass(latestRefund.status) : ""}">
+        <span>退款状态</span>
+        <strong>${latestRefund ? refundStatusText(latestRefund.status) : "暂无退款"}</strong>
+        <small>${latestRefund ? latestRefund.refundNo : "退票后会生成退款流水"}</small>
+      </article>
+    </section>
+  `;
+}
+
+function renderOrderDetailActions(order) {
+  const actions = [];
+  if (order.status === "PENDING_PAYMENT") {
+    actions.push(`<button class="primary-button compact-button" type="button" data-detail-pay-order="${order.id}">立即支付</button>`);
+    actions.push(`<button class="secondary-button compact-button" type="button" data-detail-close-order="${order.id}">取消订单</button>`);
+  }
+  if (order.status === "PAID") {
+    actions.push(`<button class="secondary-button compact-button danger-soft" type="button" data-detail-refund-order="${order.id}">申请退票</button>`);
+  }
+  actions.push(`<button class="secondary-button compact-button" type="button" data-detail-refresh-order="${order.id}">刷新详情</button>`);
+  return `
+    <section class="detail-action-strip" aria-label="订单操作">
+      <div>
+        <strong>${orderActionTitle(order.status)}</strong>
+        <span>${orderActionHint(order.status)}</span>
+      </div>
+      <div class="inline-actions">${actions.join("")}</div>
+    </section>
+  `;
+}
+
+function bindOrderDetailActions(modal) {
+  modal.querySelectorAll("[data-detail-pay-order]").forEach(button => {
+    button.addEventListener("click", () => runOrderDetailAction(button.dataset.detailPayOrder, "pay"));
+  });
+  modal.querySelectorAll("[data-detail-close-order]").forEach(button => {
+    button.addEventListener("click", () => runOrderDetailAction(button.dataset.detailCloseOrder, "close"));
+  });
+  modal.querySelectorAll("[data-detail-refund-order]").forEach(button => {
+    button.addEventListener("click", () => runOrderDetailAction(button.dataset.detailRefundOrder, "refund"));
+  });
+  modal.querySelectorAll("[data-detail-refresh-order]").forEach(button => {
+    button.addEventListener("click", () => openPassengerOrderDetail(button.dataset.detailRefreshOrder));
+  });
+}
+
+async function runOrderDetailAction(orderId, action) {
+  const config = {
+    pay: { path: `/passenger/orders/${orderId}/pay`, success: "支付成功，电子票已更新" },
+    close: { path: `/passenger/orders/${orderId}/close`, success: "订单已取消，库存已释放" },
+    refund: { path: `/passenger/orders/${orderId}/refund`, success: "退票成功，电子票已标记失效" },
+  }[action];
+  if (!config) {
+    return;
+  }
+  try {
+    await passengerRequest(config.path, { method: "POST" });
+    showToast(config.success);
+    passengerState.tickets.page = 0;
+    await refreshPassengerData();
+    await openPassengerOrderDetail(orderId);
+  } catch (error) {
+    showToast(error.message || "订单操作失败");
+  }
+}
+
+function renderTicketStateNote(ticket) {
+  const status = ticket && ticket.status;
+  const message = {
+    ISSUED: "当前电子票有效。请以乘车日期、车次和站点信息为准，进站时核对本人证件。",
+    REFUNDED: "该电子票已随退票失效，不能继续用于乘车。退款进度请查看退款流水。",
+    CANCELLED: "该电子票已取消，不能继续用于乘车。",
+  }[status] || "票面状态会随订单支付、取消和退票动作同步更新。";
+  return `<div class="ticket-state-note ${ticketStatusClass(status)}">${escapeHtml(message)}</div>`;
+}
+
+function orderActionTitle(status) {
+  const map = {
+    PENDING_PAYMENT: "待支付订单",
+    PAID: "已出票订单",
+    CLOSED: "订单已关闭",
+    REFUNDED: "订单已退票",
+  };
+  return map[status] || "订单状态";
+}
+
+function orderActionHint(status) {
+  const map = {
+    PENDING_PAYMENT: "你可以继续支付或取消订单。",
+    PAID: "电子票已生成，如行程变化可申请退票。",
+    CLOSED: "该订单已关闭，库存已释放。",
+    REFUNDED: "电子票已失效，请查看退款流水确认资金状态。",
+  };
+  return map[status] || "订单状态会随交易动作自动更新。";
 }
 
 function renderOrderTimeline(order, ticket, payments, refunds) {
@@ -1125,6 +1245,7 @@ function renderPassengerTickets(tickets) {
         <span>${escapeHtml(ticket.passengerName || "-")}</span>
         <small>${idTypeText(ticket.passengerIdType)} / ${escapeHtml(ticket.passengerIdCardMasked || "-")}</small>
       </div>
+      ${renderTicketStateNote(ticket)}
       <div class="ticket-wallet-footer">
         <span>出票 ${formatDateTime(ticket.issuedAt) || "-"}</span>
         <button class="secondary-button compact-button" type="button" data-ticket-order-detail="${ticket.orderId}">查看订单详情</button>
@@ -1703,7 +1824,7 @@ function ticketStatusText(value) {
 
 function ticketStatusClass(value) {
   const map = {
-    ISSUED: "",
+    ISSUED: "issued",
     REFUNDED: "refunded",
     CANCELLED: "closed",
   };
