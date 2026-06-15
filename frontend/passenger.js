@@ -1141,6 +1141,8 @@ async function payPassengerOrder(orderId) {
     await passengerRequest(`/passenger/orders/${orderId}/pay`, { method: "POST" });
     showToast("支付成功，订单状态已更新");
     await refreshPassengerData();
+    passengerState.tickets.page = 0;
+    await loadPassengerTickets();
     activateSection("passenger-orders");
   } catch (error) {
     showToast(error.message || "支付失败");
@@ -1162,6 +1164,8 @@ async function refundPassengerOrder(orderId) {
     await passengerRequest(`/passenger/orders/${orderId}/refund`, { method: "POST" });
     showToast("退票成功，已创建退款流水");
     await refreshPassengerData();
+    passengerState.tickets.page = 0;
+    await loadPassengerTickets();
     await loadPassengerRefunds();
   } catch (error) {
     showToast(error.message || "退票失败");
@@ -1419,6 +1423,7 @@ function renderLoggedOutPlaceholders() {
 async function passengerRequest(path, options = {}, withAuth = true) {
   const requestOptions = { ...options };
   requestOptions.headers = { ...(options.headers || {}) };
+  requestOptions.cache = "no-store";
   const hasAuthHeader = Boolean(withAuth && passengerState.auth && passengerState.auth.token);
   if (hasAuthHeader) {
     requestOptions.headers.Authorization = `Bearer ${passengerState.auth.token}`;
