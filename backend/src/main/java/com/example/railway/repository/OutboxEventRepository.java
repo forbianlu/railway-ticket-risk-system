@@ -25,6 +25,10 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long>,
 
     List<OutboxEvent> findByStatus(OutboxEventStatus status);
 
+    long countByStatus(OutboxEventStatus status);
+
+    List<OutboxEvent> findTop8ByStatusOrderByCreatedAtDesc(OutboxEventStatus status);
+
     List<OutboxEvent> findByAggregateTypeAndAggregateIdOrderByCreatedAtDesc(String aggregateType, String aggregateId);
 
     List<OutboxEvent> findByStatusAndUpdatedAtBefore(OutboxEventStatus status, LocalDateTime updatedAt);

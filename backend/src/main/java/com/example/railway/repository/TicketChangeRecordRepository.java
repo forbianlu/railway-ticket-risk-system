@@ -33,6 +33,8 @@ public interface TicketChangeRecordRepository extends JpaRepository<TicketChange
 
     long countByStatus(TicketChangeStatus status);
 
+    List<TicketChangeRecord> findTop8ByStatusOrderByCreatedAtDesc(TicketChangeStatus status);
+
     boolean existsByChangeNo(String changeNo);
 
     @Query("select c from TicketChangeRecord c " +

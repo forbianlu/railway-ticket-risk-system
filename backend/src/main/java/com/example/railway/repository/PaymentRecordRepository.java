@@ -28,6 +28,10 @@ public interface PaymentRecordRepository extends JpaRepository<PaymentRecord, Lo
 
     long countByUserId(Long userId);
 
+    long countByStatus(PaymentStatus status);
+
+    List<PaymentRecord> findTop8ByStatusOrderByCreatedAtDesc(PaymentStatus status);
+
     boolean existsByPaymentNo(String paymentNo);
 
     @Query("select p from PaymentRecord p " +

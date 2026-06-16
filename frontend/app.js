@@ -102,6 +102,8 @@ const elements = {
   rateLimitBlocked: document.querySelector("#rate-limit-blocked"),
   rateLimitRules: document.querySelector("#rate-limit-rules"),
   popularTrains: document.querySelector("#popular-trains"),
+  adminWorkbenchSummary: document.querySelector("#admin-workbench-summary"),
+  adminWorkbenchList: document.querySelector("#admin-workbench-list"),
   fromStation: document.querySelector("#from-station"),
   toStation: document.querySelector("#to-station"),
   travelDate: document.querySelector("#travel-date"),
@@ -217,6 +219,7 @@ const elements = {
 };
 
 document.querySelector("#refresh-dashboard").addEventListener("click", refreshAll);
+document.querySelector("#refresh-workbench").addEventListener("click", loadAdminWorkbench);
 document.querySelector("#search-form").addEventListener("submit", event => {
   event.preventDefault();
   searchTrains();
@@ -497,8 +500,10 @@ async function loadDashboard() {
     elements.riskRate.textContent = formatPercent(summary.riskRate);
     elements.openRisks.textContent = summary.unhandledRiskCount ?? summary.openRiskEvents;
     renderPopularTrains(summary.popularTrains || []);
+    await loadAdminWorkbench();
   } catch (error) {
     renderPopularTrains([]);
+    renderAdminWorkbench(null);
   }
 }
 
@@ -1389,6 +1394,81 @@ function renderTicketChanges(changes) {
       </tr>
     `)
     .join("");
+}
+
+async function loadAdminWorkbench() {
+  try {
+    const summary = await request("/dashboard/workbench");
+    renderAdminWorkbench(summary);
+  } catch (error) {
+    renderAdminWorkbench(null);
+  }
+}
+
+function renderAdminWorkbench(summary) {
+  if (!elements.adminWorkbenchSummary || !elements.adminWorkbenchList) {
+    return;
+  }
+  if (!summary) {
+    elements.adminWorkbenchSummary.innerHTML = "";
+    elements.adminWorkbenchList.innerHTML = emptyItem("无法获取异常工作台数据");
+    return;
+  }
+  const cards = [
+    { label: "支付失败", value: summary.failedPaymentCount || 0, target: "payments", status: "FAILED", tone: "danger" },
+    { label: "退款待处理", value: summary.pendingRefundCount || 0, target: "refunds", status: "PENDING", tone: "warn" },
+    { label: "退款失败", value: summary.failedRefundCount || 0, target: "refunds", status: "FAILED", tone: "danger" },
+    { label: "改签待支付", value: summary.pendingChangeCount || 0, target: "ticket-changes", status: "PENDING_PAYMENT", tone: "warn" },
+    { label: "改签失败", value: summary.failedChangeCount || 0, target: "ticket-changes", status: "FAILED", tone: "danger" },
+    { label: "待处置风险", value: summary.pendingRiskCount || 0, target: "risks", status: "PENDING", tone: "danger" },
+    { label: "Outbox 失败", value: summary.failedOutboxCount || 0, target: "outbox", status: "FAILED", tone: "warn" },
+    { label: "未读通知", value: summary.unreadNotificationCount || 0, target: "notifications", status: "UNREAD", tone: "info" },
+  ];
+  elements.adminWorkbenchSummary.innerHTML = cards
+    .map(card => `
+      <button class="ops-workbench-card ${card.tone}" type="button" data-workbench-target="${card.target}" data-workbench-status="${card.status}">
+        <span>${card.label}</span>
+        <strong>${card.value}</strong>
+      </button>
+    `)
+    .join("");
+  const items = summary.exceptionItems || [];
+  if (items.length === 0) {
+    elements.adminWorkbenchList.innerHTML = emptyItem("暂无需要处置的异常交易");
+  } else {
+    elements.adminWorkbenchList.innerHTML = items
+      .map(item => `
+        <div class="ops-workbench-item ${item.severity || "medium"}">
+          <div>
+            <div class="workbench-item-title">
+              <strong>${escapeHtml(item.title || item.type)}</strong>
+              <span>${escapeHtml(item.status || "-")}</span>
+            </div>
+            <p>${escapeHtml(item.description || "")}</p>
+            <small>${escapeHtml(item.orderNo || item.businessId || "-")} · ${formatDateTime(item.createdAt)}</small>
+          </div>
+          <button class="ghost-button tiny-button" type="button"
+                  data-workbench-action="${escapeHtml(item.actionTarget || "")}"
+                  data-workbench-status="${escapeHtml(item.status || "")}"
+                  data-workbench-order="${escapeHtml(item.orderId || "")}">
+            ${escapeHtml(item.actionLabel || "查看")}
+          </button>
+        </div>
+      `)
+      .join("");
+  }
+  elements.adminWorkbenchSummary.querySelectorAll("[data-workbench-target]").forEach(button => {
+    button.addEventListener("click", () => openWorkbenchTarget(button.dataset.workbenchTarget, button.dataset.workbenchStatus));
+  });
+  elements.adminWorkbenchList.querySelectorAll("[data-workbench-action]").forEach(button => {
+    button.addEventListener("click", () => {
+      if (button.dataset.workbenchOrder) {
+        openAdminOrderDetail(button.dataset.workbenchOrder);
+        return;
+      }
+      openWorkbenchTarget(button.dataset.workbenchAction, button.dataset.workbenchStatus);
+    });
+  });
 }
 
 function renderTicketChangePagination() {
@@ -2576,6 +2656,26 @@ async function openRefunds(status, label) {
   showToast(`已切换到${label}`);
 }
 
+async function openPaymentsByStatus(status, label) {
+  elements.paymentStatus.value = status;
+  elements.paymentNoFilter.value = "";
+  elements.paymentOrderId.value = "";
+  state.paymentPage.page = 0;
+  navigateToSection("payments");
+  await loadPaymentsPage();
+  showToast(`已切换到${label}`);
+}
+
+async function openTicketChangesByStatus(status, label) {
+  elements.ticketChangeStatus.value = status;
+  elements.ticketChangeNo.value = "";
+  elements.ticketChangeUserId.value = "";
+  state.ticketChangePage.page = 0;
+  navigateToSection("ticket-changes");
+  await loadTicketChangesPage();
+  showToast(`已切换到${label}`);
+}
+
 async function openOutboxByStatus(status, label) {
   elements.outboxStatus.value = status;
   elements.outboxEventType.value = "";
@@ -2583,6 +2683,43 @@ async function openOutboxByStatus(status, label) {
   navigateToSection("outbox");
   await Promise.all([loadOutboxSummary(), loadOutboxEventsPage()]);
   showToast(`已切换到${label}`);
+}
+
+async function openNotificationsByStatus(status, label) {
+  elements.notificationStatus.value = status;
+  elements.notificationType.value = "";
+  elements.notificationOrderNo.value = "";
+  elements.notificationUserId.value = "";
+  state.notificationPage.page = 0;
+  navigateToSection("notifications");
+  await Promise.all([loadNotificationSummary(), loadNotificationsPage()]);
+  showToast(`已切换到${label}`);
+}
+
+function openWorkbenchTarget(target, status) {
+  switch (target) {
+    case "payments":
+      openPaymentsByStatus(status || "", "支付异常");
+      break;
+    case "refunds":
+      openRefunds(status || "", "退款异常");
+      break;
+    case "ticket-changes":
+      openTicketChangesByStatus(status || "", "改签追踪");
+      break;
+    case "risks":
+      openRisksByStatus(status || "PENDING", "风险处置");
+      break;
+    case "outbox":
+      openOutboxByStatus(status || "FAILED", "事件中心");
+      break;
+    case "notifications":
+      openNotificationsByStatus(status || "UNREAD", "通知中心");
+      break;
+    default:
+      navigateToSection("dashboard");
+      break;
+  }
 }
 
 function navigateToSection(sectionId) {

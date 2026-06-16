@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.railway.dto.DashboardSummary;
+import com.example.railway.dto.AdminWorkbenchResponse;
 import com.example.railway.service.DashboardService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,5 +26,11 @@ public class DashboardController {
     @GetMapping("/summary")
     public DashboardSummary summary() {
         return dashboardService.summary();
+    }
+
+    @Operation(summary = "查询管理端异常交易工作台")
+    @GetMapping("/workbench")
+    public AdminWorkbenchResponse workbench() {
+        return dashboardService.workbench();
     }
 }

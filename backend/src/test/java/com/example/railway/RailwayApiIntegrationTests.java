@@ -59,6 +59,7 @@ import com.example.railway.dto.AuthResponse;
 import com.example.railway.dto.AdminGlobalSearchResponse;
 import com.example.railway.dto.CreateOrderRequest;
 import com.example.railway.dto.CreatePaymentRequest;
+import com.example.railway.dto.AdminWorkbenchResponse;
 import com.example.railway.dto.DashboardSummary;
 import com.example.railway.dto.LoginRequest;
 import com.example.railway.dto.NotificationPageResponse;
@@ -2230,6 +2231,25 @@ class RailwayApiIntegrationTests {
         assertThat(summary.getRefundRate()).isGreaterThanOrEqualTo(0.0D);
         assertThat(summary.getRiskRate()).isGreaterThanOrEqualTo(0.0D);
         assertThat(summary.getPopularTrains()).isNotEmpty();
+    }
+
+    @Test
+    void dashboardShouldExposeAdminExceptionWorkbench() {
+        AdminWorkbenchResponse workbench = restTemplate.getForObject("/api/dashboard/workbench", AdminWorkbenchResponse.class);
+
+        assertThat(workbench).isNotNull();
+        assertThat(workbench.getFailedPaymentCount()).isGreaterThanOrEqualTo(0);
+        assertThat(workbench.getPendingRefundCount()).isGreaterThanOrEqualTo(0);
+        assertThat(workbench.getFailedRefundCount()).isGreaterThanOrEqualTo(0);
+        assertThat(workbench.getPendingChangeCount()).isGreaterThanOrEqualTo(0);
+        assertThat(workbench.getFailedChangeCount()).isGreaterThanOrEqualTo(0);
+        assertThat(workbench.getPendingRiskCount()).isGreaterThanOrEqualTo(0);
+        assertThat(workbench.getFailedOutboxCount()).isGreaterThanOrEqualTo(0);
+        assertThat(workbench.getBacklogOutboxCount()).isGreaterThanOrEqualTo(0);
+        assertThat(workbench.getUnreadNotificationCount()).isGreaterThanOrEqualTo(0);
+        assertThat(workbench.getTotalExceptionCount()).isGreaterThanOrEqualTo(workbench.getFailedPaymentCount());
+        assertThat(workbench.getExceptionItems()).isNotNull();
+        assertThat(workbench.getExceptionItems().size()).isLessThanOrEqualTo(12);
     }
 
     private OrderResponse createOrder(long userId, TrainSearchResponse train, String passengerName) {

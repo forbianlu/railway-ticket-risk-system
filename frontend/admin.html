@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>铁路客运票务与风控运营管理端</title>
-  <link rel="stylesheet" href="./styles.css?v=20260616-message-guide">
+  <link rel="stylesheet" href="./styles.css?v=20260616-admin-workbench">
 </head>
 <body>
   <section class="login-screen" aria-label="系统登录">
@@ -192,6 +192,19 @@
             </div>
             <div class="event-list compact-list rule-list" id="rate-limit-rules"></div>
           </div>
+        </div>
+
+        <div class="ops-workbench">
+          <div class="ops-workbench-head">
+            <div>
+              <p class="eyebrow">Exception Workbench</p>
+              <h3>异常交易处置工作台</h3>
+              <p>汇总支付失败、退款待处理、改签异常、待处置风险和 Outbox 失败事件，支持一键跳转到对应业务模块。</p>
+            </div>
+            <button class="ghost-button" type="button" id="refresh-workbench">刷新工作台</button>
+          </div>
+          <div class="ops-workbench-summary" id="admin-workbench-summary"></div>
+          <div class="ops-workbench-list" id="admin-workbench-list"></div>
         </div>
       </section>
 
@@ -781,6 +794,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./app.js?v=20260616-message-guide"></script>
+  <script src="./app.js?v=20260616-admin-workbench"></script>
 </body>
 </html>

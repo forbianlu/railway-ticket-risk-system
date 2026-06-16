@@ -30,6 +30,10 @@ public interface RefundRecordRepository extends JpaRepository<RefundRecord, Long
 
     long countByUserIdAndStatus(Long userId, RefundStatus status);
 
+    long countByStatus(RefundStatus status);
+
+    List<RefundRecord> findTop8ByStatusOrderByCreatedAtDesc(RefundStatus status);
+
     boolean existsByRefundNo(String refundNo);
 
     @Query("select r from RefundRecord r " +
