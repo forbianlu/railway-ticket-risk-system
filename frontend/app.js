@@ -781,6 +781,7 @@ function showAdminOrderDetail(detail) {
   const payments = detail.payments || [];
   const refunds = detail.refunds || [];
   const ticketChanges = detail.ticketChanges || [];
+  const notifications = detail.notifications || [];
   const risks = detail.risks || [];
   const outboxEvents = detail.outboxEvents || [];
   const logs = detail.operationLogs || [];
@@ -838,7 +839,98 @@ function showAdminOrderDetail(detail) {
       `, "暂无订单操作日志")}
     </section>
   `;
+  modal.querySelector(".order-detail-body").insertAdjacentHTML("afterbegin", `
+    <section class="detail-section transaction-chain-section">
+      <h3>交易链路排查</h3>
+      ${renderAdminTransactionChain(order, ticket, payments, refunds, ticketChanges, notifications, risks, outboxEvents, logs)}
+    </section>
+  `);
   openDetailModal(modal);
+}
+
+function renderAdminTransactionChain(order, ticket, payments, refunds, ticketChanges, notifications, risks, outboxEvents, logs) {
+  const nodes = [{
+    type: "ORDER",
+    title: "订单创建",
+    status: statusText(order.status),
+    time: order.createdAt,
+    detail: order.orderNo || "-",
+  }];
+  if (ticket) {
+    nodes.push({
+      type: "TICKET",
+      title: "电子票",
+      status: ticketStatusText(ticket.status),
+      time: ticket.issuedAt || ticket.createdAt,
+      detail: ticket.ticketNo || "-",
+    });
+  }
+  payments.forEach(payment => nodes.push({
+    type: "PAYMENT",
+    title: "支付流水",
+    status: paymentStatusText(payment.status),
+    time: payment.paidAt || payment.createdAt,
+    detail: `${payment.paymentNo || "-"} / ${formatAmount(payment.amount)}`,
+  }));
+  refunds.forEach(refund => nodes.push({
+    type: "REFUND",
+    title: "退款流水",
+    status: refundStatusText(refund.status),
+    time: refund.refundedAt || refund.createdAt,
+    detail: `${refund.refundNo || "-"} / ${formatAmount(refund.amount)}`,
+  }));
+  ticketChanges.forEach(change => nodes.push({
+    type: "CHANGE",
+    title: "改签记录",
+    status: changeStatusText(change.status),
+    time: change.completedAt || change.updatedAt || change.createdAt,
+    detail: `${change.changeNo || "-"} / ${change.originalTrainNo || "-"} -> ${change.newTrainNo || "-"}`,
+  }));
+  notifications.forEach(notification => nodes.push({
+    type: "NOTICE",
+    title: "通知",
+    status: notificationStatusText(notification.status),
+    time: notification.createdAt,
+    detail: notification.title || notification.notificationNo || "-",
+  }));
+  risks.forEach(risk => nodes.push({
+    type: "RISK",
+    title: "风险事件",
+    status: riskStatusText(risk.status),
+    time: risk.createdAt,
+    detail: `${riskTypeText(risk.riskType)} / ${risk.reason || "-"}`,
+  }));
+  outboxEvents.slice(0, 8).forEach(event => nodes.push({
+    type: "OUTBOX",
+    title: "Outbox",
+    status: outboxStatusText(event.status),
+    time: event.processedAt || event.createdAt,
+    detail: event.eventType || "-",
+  }));
+  logs.slice(0, 8).forEach(log => nodes.push({
+    type: "LOG",
+    title: "审计日志",
+    status: log.operator || "-",
+    time: log.createdAt,
+    detail: log.action || "-",
+  }));
+  nodes.sort((left, right) => {
+    const leftTime = left.time ? new Date(left.time).getTime() : Number.MAX_SAFE_INTEGER;
+    const rightTime = right.time ? new Date(right.time).getTime() : Number.MAX_SAFE_INTEGER;
+    return leftTime - rightTime;
+  });
+  return `
+    <div class="admin-chain-board">
+      ${nodes.map(node => `
+        <article class="admin-chain-node ${escapeHtml(node.type.toLowerCase())}">
+          <span>${escapeHtml(node.type)}</span>
+          <strong>${escapeHtml(node.title)}</strong>
+          <small>${escapeHtml(node.status || "-")} / ${escapeHtml(node.detail || "-")}</small>
+          <time>${formatDateTime(node.time) || "-"}</time>
+        </article>
+      `).join("")}
+    </div>
+  `;
 }
 
 function renderTicketDetail(ticket) {
@@ -1563,7 +1655,7 @@ function renderGlobalSearchItem(item) {
         <span class="status ${searchStatusClass(item.status)}">${escapeHtml(item.status || item.businessType || "-")}</span>
       </div>
       <div class="search-result-meta">
-        <span>${escapeHtml(item.orderNo || item.ticketNo || item.paymentNo || item.refundNo || item.notificationNo || item.businessId || "-")}</span>
+        <span>${escapeHtml(item.orderNo || item.ticketNo || item.paymentNo || item.refundNo || item.changeNo || item.notificationNo || item.businessId || "-")}</span>
         <span>${formatDateTime(item.createdAt) || "-"}</span>
       </div>
       <div class="search-matched-fields">${fields || "<span>related</span>"}</div>

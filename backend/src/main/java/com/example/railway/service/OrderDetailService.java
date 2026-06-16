@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.railway.common.BusinessException;
 import com.example.railway.domain.OperationLog;
 import com.example.railway.domain.OutboxEvent;
+import com.example.railway.domain.NotificationRecord;
 import com.example.railway.domain.PaymentRecord;
 import com.example.railway.domain.RefundRecord;
 import com.example.railway.domain.RiskEvent;
@@ -18,12 +19,14 @@ import com.example.railway.dto.OperationLogItemResponse;
 import com.example.railway.dto.OrderDetailResponse;
 import com.example.railway.dto.OrderResponse;
 import com.example.railway.dto.OutboxEventResponse;
+import com.example.railway.dto.NotificationResponse;
 import com.example.railway.dto.PaymentResponse;
 import com.example.railway.dto.RefundResponse;
 import com.example.railway.dto.RiskEventResponse;
 import com.example.railway.dto.TicketResponse;
 import com.example.railway.repository.OperationLogRepository;
 import com.example.railway.repository.OutboxEventRepository;
+import com.example.railway.repository.NotificationRecordRepository;
 import com.example.railway.repository.PaymentRecordRepository;
 import com.example.railway.repository.RefundRecordRepository;
 import com.example.railway.repository.RiskEventRepository;
@@ -39,6 +42,7 @@ public class OrderDetailService {
     private final RiskEventRepository riskEventRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final OperationLogRepository operationLogRepository;
+    private final NotificationRecordRepository notificationRecordRepository;
     private final TicketService ticketService;
     private final TicketChangeService ticketChangeService;
 
@@ -48,6 +52,7 @@ public class OrderDetailService {
                               RiskEventRepository riskEventRepository,
                               OutboxEventRepository outboxEventRepository,
                               OperationLogRepository operationLogRepository,
+                              NotificationRecordRepository notificationRecordRepository,
                               TicketService ticketService,
                               TicketChangeService ticketChangeService) {
         this.ticketOrderRepository = ticketOrderRepository;
@@ -56,6 +61,7 @@ public class OrderDetailService {
         this.riskEventRepository = riskEventRepository;
         this.outboxEventRepository = outboxEventRepository;
         this.operationLogRepository = operationLogRepository;
+        this.notificationRecordRepository = notificationRecordRepository;
         this.ticketService = ticketService;
         this.ticketChangeService = ticketChangeService;
     }
@@ -117,7 +123,16 @@ public class OrderDetailService {
         response.setPayments(toPaymentResponses(paymentRecordRepository.findByOrderIdOrderByCreatedAtDesc(order.getId())));
         response.setRefunds(toRefundResponses(refundRecordRepository.findByOrderIdOrderByCreatedAtDesc(order.getId())));
         response.setTicketChanges(ticketChangeService.findOrderChanges(order.getId()));
+        response.setNotifications(toNotificationResponses(notificationRecordRepository.findByOrderIdOrderByCreatedAtDesc(order.getId())));
         return response;
+    }
+
+    private List<NotificationResponse> toNotificationResponses(List<NotificationRecord> records) {
+        List<NotificationResponse> responses = new ArrayList<NotificationResponse>();
+        for (NotificationRecord record : records) {
+            responses.add(NotificationResponse.from(record));
+        }
+        return responses;
     }
 
     private List<PaymentResponse> toPaymentResponses(List<PaymentRecord> records) {

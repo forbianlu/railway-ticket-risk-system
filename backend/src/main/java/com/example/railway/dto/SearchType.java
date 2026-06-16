@@ -5,6 +5,7 @@ public enum SearchType {
     TICKET,
     PAYMENT,
     REFUND,
+    TICKET_CHANGE,
     TRAVELER,
     RISK,
     OUTBOX,

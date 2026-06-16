@@ -37,6 +37,8 @@ public interface NotificationRecordRepository extends JpaRepository<Notification
 
     List<NotificationRecord> findByCreatedAtBetween(LocalDateTime from, LocalDateTime to);
 
+    List<NotificationRecord> findByOrderIdOrderByCreatedAtDesc(Long orderId);
+
     @Query("select n from NotificationRecord n " +
             "where lower(n.notificationNo) like lower(concat('%', :keyword, '%')) " +
             "or lower(n.title) like lower(concat('%', :keyword, '%')) " +

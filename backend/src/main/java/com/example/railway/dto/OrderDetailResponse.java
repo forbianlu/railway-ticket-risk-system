@@ -10,6 +10,7 @@ public class OrderDetailResponse {
     private List<PaymentResponse> payments = new ArrayList<PaymentResponse>();
     private List<RefundResponse> refunds = new ArrayList<RefundResponse>();
     private List<TicketChangeResponse> ticketChanges = new ArrayList<TicketChangeResponse>();
+    private List<NotificationResponse> notifications = new ArrayList<NotificationResponse>();
     private List<RiskEventResponse> risks = new ArrayList<RiskEventResponse>();
     private List<OutboxEventResponse> outboxEvents = new ArrayList<OutboxEventResponse>();
     private List<OperationLogItemResponse> operationLogs = new ArrayList<OperationLogItemResponse>();
@@ -52,6 +53,14 @@ public class OrderDetailResponse {
 
     public void setTicketChanges(List<TicketChangeResponse> ticketChanges) {
         this.ticketChanges = ticketChanges;
+    }
+
+    public List<NotificationResponse> getNotifications() {
+        return notifications;
+    }
+
+    public void setNotifications(List<NotificationResponse> notifications) {
+        this.notifications = notifications;
     }
 
     public List<RiskEventResponse> getRisks() {

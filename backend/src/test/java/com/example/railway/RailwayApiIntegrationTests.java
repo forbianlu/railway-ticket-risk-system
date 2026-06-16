@@ -75,6 +75,7 @@ import com.example.railway.dto.OutboxRetryResponse;
 import com.example.railway.dto.PassengerCreateOrderRequest;
 import com.example.railway.dto.PassengerChangeTicketRequest;
 import com.example.railway.dto.PassengerSummaryResponse;
+import com.example.railway.dto.PassengerTodoItemResponse;
 import com.example.railway.dto.PassengerTransactionSummaryResponse;
 import com.example.railway.dto.PassengerTravelerRequest;
 import com.example.railway.dto.PassengerTravelerResponse;
@@ -752,6 +753,8 @@ class RailwayApiIntegrationTests {
         assertThat(summaryResponse.getBody().getPendingChangeCount()).isGreaterThanOrEqualTo(1);
         assertThat(summaryResponse.getBody().getLatestChanges()).extracting(TicketChangeResponse::getChangeNo)
                 .contains(created.getChangeNo());
+        assertThat(summaryResponse.getBody().getTodoItems()).extracting(PassengerTodoItemResponse::getType)
+                .contains("CHANGE_PAYMENT");
 
         ResponseEntity<TicketChangeResponse> paidChangeResponse = restTemplate.exchange(
                 "/api/passenger/changes/{id}/pay",
@@ -807,6 +810,17 @@ class RailwayApiIntegrationTests {
                 .contains(created.getChangeNo());
         assertThat(newDetail.getBody().getTicketChanges()).extracting(TicketChangeResponse::getChangeNo)
                 .contains(created.getChangeNo());
+        assertThat(originalDetail.getBody().getNotifications()).extracting(NotificationResponse::getType)
+                .contains(NotificationType.TICKET_CHANGE_CREATED.name());
+        assertThat(newDetail.getBody().getNotifications()).extracting(NotificationResponse::getType)
+                .contains(NotificationType.TICKET_CHANGE_PENDING_PAYMENT.name(), NotificationType.TICKET_CHANGE_SUCCEEDED.name());
+
+        AdminGlobalSearchResponse changeSearch = search(admin,
+                "/api/search?keyword={keyword}&types=TICKET_CHANGE&limitPerType=3&includeTrace=true",
+                created.getChangeNo());
+        SearchResultGroupResponse changeGroup = group(changeSearch, "TICKET_CHANGE");
+        assertThat(changeGroup.getItems()).extracting(SearchResultItemResponse::getChangeNo).contains(created.getChangeNo());
+        assertThat(changeGroup.getItems().get(0).getTrace()).isNotEmpty();
     }
 
     @Test

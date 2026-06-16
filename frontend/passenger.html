@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>乘客购票服务 - 铁路客运票务与风控运营平台</title>
-  <link rel="stylesheet" href="./styles.css?v=20260616-ticket-change">
+  <link rel="stylesheet" href="./styles.css?v=20260616-chain-center">
 </head>
 <body class="passenger-page passenger-consumer-page">
   <section class="passenger-login passenger-gateway" aria-label="乘客登录">
@@ -201,6 +201,15 @@
         </div>
         <div id="passenger-transaction-stats" class="transaction-status-grid"></div>
         <div class="transaction-flow-board">
+          <article class="transaction-todo-panel">
+            <div class="panel-head">
+              <div>
+                <h3>待办事项</h3>
+                <p>把需要立即处理的支付、改签、退款和消息集中到这里。</p>
+              </div>
+            </div>
+            <div id="passenger-transaction-todos" class="passenger-todo-list"></div>
+          </article>
           <article>
             <div class="panel-head">
               <div>
@@ -547,6 +556,6 @@
   </div>
 
   <div id="passenger-toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./passenger.js?v=20260616-ticket-change"></script>
+  <script src="./passenger.js?v=20260616-chain-center"></script>
 </body>
 </html>

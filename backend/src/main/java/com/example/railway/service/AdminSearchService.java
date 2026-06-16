@@ -20,6 +20,7 @@ import com.example.railway.domain.PassengerTraveler;
 import com.example.railway.domain.PaymentRecord;
 import com.example.railway.domain.RefundRecord;
 import com.example.railway.domain.RiskEvent;
+import com.example.railway.domain.TicketChangeRecord;
 import com.example.railway.domain.TicketOrder;
 import com.example.railway.domain.TicketRecord;
 import com.example.railway.dto.AdminGlobalSearchResponse;
@@ -33,6 +34,7 @@ import com.example.railway.repository.PassengerTravelerRepository;
 import com.example.railway.repository.PaymentRecordRepository;
 import com.example.railway.repository.RefundRecordRepository;
 import com.example.railway.repository.RiskEventRepository;
+import com.example.railway.repository.TicketChangeRecordRepository;
 import com.example.railway.repository.TicketOrderRepository;
 import com.example.railway.repository.TicketRecordRepository;
 
@@ -46,6 +48,7 @@ public class AdminSearchService {
     private final TicketRecordRepository ticketRecordRepository;
     private final PaymentRecordRepository paymentRecordRepository;
     private final RefundRecordRepository refundRecordRepository;
+    private final TicketChangeRecordRepository ticketChangeRecordRepository;
     private final PassengerTravelerRepository passengerTravelerRepository;
     private final RiskEventRepository riskEventRepository;
     private final OutboxEventRepository outboxEventRepository;
@@ -56,6 +59,7 @@ public class AdminSearchService {
                               TicketRecordRepository ticketRecordRepository,
                               PaymentRecordRepository paymentRecordRepository,
                               RefundRecordRepository refundRecordRepository,
+                              TicketChangeRecordRepository ticketChangeRecordRepository,
                               PassengerTravelerRepository passengerTravelerRepository,
                               RiskEventRepository riskEventRepository,
                               OutboxEventRepository outboxEventRepository,
@@ -65,6 +69,7 @@ public class AdminSearchService {
         this.ticketRecordRepository = ticketRecordRepository;
         this.paymentRecordRepository = paymentRecordRepository;
         this.refundRecordRepository = refundRecordRepository;
+        this.ticketChangeRecordRepository = ticketChangeRecordRepository;
         this.passengerTravelerRepository = passengerTravelerRepository;
         this.riskEventRepository = riskEventRepository;
         this.outboxEventRepository = outboxEventRepository;
@@ -105,6 +110,9 @@ public class AdminSearchService {
         }
         if (SearchType.REFUND.equals(type)) {
             return group(type, mapRefunds(refundRecordRepository.searchAdmin(keyword, pageable), keyword, includeTrace));
+        }
+        if (SearchType.TICKET_CHANGE.equals(type)) {
+            return group(type, mapTicketChanges(ticketChangeRecordRepository.searchAdmin(keyword, pageable), keyword, includeTrace));
         }
         if (SearchType.TRAVELER.equals(type)) {
             return group(type, mapTravelers(passengerTravelerRepository.searchAdmin(keyword, pageable), keyword, includeTrace));
@@ -259,6 +267,35 @@ public class AdminSearchService {
                     "orderNo", refund.getOrderNo()));
             if (includeTrace) {
                 item.getTrace().add("REFUND -> ORDER_DETAIL");
+            }
+            items.add(item);
+        }
+        return items;
+    }
+
+    private List<SearchResultItemResponse> mapTicketChanges(List<TicketChangeRecord> changes, String keyword, boolean includeTrace) {
+        List<SearchResultItemResponse> items = new ArrayList<SearchResultItemResponse>();
+        for (TicketChangeRecord change : changes) {
+            SearchResultItemResponse item = base("TICKET_CHANGE-" + change.getId(),
+                    change.getChangeNo(),
+                    change.getOriginalTrainNo() + " -> " + change.getNewTrainNo() + " | " + change.getOriginalOrderNo() + " -> " + change.getNewOrderNo(),
+                    enumName(change.getStatus()),
+                    "TICKET_CHANGE",
+                    change.getChangeNo(),
+                    change.getCreatedAt());
+            item.setOrderId(change.getNewOrderId());
+            item.setOrderNo(change.getNewOrderNo());
+            item.setChangeNo(change.getChangeNo());
+            item.setDetailAction("ORDER_DETAIL");
+            item.setMatchedFields(matched(keyword,
+                    "changeNo", change.getChangeNo(),
+                    "originalOrderNo", change.getOriginalOrderNo(),
+                    "newOrderNo", change.getNewOrderNo(),
+                    "originalTicketNo", change.getOriginalTicketNo(),
+                    "newTicketNo", change.getNewTicketNo(),
+                    "route", change.getOriginalTrainNo() + " -> " + change.getNewTrainNo()));
+            if (includeTrace) {
+                item.getTrace().add("TICKET_CHANGE -> ORIGINAL_ORDER/NEW_ORDER/TICKET/PAYMENT/REFUND");
             }
             items.add(item);
         }
@@ -521,6 +558,9 @@ public class AdminSearchService {
         }
         if (SearchType.REFUND.equals(type)) {
             return "Refund";
+        }
+        if (SearchType.TICKET_CHANGE.equals(type)) {
+            return "Ticket Change";
         }
         if (SearchType.TRAVELER.equals(type)) {
             return "Traveler";

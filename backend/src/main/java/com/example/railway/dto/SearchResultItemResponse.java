@@ -17,6 +17,7 @@ public class SearchResultItemResponse {
     private String ticketNo;
     private String paymentNo;
     private String refundNo;
+    private String changeNo;
     private String notificationNo;
     private LocalDateTime createdAt;
     private String detailAction;
@@ -109,6 +110,14 @@ public class SearchResultItemResponse {
 
     public void setRefundNo(String refundNo) {
         this.refundNo = refundNo;
+    }
+
+    public String getChangeNo() {
+        return changeNo;
+    }
+
+    public void setChangeNo(String changeNo) {
+        this.changeNo = changeNo;
     }
 
     public String getNotificationNo() {

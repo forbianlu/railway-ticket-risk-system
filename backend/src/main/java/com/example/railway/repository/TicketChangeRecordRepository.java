@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.example.railway.domain.TicketChangeRecord;
 import com.example.railway.domain.TicketChangeStatus;
@@ -32,4 +34,15 @@ public interface TicketChangeRecordRepository extends JpaRepository<TicketChange
     long countByStatus(TicketChangeStatus status);
 
     boolean existsByChangeNo(String changeNo);
+
+    @Query("select c from TicketChangeRecord c " +
+            "where lower(c.changeNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(c.originalOrderNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(c.newOrderNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(c.originalTicketNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(c.newTicketNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(c.originalTrainNo) like lower(concat('%', :keyword, '%')) " +
+            "or lower(c.newTrainNo) like lower(concat('%', :keyword, '%')) " +
+            "order by c.createdAt desc")
+    List<TicketChangeRecord> searchAdmin(@Param("keyword") String keyword, Pageable pageable);
 }

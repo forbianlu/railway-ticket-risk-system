@@ -28,12 +28,13 @@ import com.example.railway.domain.TicketOrder;
 import com.example.railway.domain.TicketRecord;
 import com.example.railway.domain.TicketStatus;
 import com.example.railway.dto.CreatePaymentRequest;
+import com.example.railway.dto.OrderResponse;
 import com.example.railway.dto.PassengerChangeTicketRequest;
+import com.example.railway.dto.PassengerTodoItemResponse;
 import com.example.railway.dto.PassengerTransactionSummaryResponse;
 import com.example.railway.dto.PaymentResponse;
 import com.example.railway.dto.TicketChangePageResponse;
 import com.example.railway.dto.TicketChangeResponse;
-import com.example.railway.dto.OrderResponse;
 import com.example.railway.repository.RefundRecordRepository;
 import com.example.railway.repository.SeatInventoryRepository;
 import com.example.railway.repository.TicketChangeRecordRepository;
@@ -273,7 +274,61 @@ public class TicketChangeService {
             latestChanges.add(response(change));
         }
         response.setLatestChanges(latestChanges);
+        response.setTodoItems(buildPassengerTodos(userId, response));
         return response;
+    }
+
+    private List<PassengerTodoItemResponse> buildPassengerTodos(Long userId, PassengerTransactionSummaryResponse summary) {
+        List<PassengerTodoItemResponse> todos = new ArrayList<PassengerTodoItemResponse>();
+        for (TicketOrder order : ticketOrderRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, OrderStatus.PENDING_PAYMENT, PageRequest.of(0, 3))) {
+            todos.add(PassengerTodoItemResponse.of(
+                    "ORDER_PAYMENT",
+                    "待支付订单",
+                    order.getTrain().getTrainNo() + " / " + order.getOrderNo(),
+                    order.getStatus().name(),
+                    "HIGH",
+                    "ORDER_DETAIL",
+                    order.getId(),
+                    null,
+                    order.getCreatedAt()));
+        }
+        for (TicketChangeRecord change : ticketChangeRecordRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, TicketChangeStatus.PENDING_PAYMENT, PageRequest.of(0, 3)).getContent()) {
+            todos.add(PassengerTodoItemResponse.of(
+                    "CHANGE_PAYMENT",
+                    "待支付改签",
+                    change.getOriginalTrainNo() + " -> " + change.getNewTrainNo() + " / " + change.getChangeNo(),
+                    change.getStatus().name(),
+                    "HIGH",
+                    "CHANGE_PAY",
+                    change.getNewOrderId(),
+                    change.getId(),
+                    change.getCreatedAt()));
+        }
+        if (summary.getPendingRefundCount() > 0) {
+            todos.add(PassengerTodoItemResponse.of(
+                    "REFUND_PENDING",
+                    "退款处理中",
+                    "有 " + summary.getPendingRefundCount() + " 笔退款正在处理",
+                    "PENDING",
+                    "MEDIUM",
+                    "REFUNDS",
+                    null,
+                    null,
+                    null));
+        }
+        if (summary.getUnreadNotificationCount() > 0) {
+            todos.add(PassengerTodoItemResponse.of(
+                    "UNREAD_NOTIFICATION",
+                    "未读消息",
+                    "有 " + summary.getUnreadNotificationCount() + " 条消息待查看",
+                    "UNREAD",
+                    "MEDIUM",
+                    "NOTIFICATIONS",
+                    null,
+                    null,
+                    null));
+        }
+        return todos;
     }
 
     private void completeSuccessfulChange(TicketChangeRecord change, TicketOrder original, TicketOrder newOrder, LocalDateTime now) {

@@ -53,6 +53,7 @@ const elements = {
   upcomingTrips: document.querySelector("#passenger-upcoming-trips"),
   refreshTransactions: document.querySelector("#passenger-refresh-transactions"),
   transactionStats: document.querySelector("#passenger-transaction-stats"),
+  transactionTodos: document.querySelector("#passenger-transaction-todos"),
   transactionOrders: document.querySelector("#passenger-transaction-orders"),
   transactionChanges: document.querySelector("#passenger-transaction-changes"),
   searchForm: document.querySelector("#passenger-search-form"),
@@ -412,6 +413,7 @@ async function loadPassengerTransactionSummary() {
     renderPassengerTransactionSummary(summary);
   } catch (error) {
     elements.transactionStats.innerHTML = recordEmpty(error.message || "无法加载交易状态中心");
+    elements.transactionTodos.innerHTML = emptyItem("暂时无法加载待办事项");
     elements.transactionOrders.innerHTML = emptyItem("暂无订单动态");
     elements.transactionChanges.innerHTML = emptyItem("暂无改签动态");
   }
@@ -435,8 +437,63 @@ function renderPassengerTransactionSummary(summary) {
   elements.transactionStats.querySelectorAll("[data-transaction-target]").forEach(button => {
     button.addEventListener("click", () => activateSection(button.dataset.transactionTarget));
   });
+  renderPassengerTodos(summary.todoItems || []);
   renderMiniOrders(elements.transactionOrders, summary.latestOrders || [], "暂无订单动态");
   renderMiniChanges(elements.transactionChanges, summary.latestChanges || [], "暂无改签动态");
+}
+
+function renderPassengerTodos(todos) {
+  if (!todos.length) {
+    elements.transactionTodos.innerHTML = emptyItem("暂无待办事项，当前行程状态平稳");
+    return;
+  }
+  elements.transactionTodos.innerHTML = todos.map(todo => `
+    <article class="passenger-todo-card ${escapeHtml((todo.priority || "").toLowerCase())}">
+      <div>
+        <span class="todo-type">${escapeHtml(todo.type || "-")}</span>
+        <strong>${escapeHtml(todo.title || "-")}</strong>
+        <small>${escapeHtml(todo.description || "-")}</small>
+      </div>
+      <button class="secondary-button compact-button" type="button"
+        data-todo-target="${escapeHtml(todo.actionTarget || "")}"
+        data-todo-order="${todo.orderId || ""}"
+        data-todo-change="${todo.changeId || ""}">
+        处理
+      </button>
+    </article>
+  `).join("");
+  elements.transactionTodos.querySelectorAll("[data-todo-target]").forEach(button => {
+    button.addEventListener("click", () => handlePassengerTodo(button));
+  });
+}
+
+async function handlePassengerTodo(button) {
+  const target = button.dataset.todoTarget;
+  const orderId = button.dataset.todoOrder;
+  const changeId = button.dataset.todoChange;
+  if (target === "ORDER_DETAIL" && orderId) {
+    await openPassengerOrderDetail(orderId);
+    return;
+  }
+  if (target === "CHANGE_PAY" && changeId) {
+    await payPassengerChange(changeId);
+    return;
+  }
+  if (target === "REFUNDS") {
+    elements.refundStatus.value = "PENDING";
+    passengerState.refunds.page = 0;
+    activateSection("passenger-refunds");
+    await loadPassengerRefunds();
+    return;
+  }
+  if (target === "NOTIFICATIONS") {
+    elements.notificationStatus.value = "UNREAD";
+    passengerState.notifications.page = 0;
+    activateSection("passenger-notifications");
+    await loadPassengerNotifications();
+    return;
+  }
+  activateSection("passenger-transactions");
 }
 
 function renderMiniChanges(container, changes, emptyText) {
@@ -996,6 +1053,7 @@ function showPassengerOrderDetail(detail) {
   const payments = detail.payments || [];
   const refunds = detail.refunds || [];
   const ticketChanges = detail.ticketChanges || [];
+  const notifications = detail.notifications || [];
   modal.querySelector(".order-detail-body").innerHTML = `
     <div class="detail-hero">
       <div>
@@ -1012,7 +1070,7 @@ function showPassengerOrderDetail(detail) {
     ${renderOrderDetailActions(order)}
     <section class="detail-section">
       <h3>订单进度</h3>
-      ${renderOrderTimeline(order, ticket, payments, refunds)}
+      ${renderFullOrderTimeline(order, ticket, payments, refunds, ticketChanges, notifications)}
     </section>
     <section class="detail-section">
       <h3>电子票 / 行程单</h3>
@@ -1243,6 +1301,74 @@ function renderOrderTimeline(order, ticket, payments, refunds) {
   ];
   return `
     <ol class="order-progress-timeline">
+      ${steps.map(step => `
+        <li class="${step.done ? "done" : ""}">
+          <span class="timeline-dot"></span>
+          <div>
+            <strong>${escapeHtml(step.label)}</strong>
+            <small>${escapeHtml(step.detail || "-")}</small>
+            <time>${formatDateTime(step.time) || "-"}</time>
+          </div>
+        </li>
+      `).join("")}
+    </ol>
+  `;
+}
+
+function renderFullOrderTimeline(order, ticket, payments, refunds, ticketChanges = [], notifications = []) {
+  const successPayment = payments.find(payment => payment.status === "SUCCESS");
+  const latestPayment = payments[0];
+  const latestRefund = refunds[0];
+  const steps = [
+    {
+      label: "创建订单",
+      time: order.createdAt,
+      done: Boolean(order.createdAt),
+      detail: order.orderNo || "-",
+    },
+    {
+      label: "完成支付",
+      time: order.paidAt || (successPayment && successPayment.paidAt),
+      done: ["PAID", "REFUNDED", "CANCELLED"].includes(order.status),
+      detail: successPayment ? successPayment.paymentNo : (latestPayment ? paymentStatusText(latestPayment.status) : "等待支付"),
+    },
+    {
+      label: "生成电子票",
+      time: ticket && ticket.issuedAt,
+      done: Boolean(ticket && ticket.issuedAt),
+      detail: ticket ? ticket.ticketNo : "支付成功后生成",
+    },
+    ...ticketChanges.map(change => ({
+      label: "改签链路",
+      time: change.completedAt || change.updatedAt || change.createdAt,
+      done: change.status === "SUCCESS",
+      detail: `${changeStatusText(change.status)} / ${change.changeNo || "-"} / ${change.originalTrainNo || "-"} -> ${change.newTrainNo || "-"}`,
+    })),
+    {
+      label: "退票处理",
+      time: order.refundedAt,
+      done: order.status === "REFUNDED",
+      detail: order.status === "REFUNDED" ? "订单已退票" : "未退票",
+    },
+    {
+      label: "退款结果",
+      time: latestRefund && (latestRefund.refundedAt || latestRefund.createdAt),
+      done: Boolean(latestRefund && latestRefund.status === "SUCCESS"),
+      detail: latestRefund ? `${refundStatusText(latestRefund.status)} / ${latestRefund.refundNo}` : "暂无退款记录",
+    },
+    ...notifications.slice(0, 4).map(notification => ({
+      label: "通知触达",
+      time: notification.createdAt,
+      done: notification.status === "READ",
+      detail: `${notificationTypeText(notification.type)} / ${notification.title || notification.notificationNo || "-"}`,
+    })),
+  ].sort((leftStep, rightStep) => {
+    const left = leftStep.time ? new Date(leftStep.time).getTime() : Number.MAX_SAFE_INTEGER;
+    const right = rightStep.time ? new Date(rightStep.time).getTime() : Number.MAX_SAFE_INTEGER;
+    return left - right;
+  });
+  return `
+    <ol class="order-progress-timeline full-chain-timeline">
       ${steps.map(step => `
         <li class="${step.done ? "done" : ""}">
           <span class="timeline-dot"></span>
@@ -1909,6 +2035,7 @@ function renderLoggedOutPlaceholders() {
   resetTravelerForm();
   elements.orderCards.innerHTML = emptyItem("登录后查看我的订单");
   elements.transactionStats.innerHTML = recordEmpty("登录后查看交易状态中心");
+  elements.transactionTodos.innerHTML = emptyItem("登录后查看待办事项");
   elements.transactionOrders.innerHTML = emptyItem("登录后查看订单动态");
   elements.transactionChanges.innerHTML = emptyItem("登录后查看改签动态");
   elements.changeResults.innerHTML = recordEmpty("登录后查看改签记录");

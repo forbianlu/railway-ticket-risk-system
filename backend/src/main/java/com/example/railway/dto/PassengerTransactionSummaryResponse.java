@@ -13,6 +13,7 @@ public class PassengerTransactionSummaryResponse {
     private long unreadNotificationCount;
     private List<OrderResponse> latestOrders = new ArrayList<OrderResponse>();
     private List<TicketChangeResponse> latestChanges = new ArrayList<TicketChangeResponse>();
+    private List<PassengerTodoItemResponse> todoItems = new ArrayList<PassengerTodoItemResponse>();
 
     public long getPendingPaymentOrderCount() { return pendingPaymentOrderCount; }
     public void setPendingPaymentOrderCount(long pendingPaymentOrderCount) { this.pendingPaymentOrderCount = pendingPaymentOrderCount; }
@@ -30,4 +31,6 @@ public class PassengerTransactionSummaryResponse {
     public void setLatestOrders(List<OrderResponse> latestOrders) { this.latestOrders = latestOrders; }
     public List<TicketChangeResponse> getLatestChanges() { return latestChanges; }
     public void setLatestChanges(List<TicketChangeResponse> latestChanges) { this.latestChanges = latestChanges; }
+    public List<PassengerTodoItemResponse> getTodoItems() { return todoItems; }
+    public void setTodoItems(List<PassengerTodoItemResponse> todoItems) { this.todoItems = todoItems; }
 }

@@ -63,4 +63,6 @@ public interface TicketOrderRepository extends JpaRepository<TicketOrder, Long>,
     List<TicketOrder> searchAdmin(@Param("keyword") String keyword, Pageable pageable);
 
     List<TicketOrder> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
+
+    List<TicketOrder> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, OrderStatus status, Pageable pageable);
 }
