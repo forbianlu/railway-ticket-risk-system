@@ -1777,6 +1777,11 @@ class RailwayApiIntegrationTests {
 
         NotificationPageResponse passenger1Notifications = fetchPassengerNotifications(passenger1, "/api/passenger/notifications?size=100");
         NotificationPageResponse passenger2Notifications = fetchPassengerNotifications(passenger2, "/api/passenger/notifications?size=100");
+        NotificationResponse orderCreatedNotification = passenger1Notifications.getContent().stream()
+                .filter(notification -> NotificationType.ORDER_CREATED.name().equals(notification.getType()))
+                .filter(notification -> passenger1Order.getOrderNo().equals(notification.getOrderNo()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected order created notification"));
         NotificationResponse passenger2Notification = passenger2Notifications.getContent().stream()
                 .filter(notification -> passenger2Order.getOrderNo().equals(notification.getOrderNo()))
                 .findFirst()
@@ -1841,6 +1846,9 @@ class RailwayApiIntegrationTests {
 
         assertThat(passenger1Notifications.getContent()).allSatisfy(notification -> assertThat(notification.getUserId()).isEqualTo(passenger1Id));
         assertThat(passenger1Notifications.getContent()).extracting(NotificationResponse::getOrderNo).doesNotContain(passenger2Order.getOrderNo());
+        assertThat(orderCreatedNotification.getActionType()).isEqualTo("ORDER_PAYMENT");
+        assertThat(orderCreatedNotification.getActionTarget()).isEqualTo("ORDERS");
+        assertThat(orderCreatedNotification.getPriority()).isEqualTo("HIGH");
         assertThat(markOtherRead.getStatusCodeValue()).isEqualTo(403);
         assertThat(paid).isNotNull();
         assertThat(paid.getStatus()).isEqualTo("PAID");
@@ -1854,6 +1862,12 @@ class RailwayApiIntegrationTests {
                         NotificationType.ORDER_REFUNDED.name(),
                         NotificationType.REFUND_SUCCEEDED.name()
                 );
+        assertThat(afterFlow.getContent()).filteredOn(notification -> NotificationType.TICKET_ISSUED.name().equals(notification.getType()))
+                .extracting(NotificationResponse::getActionTarget)
+                .contains("TICKETS");
+        assertThat(afterFlow.getContent()).filteredOn(notification -> NotificationType.REFUND_SUCCEEDED.name().equals(notification.getType()))
+                .extracting(NotificationResponse::getActionTarget)
+                .contains("REFUNDS");
         assertThat(afterFlow.getContent()).allSatisfy(notification -> assertThat(notification.getUserId()).isEqualTo(passenger1Id));
         assertThat(markedRead).isNotNull();
         assertThat(markedRead.getStatus()).isEqualTo(NotificationStatus.READ.name());

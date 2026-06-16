@@ -20,6 +20,11 @@ public class NotificationResponse {
     private String ticketNo;
     private String paymentNo;
     private String refundNo;
+    private String actionType;
+    private String actionLabel;
+    private String actionTarget;
+    private String actionHint;
+    private String priority;
     private LocalDateTime readAt;
     private LocalDateTime createdAt;
 
@@ -39,9 +44,49 @@ public class NotificationResponse {
         response.setTicketNo(record.getTicketNo());
         response.setPaymentNo(record.getPaymentNo());
         response.setRefundNo(record.getRefundNo());
+        response.applyAction(record);
         response.setReadAt(record.getReadAt());
         response.setCreatedAt(record.getCreatedAt());
         return response;
+    }
+
+    private void applyAction(NotificationRecord record) {
+        String type = record.getType() == null ? null : record.getType().name();
+        if ("ORDER_CREATED".equals(type)) {
+            setAction("ORDER_PAYMENT", "Go to payment", "ORDERS", "This order is waiting for payment.", "HIGH");
+        } else if ("PAYMENT_SUCCEEDED".equals(type)) {
+            setAction("ORDER_DETAIL", "View order", "ORDER_DETAIL", "Payment succeeded. Check the order and ticket timeline.", "NORMAL");
+        } else if ("TICKET_ISSUED".equals(type)) {
+            setAction("TICKET_WALLET", "View ticket", "TICKETS", "The e-ticket is ready in your ticket wallet.", "NORMAL");
+        } else if ("ORDER_CLOSED".equals(type)) {
+            setAction("ORDER_DETAIL", "View order", "ORDER_DETAIL", "The order has been closed.", "NORMAL");
+        } else if ("ORDER_REFUNDED".equals(type)) {
+            setAction("REFUND_RECORDS", "View refund", "REFUNDS", "Refund processing has started.", "HIGH");
+        } else if ("REFUND_SUCCEEDED".equals(type)) {
+            setAction("REFUND_RECORDS", "View refund", "REFUNDS", "Refund succeeded. Check the refund record.", "NORMAL");
+        } else if ("REFUND_FAILED".equals(type)) {
+            setAction("REFUND_RECORDS", "Check refund", "REFUNDS", "Refund failed and may need follow-up handling.", "HIGH");
+        } else if ("TICKET_CHANGE_PENDING_PAYMENT".equals(type)) {
+            setAction("CHANGE_PAYMENT", "Pay change", "CHANGES", "The ticket change requires price-difference payment.", "HIGH");
+        } else if ("TICKET_CHANGE_CREATED".equals(type)) {
+            setAction("CHANGE_DETAIL", "View change", "CHANGES", "The ticket change request has been submitted.", "NORMAL");
+        } else if ("TICKET_CHANGE_SUCCEEDED".equals(type)) {
+            setAction("CHANGE_DETAIL", "View change", "CHANGES", "Ticket change completed. Check the new ticket.", "NORMAL");
+        } else if ("TICKET_CHANGE_FAILED".equals(type)) {
+            setAction("CHANGE_DETAIL", "Check change", "CHANGES", "Ticket change failed. Review the change record.", "HIGH");
+        } else if ("RISK_ALERT".equals(type)) {
+            setAction("ORDER_DETAIL", "View order", "ORDER_DETAIL", "This transaction has a risk reminder.", "HIGH");
+        } else {
+            setAction("VIEW_MESSAGE", "View message", "NOTIFICATIONS", "Review this message detail.", "NORMAL");
+        }
+    }
+
+    private void setAction(String actionType, String actionLabel, String actionTarget, String actionHint, String priority) {
+        this.actionType = actionType;
+        this.actionLabel = actionLabel;
+        this.actionTarget = actionTarget;
+        this.actionHint = actionHint;
+        this.priority = priority;
     }
 
     public Long getId() {
@@ -154,6 +199,46 @@ public class NotificationResponse {
 
     public void setRefundNo(String refundNo) {
         this.refundNo = refundNo;
+    }
+
+    public String getActionType() {
+        return actionType;
+    }
+
+    public void setActionType(String actionType) {
+        this.actionType = actionType;
+    }
+
+    public String getActionLabel() {
+        return actionLabel;
+    }
+
+    public void setActionLabel(String actionLabel) {
+        this.actionLabel = actionLabel;
+    }
+
+    public String getActionTarget() {
+        return actionTarget;
+    }
+
+    public void setActionTarget(String actionTarget) {
+        this.actionTarget = actionTarget;
+    }
+
+    public String getActionHint() {
+        return actionHint;
+    }
+
+    public void setActionHint(String actionHint) {
+        this.actionHint = actionHint;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
     }
 
     public LocalDateTime getReadAt() {

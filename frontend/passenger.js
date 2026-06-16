@@ -111,6 +111,7 @@ const elements = {
   notificationStatus: document.querySelector("#passenger-notification-status"),
   notificationTotal: document.querySelector("#passenger-notification-total"),
   notificationUnread: document.querySelector("#passenger-notification-unread"),
+  notificationGuide: document.querySelector("#passenger-notification-guide"),
   loadNotifications: document.querySelector("#passenger-load-notifications"),
   refreshNotifications: document.querySelector("#passenger-refresh-notifications"),
   readAllNotifications: document.querySelector("#passenger-read-all-notifications"),
@@ -1917,12 +1918,46 @@ async function loadPassengerNotificationSummary() {
     elements.notificationUnread.textContent = unread;
     elements.navUnread.textContent = unread;
     elements.navUnread.classList.toggle("is-empty", unread === 0);
+    renderPassengerNotificationGuide(summary);
   } catch (error) {
     elements.notificationTotal.textContent = "0";
     elements.notificationUnread.textContent = "0";
     elements.navUnread.textContent = "0";
     elements.navUnread.classList.add("is-empty");
+    elements.notificationGuide.innerHTML = "";
   }
+}
+
+function renderPassengerNotificationGuide(summary) {
+  const unread = Number(summary.unreadCount || 0);
+  const unreadByType = summary.unreadCountByType || {};
+  const actionTypes = [
+    "ORDER_CREATED",
+    "TICKET_CHANGE_PENDING_PAYMENT",
+    "ORDER_REFUNDED",
+    "REFUND_FAILED",
+    "TICKET_ISSUED",
+  ];
+  const chips = actionTypes
+    .filter(type => Number(unreadByType[type] || 0) > 0)
+    .map(type => `<span>${notificationTypeText(type)} ${Number(unreadByType[type] || 0)}</span>`)
+    .join("");
+  if (unread === 0) {
+    elements.notificationGuide.innerHTML = `
+      <div>
+        <strong>当前没有未读提醒</strong>
+        <span>支付、出票、改签和退款进度会自动同步到这里。</span>
+      </div>
+    `;
+    return;
+  }
+  elements.notificationGuide.innerHTML = `
+    <div>
+      <strong>还有 ${unread} 条未读提醒</strong>
+      <span>优先处理待支付、改签补差和退款异常，其他提醒可从订单详情查看完整链路。</span>
+    </div>
+    <div class="notification-guide-chips">${chips || "<span>查看最新提醒</span>"}</div>
+  `;
 }
 
 function renderPassengerNotifications(notifications) {
@@ -1931,7 +1966,7 @@ function renderPassengerNotifications(notifications) {
     return;
   }
   elements.notificationResults.innerHTML = notifications.map(notification => `
-    <article class="money-record-card notification-record-card ${notification.status === "UNREAD" ? "unread" : ""}">
+    <article class="money-record-card notification-record-card ${notification.status === "UNREAD" ? "unread" : ""} ${String(notification.priority || "").toLowerCase()}">
       <div class="record-title-row">
         <div>
           <span>${notificationTypeText(notification.type)}</span>
@@ -1946,7 +1981,9 @@ function renderPassengerNotifications(notifications) {
         <div><span>电子票</span><strong>${escapeHtml(notification.ticketNo || "-")}</strong></div>
         <div><span>创建时间</span><strong>${formatDateTime(notification.createdAt) || "-"}</strong></div>
       </div>
+      ${notification.actionHint ? `<div class="notification-next-step"><span>下一步</span><strong>${escapeHtml(notification.actionHint)}</strong></div>` : ""}
       <div class="record-actions">
+        ${notificationActionButton(notification)}
         ${notification.status === "UNREAD"
           ? `<button class="secondary-button compact-button" type="button" data-notification-read="${notification.id}">标为已读</button>`
           : `<span class="muted-text">已读 ${formatDateTime(notification.readAt) || ""}</span>`}
@@ -1956,13 +1993,81 @@ function renderPassengerNotifications(notifications) {
   elements.notificationResults.querySelectorAll("[data-notification-read]").forEach(button => {
     button.addEventListener("click", () => markPassengerNotificationRead(button.dataset.notificationRead));
   });
+  elements.notificationResults.querySelectorAll("[data-notification-action]").forEach(button => {
+    button.addEventListener("click", () => handlePassengerNotificationAction(button));
+  });
 }
 
-async function markPassengerNotificationRead(id) {
+function notificationActionButton(notification) {
+  const label = notification.actionLabel || "查看";
+  const action = notification.actionType || "VIEW_MESSAGE";
+  return `
+    <button class="primary-button compact-button notification-action-button" type="button"
+      data-notification-action="${escapeHtml(action)}"
+      data-notification-id="${notification.id || ""}"
+      data-notification-order="${notification.orderId || ""}"
+      data-notification-business="${escapeHtml(notification.businessId || "")}"
+      data-notification-type="${escapeHtml(notification.type || "")}">
+      ${escapeHtml(label)}
+    </button>
+  `;
+}
+
+async function handlePassengerNotificationAction(button) {
+  const action = button.dataset.notificationAction;
+  const id = button.dataset.notificationId;
+  const orderId = button.dataset.notificationOrder;
+  const type = button.dataset.notificationType;
+  if (id) {
+    await markPassengerNotificationRead(id, { silent: true });
+  }
+  if ((action === "ORDER_DETAIL" || action === "ORDER_PAYMENT") && orderId) {
+    if (action === "ORDER_PAYMENT") {
+      elements.orderStatus.value = "PENDING_PAYMENT";
+      passengerState.orders.page = 0;
+      await loadPassengerOrders();
+    }
+    await openPassengerOrderDetail(orderId);
+    return;
+  }
+  if (action === "TICKET_WALLET") {
+    elements.ticketStatus.value = type === "TICKET_ISSUED" ? "ISSUED" : "";
+    passengerState.tickets.page = 0;
+    activateSection("passenger-tickets");
+    await loadPassengerTickets();
+    return;
+  }
+  if (action === "REFUND_RECORDS") {
+    if (type === "REFUND_FAILED") {
+      elements.refundStatus.value = "FAILED";
+    } else if (type === "REFUND_SUCCEEDED") {
+      elements.refundStatus.value = "SUCCESS";
+    } else {
+      elements.refundStatus.value = "PENDING";
+    }
+    passengerState.refunds.page = 0;
+    activateSection("passenger-refunds");
+    await loadPassengerRefunds();
+    return;
+  }
+  if (action === "CHANGE_PAYMENT" || action === "CHANGE_DETAIL") {
+    elements.changeStatus.value = action === "CHANGE_PAYMENT" ? "PENDING_PAYMENT" : "";
+    passengerState.changes.page = 0;
+    activateSection("passenger-changes");
+    await loadPassengerChanges();
+    return;
+  }
+  activateSection("passenger-notifications");
+}
+
+async function markPassengerNotificationRead(id, options = {}) {
   try {
     await passengerRequest(`/passenger/notifications/${id}/read`, { method: "POST" });
     await loadPassengerNotifications();
-    showToast("消息已标为已读");
+    await loadPassengerTransactionSummary();
+    if (!options.silent) {
+      showToast("消息已标为已读");
+    }
   } catch (error) {
     showToast(error.message || "消息状态更新失败");
   }
@@ -1973,6 +2078,7 @@ async function markAllPassengerNotificationsRead() {
     await passengerRequest("/passenger/notifications/read-all", { method: "POST" });
     passengerState.notifications.page = 0;
     await loadPassengerNotifications();
+    await loadPassengerTransactionSummary();
     showToast("全部消息已标为已读");
   } catch (error) {
     showToast(error.message || "全部已读失败");
@@ -2043,6 +2149,7 @@ function renderLoggedOutPlaceholders() {
   elements.paymentResults.innerHTML = recordEmpty("登录后查看支付流水");
   elements.refundResults.innerHTML = recordEmpty("登录后查看退款流水");
   elements.notificationResults.innerHTML = recordEmpty("登录后查看消息提醒");
+  elements.notificationGuide.innerHTML = "";
   elements.notificationTotal.textContent = "0";
   elements.notificationUnread.textContent = "0";
   elements.navUnread.textContent = "0";

@@ -1718,7 +1718,7 @@ async function loadNotificationsPage() {
     renderNotifications(page.content || []);
     renderNotificationPagination();
   } catch (error) {
-    elements.notificationResults.innerHTML = tableEmpty(8, error.message || "无法获取通知数据");
+    elements.notificationResults.innerHTML = tableEmpty(9, error.message || "无法获取通知数据");
     renderNotificationPagination();
   }
 }
@@ -1736,7 +1736,7 @@ function buildNotificationQueryPath() {
 
 function renderNotifications(notifications) {
   if (notifications.length === 0) {
-    elements.notificationResults.innerHTML = tableEmpty(8, "暂无站内通知");
+    elements.notificationResults.innerHTML = tableEmpty(9, "暂无站内通知");
     return;
   }
   elements.notificationResults.innerHTML = notifications
@@ -1750,9 +1750,17 @@ function renderNotifications(notifications) {
         <td>${escapeHtml(notification.businessType || "-")}<br><span class="muted-text">${escapeHtml(notification.businessId || "-")}</span></td>
         <td>${escapeHtml(notification.orderNo || "-")}</td>
         <td>${formatDateTime(notification.createdAt) || "-"}</td>
+        <td>
+          ${notification.orderId
+            ? `<button class="secondary-button compact-button" type="button" data-notification-order-detail="${notification.orderId}">打开链路</button>`
+            : `<span class="muted-text">${escapeHtml(notification.actionTarget || "-")}</span>`}
+        </td>
       </tr>
     `)
     .join("");
+  elements.notificationResults.querySelectorAll("[data-notification-order-detail]").forEach(button => {
+    button.addEventListener("click", () => openAdminOrderDetail(button.dataset.notificationOrderDetail));
+  });
 }
 
 function renderNotificationSummary(summary) {
