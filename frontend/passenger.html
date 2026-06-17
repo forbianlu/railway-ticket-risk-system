@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>乘客购票服务 - 铁路客运票务与风控运营平台</title>
-  <link rel="stylesheet" href="./styles.css?v=20260617-flow-closure">
+    <link rel="stylesheet" href="./styles.css?v=20260617-experience-polish">
 </head>
 <body class="passenger-page passenger-consumer-page">
   <section class="passenger-login passenger-gateway" aria-label="乘客登录">
@@ -17,7 +17,7 @@
         <span class="brand-mark large">RT</span>
         <span>
           <strong>乘客购票服务</strong>
-          <small>Passenger Ticketing</small>
+          <small>乘客购票</small>
         </span>
       </a>
       <p class="eyebrow">Search. Book. Travel.</p>
@@ -32,7 +32,7 @@
 
     <div class="login-card passenger-login-card">
       <div class="login-card-head">
-        <p class="eyebrow">Passenger Access</p>
+        <p class="eyebrow">乘客登录</p>
         <h2>进入乘客端</h2>
         <p>登录已有账号，或注册新的普通乘客账号后开始购票。</p>
       </div>
@@ -90,16 +90,17 @@
         <span class="brand-mark passenger-main-mark">RT</span>
         <span>
           <strong>铁路购票服务</strong>
-          <small>Passenger Service</small>
+          <small>购票服务</small>
         </span>
       </a>
       <nav class="passenger-nav passenger-site-nav" aria-label="乘客端导航">
         <a href="#passenger-search">查票</a>
         <a href="#passenger-summary">行程</a>
         <a href="#passenger-account">账号</a>
+        <a href="#passenger-onboarding">引导</a>
         <a href="#passenger-travelers">乘车人</a>
         <a href="#passenger-orders">订单</a>
-        <a href="#passenger-transactions">状态</a>
+        <a href="#passenger-transactions">待办</a>
         <a href="#passenger-changes">改签</a>
         <a href="#passenger-tickets">车票</a>
         <a href="#passenger-payments">支付</a>
@@ -119,7 +120,7 @@
       <section id="passenger-search" class="passenger-section booking-landing">
         <div class="booking-hero-panel">
           <div class="booking-copy">
-            <p class="eyebrow">Ticket Search</p>
+            <p class="eyebrow">车票查询</p>
             <h1 class="reveal-title">从这里开始<br>你的下一段行程</h1>
             <p>选择出发站、到达站和日期，系统会展示当前可购车次。也可以直接查看全部可购车次。</p>
           </div>
@@ -148,7 +149,7 @@
         <div class="passenger-search-results">
           <div class="passenger-section-head">
             <div>
-              <p class="eyebrow">Available Tickets</p>
+              <p class="eyebrow">可购车次</p>
               <h2>可购车次</h2>
             </div>
             <span class="soft-pill">库存实时扣减</span>
@@ -160,7 +161,7 @@
       <section id="passenger-summary" class="passenger-section passenger-home-section">
         <div class="passenger-section-head">
           <div>
-            <p class="eyebrow">My Journey</p>
+            <p class="eyebrow">我的行程</p>
             <h2>我的行程</h2>
             <p>当前乘客账号的订单状态、最近订单和即将出行。</p>
           </div>
@@ -218,27 +219,17 @@
       <section id="passenger-account" class="passenger-section passenger-account-section">
         <div class="passenger-section-head">
           <div>
-            <p class="eyebrow">Account Guide</p>
-            <h2>账号与首单引导</h2>
-            <p>注册后按步骤完成常用乘车人、查票、下单、支付和电子票查看。</p>
+            <p class="eyebrow">账号设置</p>
+            <h2>账号与安全</h2>
+            <p>管理个人资料、安全密码和默认乘车人，购票时会优先使用这些信息。</p>
           </div>
-          <button id="passenger-onboarding-action" class="primary-button" type="button">开始第一段行程</button>
         </div>
         <div class="passenger-account-layout">
-          <article class="onboarding-card">
-            <div class="panel-head">
-              <div>
-                <h3>首单进度</h3>
-                <p>系统会根据你的真实操作自动更新完成状态。</p>
-              </div>
-            </div>
-            <div id="passenger-onboarding-steps" class="onboarding-steps"></div>
-          </article>
           <article class="profile-card">
             <div class="profile-header">
               <div class="profile-avatar" aria-hidden="true">RT</div>
               <div>
-                <span id="passenger-profile-role" class="soft-pill">USER</span>
+                <span id="passenger-profile-role" class="soft-pill">乘客</span>
                 <h3 id="passenger-profile-display">-</h3>
                 <p id="passenger-profile-username">-</p>
               </div>
@@ -286,14 +277,34 @@
         </div>
       </section>
 
+      <section id="passenger-onboarding" class="passenger-section passenger-onboarding-section" hidden>
+        <div class="passenger-section-head">
+          <div>
+            <p class="eyebrow">首单引导</p>
+            <h2>完成第一次购票</h2>
+            <p>只在你需要时显示，按步骤完成乘车人、查票、下单、支付和电子票查看。</p>
+          </div>
+          <button id="passenger-onboarding-action" class="primary-button" type="button">开始第一段行程</button>
+        </div>
+        <article class="onboarding-card">
+          <div class="panel-head">
+            <div>
+              <h3>首单进度</h3>
+              <p>系统会根据你的真实操作自动更新完成状态，全部完成后可关闭此引导。</p>
+            </div>
+          </div>
+          <div id="passenger-onboarding-steps" class="onboarding-steps"></div>
+        </article>
+      </section>
+
       <section id="passenger-transactions" class="passenger-section passenger-transaction-section">
         <div class="passenger-section-head">
           <div>
-            <p class="eyebrow">Transaction Center</p>
-            <h2>交易状态中心</h2>
+            <p class="eyebrow">行程待办</p>
+            <h2>我的行程提醒</h2>
             <p>集中查看待支付、有效车票、改签、退款和未读提醒，帮助你判断下一步该做什么。</p>
           </div>
-          <button id="passenger-refresh-transactions" class="secondary-button" type="button">刷新状态</button>
+          <button id="passenger-refresh-transactions" class="secondary-button" type="button">刷新提醒</button>
         </div>
         <div id="passenger-transaction-stats" class="transaction-status-grid"></div>
         <div class="transaction-flow-board">
@@ -330,7 +341,7 @@
       <section id="passenger-travelers" class="passenger-section passenger-traveler-section">
         <div class="passenger-section-head">
           <div>
-            <p class="eyebrow">Traveler Profiles</p>
+            <p class="eyebrow">常用乘车人</p>
             <h2>常用乘车人</h2>
             <p>维护常用乘车人实名信息，购票时可直接选择。证件号和手机号仅脱敏展示。</p>
           </div>
@@ -378,7 +389,7 @@
       <section id="passenger-orders" class="passenger-section passenger-order-center">
         <div class="passenger-section-head">
           <div>
-            <p class="eyebrow">Order Center</p>
+            <p class="eyebrow">我的订单</p>
             <h2>我的订单</h2>
             <p>待支付订单可支付或取消，已支付订单可申请退票。</p>
           </div>
@@ -410,7 +421,7 @@
       <section id="passenger-changes" class="passenger-section passenger-change-section">
         <div class="passenger-section-head">
           <div>
-            <p class="eyebrow">Ticket Change</p>
+            <p class="eyebrow">改签记录</p>
             <h2>我的改签</h2>
             <p>追踪原票失效、新票生成、补差支付和差额退款。</p>
           </div>
@@ -441,7 +452,7 @@
       <section id="passenger-tickets" class="passenger-section passenger-ticket-wallet-section">
         <div class="passenger-section-head">
           <div>
-            <p class="eyebrow">Ticket Wallet</p>
+            <p class="eyebrow">电子票夹</p>
             <h2>我的电子票</h2>
             <p>支付成功后自动生成电子票，退票后票面状态会同步更新。</p>
           </div>
@@ -471,7 +482,7 @@
       <section id="passenger-payments" class="passenger-section passenger-record-section">
         <div class="passenger-section-head">
           <div>
-            <p class="eyebrow">Payment Records</p>
+            <p class="eyebrow">支付记录</p>
             <h2>我的支付流水</h2>
           </div>
         </div>
@@ -500,7 +511,7 @@
       <section id="passenger-refunds" class="passenger-section passenger-record-section">
         <div class="passenger-section-head">
           <div>
-            <p class="eyebrow">Refund Records</p>
+            <p class="eyebrow">退款记录</p>
             <h2>我的退款流水</h2>
           </div>
         </div>
@@ -529,7 +540,7 @@
       <section id="passenger-notifications" class="passenger-section passenger-notification-section">
         <div class="passenger-section-head">
           <div>
-            <p class="eyebrow">Message Center</p>
+            <p class="eyebrow">消息提醒</p>
             <h2>消息中心</h2>
             <p>查看订单、支付、出票、退票和退款进度提醒。</p>
           </div>
@@ -576,7 +587,7 @@
     <div class="purchase-modal passenger-purchase-modal" role="dialog" aria-modal="true" aria-labelledby="passenger-buy-modal-title">
       <button id="passenger-buy-modal-close" class="modal-close" type="button" aria-label="关闭购票弹窗"></button>
       <div class="modal-head">
-        <p class="eyebrow">Ticket Checkout</p>
+        <p class="eyebrow">购票确认</p>
         <h2 id="passenger-buy-modal-title">确认购票信息</h2>
         <p>确认车次、席别、票价和余票后填写乘客信息。提交后系统将创建待支付订单并锁定库存。</p>
       </div>
@@ -623,7 +634,7 @@
     <div class="purchase-modal passenger-change-modal" role="dialog" aria-modal="true" aria-labelledby="passenger-change-modal-title">
       <button id="passenger-change-modal-close" class="modal-close" type="button" aria-label="关闭改签弹窗"></button>
       <div class="modal-head">
-        <p class="eyebrow">Ticket Change</p>
+        <p class="eyebrow">改签办理</p>
         <h2 id="passenger-change-modal-title">选择新的车次</h2>
         <p>改签会锁定新车次库存。若新票更贵，需要完成新票支付；若新票更便宜，系统会生成差额退款流水。</p>
       </div>
@@ -652,7 +663,22 @@
     </div>
   </div>
 
+  <div id="passenger-onboarding-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="purchase-modal onboarding-choice-modal" role="dialog" aria-modal="true" aria-labelledby="passenger-onboarding-modal-title">
+      <button id="passenger-onboarding-modal-close" class="modal-close" type="button" aria-label="关闭引导选择"></button>
+      <div class="modal-head">
+        <p class="eyebrow">新用户引导</p>
+        <h2 id="passenger-onboarding-modal-title">需要首单引导吗？</h2>
+        <p>可以一步步带你完成添加乘车人、查询车次、下单支付和查看电子票。也可以先跳过，直接开始查票。</p>
+      </div>
+      <div class="onboarding-choice-actions">
+        <button id="passenger-onboarding-skip" class="ghost-button" type="button">暂时不用</button>
+        <button id="passenger-onboarding-start" class="primary-button" type="button">需要引导</button>
+      </div>
+    </div>
+  </div>
+
   <div id="passenger-toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./passenger.js?v=20260617-flow-closure"></script>
+  <script src="./passenger.js?v=20260617-experience-polish"></script>
 </body>
 </html>

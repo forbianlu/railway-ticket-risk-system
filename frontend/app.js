@@ -846,14 +846,14 @@ function showAdminOrderDetail(detail) {
           <div class="detail-record"><strong>${riskTypeText(risk.riskType)} / ${riskStatusText(risk.status)}</strong><span>${escapeHtml(risk.reason || "-")}</span></div>
         `, "暂无风险事件")}</div>
         <div>${renderDetailRecords(outboxEvents, event => `
-          <div class="detail-record"><strong>${escapeHtml(event.eventType)}</strong><span>${outboxStatusText(event.status)} · ${formatDateTime(event.createdAt) || "-"}</span></div>
-        `, "暂无 Outbox 事件")}</div>
+          <div class="detail-record"><strong>${eventTypeText(event.eventType)}</strong><span>${outboxStatusText(event.status)} · ${formatDateTime(event.createdAt) || "-"}</span></div>
+        `, "暂无事件记录")}</div>
       </div>
     </section>
     <section class="detail-section">
       <h3>操作日志</h3>
       ${renderDetailRecords(logs, log => `
-        <div class="detail-record"><strong>${escapeHtml(log.action)}</strong><span>${escapeHtml(log.operator)} · ${formatDateTime(log.createdAt) || "-"} · ${escapeHtml(log.detail || "")}</span></div>
+        <div class="detail-record"><strong>${operationActionText(log.action)}</strong><span>${escapeHtml(log.operator)} · ${formatDateTime(log.createdAt) || "-"} · ${escapeHtml(log.detail || "")}</span></div>
       `, "暂无订单操作日志")}
     </section>
   `;
@@ -910,7 +910,7 @@ function renderAdminIssueList(order, payments, refunds, ticketChanges, risks, ou
     issues.push({ tone: "danger", title: "风险待处置", text: `${riskTypeText(risk.riskType)} / ${risk.reason || order.orderNo || "-"}` });
   });
   outboxEvents.filter(event => event.status === "FAILED").forEach(event => {
-    issues.push({ tone: "warn", title: "Outbox 失败", text: `${event.eventType} / ${event.lastError || "可在事件中心重试"}` });
+    issues.push({ tone: "warn", title: "事件处理失败", text: `${eventTypeText(event.eventType)} / ${event.lastError || "可在事件中心重试"}` });
   });
   if (!issues.length) {
     return `
@@ -953,7 +953,7 @@ function renderAdminDetailQuickActions(order, payments, refunds, ticketChanges, 
         ${latestRefund ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="refunds" data-admin-detail-order="${order.id}">退款流水</button>` : ""}
         ${latestChange ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="ticket-changes" data-admin-detail-change="${escapeHtml(latestChange.changeNo || "")}">改签记录</button>` : ""}
         ${hasRisk ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="risks" data-admin-detail-order-no="${escapeHtml(order.orderNo || "")}">风险事件</button>` : ""}
-        ${hasOutbox ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="outbox">Outbox</button>` : ""}
+        ${hasOutbox ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="outbox">事件记录</button>` : ""}
         ${hasNotice ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="notifications" data-admin-detail-order-no="${escapeHtml(order.orderNo || "")}">通知记录</button>` : ""}
         <button class="secondary-button compact-button" type="button" data-admin-detail-refresh="${order.id}">刷新链路</button>
       </div>
@@ -1027,17 +1027,17 @@ function renderAdminTransactionChain(order, ticket, payments, refunds, ticketCha
   }));
   outboxEvents.slice(0, 8).forEach(event => nodes.push({
     type: "OUTBOX",
-    title: "Outbox",
+    title: "事件记录",
     status: outboxStatusText(event.status),
     time: event.processedAt || event.createdAt,
-    detail: event.eventType || "-",
+    detail: eventTypeText(event.eventType),
   }));
   logs.slice(0, 8).forEach(log => nodes.push({
     type: "LOG",
     title: "审计日志",
     status: log.operator || "-",
     time: log.createdAt,
-    detail: log.action || "-",
+    detail: operationActionText(log.action),
   }));
   nodes.sort((left, right) => {
     const leftTime = left.time ? new Date(left.time).getTime() : Number.MAX_SAFE_INTEGER;
@@ -1048,7 +1048,7 @@ function renderAdminTransactionChain(order, ticket, payments, refunds, ticketCha
     <div class="admin-chain-board">
       ${nodes.map(node => `
         <article class="admin-chain-node ${escapeHtml(node.type.toLowerCase())}">
-          <span>${escapeHtml(node.type)}</span>
+          <span>${chainNodeTypeText(node.type)}</span>
           <strong>${escapeHtml(node.title)}</strong>
           <small>${escapeHtml(node.status || "-")} / ${escapeHtml(node.detail || "-")}</small>
           <time>${formatDateTime(node.time) || "-"}</time>
@@ -1061,13 +1061,13 @@ function renderAdminTransactionChain(order, ticket, payments, refunds, ticketCha
 function renderTicketDetail(ticket) {
   return `
     <div class="ticket-itinerary">
-      <div><span>Ticket No</span><strong>${escapeHtml(ticket.ticketNo)}</strong></div>
-      <div><span>Route</span><strong>${escapeHtml(ticket.departureStation)} → ${escapeHtml(ticket.arrivalStation)}</strong></div>
-      <div><span>Time</span><strong>${formatTime(ticket.departureTime)} - ${formatTime(ticket.arrivalTime)}</strong></div>
-      <div><span>Passenger</span><strong>${escapeHtml(ticket.passengerName)} / ${idTypeText(ticket.passengerIdType)} / ${escapeHtml(ticket.passengerIdCardMasked)}</strong></div>
-      <div><span>Phone</span><strong>${escapeHtml(ticket.passengerPhoneMasked || "-")}</strong></div>
-      <div><span>Status</span><strong>${escapeHtml(ticket.status)}</strong></div>
-      <div><span>Issued At</span><strong>${formatDateTime(ticket.issuedAt) || "-"}</strong></div>
+      <div><span>票号</span><strong>${escapeHtml(ticket.ticketNo)}</strong></div>
+      <div><span>线路</span><strong>${escapeHtml(ticket.departureStation)} → ${escapeHtml(ticket.arrivalStation)}</strong></div>
+      <div><span>时间</span><strong>${formatTime(ticket.departureTime)} - ${formatTime(ticket.arrivalTime)}</strong></div>
+      <div><span>乘车人</span><strong>${escapeHtml(ticket.passengerName)} / ${idTypeText(ticket.passengerIdType)} / ${escapeHtml(ticket.passengerIdCardMasked)}</strong></div>
+      <div><span>手机号</span><strong>${escapeHtml(ticket.passengerPhoneMasked || "-")}</strong></div>
+      <div><span>票面状态</span><strong>${ticketStatusText(ticket.status)}</strong></div>
+      <div><span>出票时间</span><strong>${formatDateTime(ticket.issuedAt) || "-"}</strong></div>
     </div>
   `;
 }
@@ -1094,7 +1094,7 @@ function ensureAdminDetailModal() {
       <div class="modal-head">
         <p class="eyebrow">Operations Detail</p>
         <h2 id="admin-order-detail-title">订单完整链路</h2>
-        <p>汇总订单、电子票、支付、退款、风险、Outbox 和日志。</p>
+        <p>汇总订单、电子票、支付、退款、风险、事件和日志。</p>
       </div>
       <div class="order-detail-body"></div>
     </div>
@@ -1544,7 +1544,7 @@ function renderAdminWorkbench(summary) {
     { label: "改签待支付", value: summary.pendingChangeCount || 0, target: "ticket-changes", status: "PENDING_PAYMENT", tone: "warn" },
     { label: "改签失败", value: summary.failedChangeCount || 0, target: "ticket-changes", status: "FAILED", tone: "danger" },
     { label: "待处置风险", value: summary.pendingRiskCount || 0, target: "risks", status: "PENDING", tone: "danger" },
-    { label: "Outbox 失败", value: summary.failedOutboxCount || 0, target: "outbox", status: "FAILED", tone: "warn" },
+    { label: "事件失败", value: summary.failedOutboxCount || 0, target: "outbox", status: "FAILED", tone: "warn" },
     { label: "未读通知", value: summary.unreadNotificationCount || 0, target: "notifications", status: "UNREAD", tone: "info" },
   ];
   elements.adminWorkbenchSummary.innerHTML = cards
@@ -1565,7 +1565,7 @@ function renderAdminWorkbench(summary) {
           <div>
             <div class="workbench-item-title">
               <strong>${escapeHtml(item.title || item.type)}</strong>
-              <span>${escapeHtml(item.status || "-")}</span>
+              <span>${statusLikeText(item.status)}</span>
             </div>
             <p>${escapeHtml(item.description || "")}</p>
             <small>${escapeHtml(item.orderNo || item.businessId || "-")} · ${formatDateTime(item.createdAt)}</small>
@@ -1664,15 +1664,15 @@ function buildOutboxQueryPath() {
 
 function renderOutboxEvents(events) {
   if (events.length === 0) {
-    elements.outboxResults.innerHTML = tableEmpty(9, "暂无 Outbox 事件");
+    elements.outboxResults.innerHTML = tableEmpty(9, "暂无事件记录");
     return;
   }
   elements.outboxResults.innerHTML = events
     .map(event => `
       <tr>
         <td><span class="muted-text">${event.eventId}</span></td>
-        <td>${event.eventType}</td>
-        <td>${event.aggregateType}<br><span class="muted-text">${event.aggregateId}</span></td>
+        <td>${eventTypeText(event.eventType)}</td>
+        <td>${aggregateTypeText(event.aggregateType)}<br><span class="muted-text">${businessIdText(event.aggregateId)}</span></td>
         <td><span class="status ${outboxStatusClass(event.status)}">${outboxStatusText(event.status)}</span></td>
         <td>${event.retryCount}/${event.maxRetryCount}</td>
         <td>${formatDateTime(event.createdAt)}</td>
@@ -1741,7 +1741,7 @@ function renderOutboxSummary(summary) {
   elements.outboxSummaryFailed.textContent = data.failedCount || 0;
   elements.outboxSummaryFailureRate.textContent = formatPercent(data.failureRate || 0);
   elements.outboxSummaryBacklog.textContent = data.backlogCount || 0;
-  elements.outboxTypeSummary.innerHTML = renderSummaryMap(data.eventCountByType || {});
+  elements.outboxTypeSummary.innerHTML = renderSummaryMap(data.eventCountByType || {}, eventTypeText);
   elements.outboxStatusSummary.innerHTML = renderSummaryMap(data.eventCountByStatus || {}, outboxStatusText);
 }
 
@@ -1824,8 +1824,8 @@ function renderGlobalSearch(result) {
       <article class="search-result-group">
         <div class="search-group-head">
           <div>
-            <p class="eyebrow">${escapeHtml(group.type || "")}</p>
-            <h3>${escapeHtml(group.typeName || group.type || "结果")}</h3>
+            <p class="eyebrow">${businessTypeText(group.type)}</p>
+            <h3>${escapeHtml(group.typeName || businessTypeText(group.type) || "结果")}</h3>
           </div>
           <span>${group.count || 0} 条</span>
         </div>
@@ -1855,13 +1855,13 @@ function renderGlobalSearchItem(item) {
           <strong>${escapeHtml(item.title || "-")}</strong>
           <p>${escapeHtml(item.subtitle || "-")}</p>
         </div>
-        <span class="status ${searchStatusClass(item.status)}">${escapeHtml(item.status || item.businessType || "-")}</span>
+        <span class="status ${searchStatusClass(item.status)}">${statusLikeText(item.status || item.businessType)}</span>
       </div>
       <div class="search-result-meta">
         <span>${escapeHtml(item.orderNo || item.ticketNo || item.paymentNo || item.refundNo || item.changeNo || item.notificationNo || item.businessId || "-")}</span>
         <span>${formatDateTime(item.createdAt) || "-"}</span>
       </div>
-      <div class="search-matched-fields">${fields || "<span>related</span>"}</div>
+      <div class="search-matched-fields">${fields || "<span>相关记录</span>"}</div>
       ${trace}
       <div class="search-result-actions">${action}</div>
     </div>
@@ -1950,13 +1950,13 @@ function renderNotifications(notifications) {
         <td>${notificationTypeText(notification.type)}</td>
         <td><strong>${escapeHtml(notification.title)}</strong><br><span class="muted-text">${escapeHtml(notification.content)}</span></td>
         <td><span class="status ${notificationStatusClass(notification.status)}">${notificationStatusText(notification.status)}</span></td>
-        <td>${escapeHtml(notification.businessType || "-")}<br><span class="muted-text">${escapeHtml(notification.businessId || "-")}</span></td>
+        <td>${businessTypeText(notification.businessType)}<br><span class="muted-text">${businessIdText(notification.businessId)}</span></td>
         <td>${escapeHtml(notification.orderNo || "-")}</td>
         <td>${formatDateTime(notification.createdAt) || "-"}</td>
         <td>
           ${notification.orderId
             ? `<button class="secondary-button compact-button" type="button" data-notification-order-detail="${notification.orderId}">打开链路</button>`
-            : `<span class="muted-text">${escapeHtml(notification.actionTarget || "-")}</span>`}
+            : `<span class="muted-text">${actionTargetText(notification.actionTarget)}</span>`}
         </td>
       </tr>
     `)
@@ -2311,7 +2311,7 @@ function renderLogs() {
   elements.logList.innerHTML = visibleLogs
     .map(log => `
       <div class="event-item">
-        <strong>${escapeHtml(log.action)} / ${escapeHtml(log.targetType)}</strong>
+        <strong>${operationActionText(log.action)} / ${aggregateTypeText(log.targetType)}</strong>
         <span>${escapeHtml(log.operator)} · ${formatDateTime(log.createdAt) || "-"}</span>
         <span>${escapeHtml(log.detail)}</span>
       </div>
@@ -2495,7 +2495,7 @@ function statusText(value) {
     CLOSED: "已关闭",
     CANCELLED: "已取消",
   };
-  return map[value] || value;
+  return map[value] || humanizeCode(value);
 }
 
 function orderStatusClass(value) {
@@ -2514,7 +2514,7 @@ function paymentStatusText(value) {
     SUCCESS: "支付成功",
     FAILED: "支付失败",
   };
-  return map[value] || value;
+  return map[value] || humanizeCode(value);
 }
 
 function paymentStatusClass(value) {
@@ -2532,7 +2532,7 @@ function refundStatusText(value) {
     SUCCESS: "退款成功",
     FAILED: "退款失败",
   };
-  return map[value] || value;
+  return map[value] || humanizeCode(value);
 }
 
 function refundStatusClass(value) {
@@ -2551,7 +2551,7 @@ function changeStatusText(value) {
     FAILED: "改签失败",
     CANCELLED: "已取消",
   };
-  return map[value] || value || "-";
+  return map[value] || humanizeCode(value);
 }
 
 function changeStatusClass(value) {
@@ -2570,7 +2570,7 @@ function ticketStatusText(value) {
     REFUNDED: "已退票",
     CANCELLED: "已取消",
   };
-  return map[value] || value || "-";
+  return map[value] || humanizeCode(value);
 }
 
 function ticketStatusClass(value) {
@@ -2588,7 +2588,7 @@ function riskTypeText(value) {
     FREQUENT_REFUND: "频繁退票",
     HIGH_AMOUNT: "高金额订单",
   };
-  return map[value] || value;
+  return map[value] || humanizeCode(value);
 }
 
 function riskLevelText(value) {
@@ -2597,7 +2597,7 @@ function riskLevelText(value) {
     MEDIUM: "中风险",
     HIGH: "高风险",
   };
-  return map[value] || value;
+  return map[value] || humanizeCode(value);
 }
 
 function riskStatusText(value) {
@@ -2635,7 +2635,7 @@ function outboxStatusText(value) {
     DONE: "处理完成",
     FAILED: "处理失败",
   };
-  return map[value] || value;
+  return map[value] || humanizeCode(value);
 }
 
 function outboxStatusClass(value) {
@@ -2663,7 +2663,7 @@ function notificationTypeText(value) {
     TICKET_CHANGE_FAILED: "改签失败",
     RISK_ALERT: "风险提醒",
   };
-  return map[value] || value || "-";
+  return map[value] || humanizeCode(value);
 }
 
 function notificationStatusText(value) {
@@ -2671,7 +2671,7 @@ function notificationStatusText(value) {
     UNREAD: "未读",
     READ: "已读",
   };
-  return map[value] || value || "-";
+  return map[value] || humanizeCode(value);
 }
 
 function notificationStatusClass(value) {
@@ -2688,7 +2688,137 @@ function roleText(value) {
     OPERATOR: "运营人员",
     RISK_OFFICER: "风控专员",
   };
-  return map[value] || value;
+  return map[value] || humanizeCode(value);
+}
+
+function eventTypeText(value) {
+  const map = {
+    ORDER_PAID: "订单已支付",
+    ORDER_REFUNDED: "订单已退票",
+    ORDER_CLOSED: "订单已关闭",
+    PAYMENT_SUCCEEDED: "支付成功",
+    PAYMENT_FAILED: "支付失败",
+    REFUND_CREATED: "退款已创建",
+    REFUND_SUCCEEDED: "退款成功",
+    REFUND_FAILED: "退款失败",
+    RISK_EVENT_CREATED: "风险事件已创建",
+    RISK_EVENT_HANDLED: "风险事件已处置",
+    TICKET_ISSUED: "电子票已出票",
+    TICKET_INVALIDATED: "电子票已失效",
+    TICKET_CHANGE_CREATED: "已发起改签",
+    TICKET_CHANGE_PENDING_PAYMENT: "改签待支付",
+    TICKET_CHANGE_SUCCEEDED: "改签成功",
+    TICKET_CHANGE_FAILED: "改签失败",
+    NOTIFICATION_CREATED: "消息已创建",
+  };
+  return map[value] || humanizeCode(value);
+}
+
+function aggregateTypeText(value) {
+  const map = {
+    ORDER: "订单",
+    PAYMENT: "支付",
+    REFUND: "退款",
+    RISK: "风险",
+    TICKET: "电子票",
+    TICKET_CHANGE: "改签",
+    NOTIFICATION: "消息",
+    OUTBOX: "事件",
+    LOG: "日志",
+  };
+  return map[value] || humanizeCode(value);
+}
+
+function businessTypeText(value) {
+  return aggregateTypeText(value);
+}
+
+function businessIdText(value) {
+  if (!value) {
+    return "-";
+  }
+  const text = String(value);
+  const prefixes = {
+    "ORDER:": "订单：",
+    "PAYMENT:": "支付：",
+    "REFUND:": "退款：",
+    "TICKET:": "电子票：",
+    "TICKET_CHANGE:": "改签单：",
+    "NOTIFICATION:": "消息：",
+    "RISK:": "风险：",
+  };
+  const prefix = Object.keys(prefixes).find(item => text.startsWith(item));
+  return escapeHtml(prefix ? `${prefixes[prefix]}${text.slice(prefix.length)}` : text);
+}
+
+function chainNodeTypeText(value) {
+  return aggregateTypeText(value);
+}
+
+function actionTargetText(value) {
+  const map = {
+    ORDER_DETAIL: "订单详情",
+    ORDER_PAYMENT: "订单支付",
+    CHANGE_PAYMENT: "改签补差",
+    REFUNDS: "退款记录",
+    NOTIFICATIONS: "消息中心",
+    payments: "支付流水",
+    refunds: "退款流水",
+    risks: "风险事件",
+    outbox: "事件中心",
+    notifications: "通知中心",
+  };
+  return map[value] || humanizeCode(value);
+}
+
+function operationActionText(value) {
+  const map = {
+    LOGIN: "登录",
+    CREATE_ORDER: "创建订单",
+    CREATE_PAYMENT: "创建支付",
+    PAY_ORDER: "支付订单",
+    PAYMENT_CALLBACK: "支付回调",
+    CLOSE_ORDER: "关闭订单",
+    REFUND_ORDER: "退票",
+    REFUND_CALLBACK: "退款回调",
+    HANDLE_RISK_EVENT: "处置风险",
+    OUTBOX_DISPATCH: "事件派发",
+    CACHE_CLEAR: "清理缓存",
+    TICKET_ISSUED: "电子票出票",
+    TICKET_CHANGE_CREATED: "发起改签",
+    TICKET_CHANGE_PAID: "改签支付",
+    TICKET_CHANGE_CANCELLED: "取消改签",
+    NOTIFICATION_CREATED: "创建通知",
+  };
+  return map[value] || humanizeCode(value);
+}
+
+function statusLikeText(value) {
+  return statusText(value);
+}
+
+function humanizeCode(value) {
+  if (!value) {
+    return "-";
+  }
+  const map = {
+    SUCCESS: "成功",
+    FAILED: "失败",
+    PENDING: "待处理",
+    PROCESSING: "处理中",
+    DONE: "已完成",
+    UNREAD: "未读",
+    READ: "已读",
+    ORDER: "订单",
+    PAYMENT: "支付",
+    REFUND: "退款",
+    RISK: "风险",
+    TICKET: "电子票",
+    TICKET_CHANGE: "改签",
+    NOTIFICATION: "消息",
+    OUTBOX: "事件",
+  };
+  return map[value] || String(value).replace(/_/g, " ");
 }
 
 function escapeHtml(value) {
@@ -2739,7 +2869,7 @@ function setupDashboardDrilldowns() {
   bindMetricCard(elements.outboxSummaryPending, () => openOutboxByStatus("PENDING", "待处理事件"));
   bindMetricCard(elements.outboxSummaryProcessing, () => openOutboxByStatus("PROCESSING", "处理中事件"));
   bindMetricCard(elements.outboxSummaryFailed, () => openOutboxByStatus("FAILED", "失败事件"));
-  bindMetricCard(elements.outboxSummaryBacklog, () => openOutboxByStatus("", "Outbox 积压概览"));
+  bindMetricCard(elements.outboxSummaryBacklog, () => openOutboxByStatus("", "事件积压概览"));
 }
 
 function bindMetricCard(valueElement, handler) {
@@ -2910,7 +3040,7 @@ function openAdminDetailTarget(button) {
       openRisksByOrder(orderNo);
       break;
     case "outbox":
-      openOutboxByStatus("", "关联 Outbox 事件");
+      openOutboxByStatus("", "关联事件记录");
       break;
     case "notifications":
       openNotificationsByOrder(orderNo);

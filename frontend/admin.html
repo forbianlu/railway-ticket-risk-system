@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>铁路客运票务与风控运营管理端</title>
-  <link rel="stylesheet" href="./styles.css?v=20260617-flow-closure">
+  <link rel="stylesheet" href="./styles.css?v=20260617-experience-polish">
 </head>
 <body>
   <section class="login-screen" aria-label="系统登录">
@@ -16,7 +16,7 @@
       <div class="brand-card">
         <div class="brand-mark large">RT</div>
         <div>
-          <p class="eyebrow">Railway Operations Console</p>
+          <p class="eyebrow">运营管理端</p>
           <h1>铁路客运票务与风控运营管理端</h1>
           <p class="hero-copy">面向票务交易、资金流水、风险处置、事件治理和运营监控的一体化后台管理端。</p>
         </div>
@@ -32,14 +32,14 @@
         </div>
         <div>
           <span>系统治理</span>
-          <strong>缓存 / 限流 / Outbox</strong>
+          <strong>缓存 / 限流 / 事件</strong>
         </div>
       </div>
     </div>
 
     <div class="login-card">
       <div class="login-card-head">
-        <p class="eyebrow">Secure Access</p>
+        <p class="eyebrow">安全登录</p>
         <h2>登录运营管理端</h2>
         <p>使用管理端演示账号进入系统，登录后可查看订单、流水、风险、事件和审计数据。</p>
       </div>
@@ -90,7 +90,7 @@
         <a href="#logs"><span class="nav-icon log-icon"></span>审计日志</a>
       </nav>
       <div class="sidebar-footer">
-        <span>Backend</span>
+        <span>后端服务</span>
         <strong>Spring Boot / JWT / Redis</strong>
       </div>
     </aside>
@@ -98,7 +98,7 @@
     <main class="main">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Operations Workspace</p>
+          <p class="eyebrow">运营工作台</p>
           <h1>交易与风控运营总览</h1>
         </div>
         <div class="topbar-actions">
@@ -113,7 +113,7 @@
       <section id="dashboard" class="section dashboard-section">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Live Summary</p>
+            <p class="eyebrow">实时概览</p>
             <h2>运营看板</h2>
             <p>集中展示订单状态、风险压力、退票趋势、热门车次以及系统治理指标。</p>
           </div>
@@ -197,9 +197,9 @@
         <div class="ops-workbench">
           <div class="ops-workbench-head">
             <div>
-              <p class="eyebrow">Exception Workbench</p>
+              <p class="eyebrow">异常工作台</p>
               <h3>异常交易处置工作台</h3>
-              <p>汇总支付失败、退款待处理、改签异常、待处置风险和 Outbox 失败事件，支持一键跳转到对应业务模块。</p>
+              <p>汇总支付失败、退款待处理、改签异常、待处置风险和事件处理失败，支持一键跳转到对应业务模块。</p>
             </div>
             <button class="ghost-button" type="button" id="refresh-workbench">刷新工作台</button>
           </div>
@@ -210,7 +210,7 @@
 
       <section id="global-search" class="section global-search-section">
         <div class="section-title">
-          <p class="eyebrow">Global Lookup</p>
+          <p class="eyebrow">全局检索</p>
           <h2>综合查询中心</h2>
           <p>输入订单号、票号、支付/退款流水、乘车人、通知编号或事件关键字，快速定位业务记录并追踪订单链路。</p>
         </div>
@@ -229,7 +229,7 @@
               <option value="TICKET_CHANGE">改签</option>
               <option value="TRAVELER">乘车人</option>
               <option value="RISK">风险</option>
-              <option value="OUTBOX">Outbox</option>
+              <option value="OUTBOX">事件</option>
               <option value="NOTIFICATION">通知</option>
               <option value="OPERATION_LOG">日志</option>
             </select>
@@ -253,7 +253,7 @@
 
       <section id="search" class="section">
         <div class="section-title">
-          <p class="eyebrow">Inventory Search</p>
+          <p class="eyebrow">余票查询</p>
           <h2>车次查询</h2>
           <p>按出发站、到达站和乘车日期查询可售库存，低库存车次会在列表中突出显示。</p>
         </div>
@@ -295,7 +295,7 @@
 
       <section id="orders" class="section">
         <div class="section-title">
-          <p class="eyebrow">Order Lifecycle</p>
+          <p class="eyebrow">订单生命周期</p>
           <h2>订单管理</h2>
           <p>筛选订单状态和创建日期，查看待支付、已支付、已关闭、已退票等状态流转。</p>
         </div>
@@ -358,7 +358,7 @@
 
       <section id="payments" class="section">
         <div class="section-title">
-          <p class="eyebrow">Payment Ledger</p>
+          <p class="eyebrow">支付流水</p>
           <h2>支付流水</h2>
           <p>创建模拟支付流水，执行成功或失败回调，验证支付幂等、签名和金额一致性。</p>
         </div>
@@ -412,7 +412,7 @@
 
       <section id="refunds" class="section">
         <div class="section-title">
-          <p class="eyebrow">Refund Ledger</p>
+          <p class="eyebrow">退款流水</p>
           <h2>退款流水</h2>
           <p>查看退票后的退款状态，模拟退款回调，观察退款成功、失败和幂等处理结果。</p>
         </div>
@@ -467,7 +467,7 @@
 
       <section id="ticket-changes" class="section">
         <div class="section-title">
-          <p class="eyebrow">Ticket Change Tracking</p>
+          <p class="eyebrow">改签追踪</p>
           <h2>改签追踪</h2>
           <p>查看乘客改签申请、原订单与新订单关系、补差支付和差额退款状态。</p>
         </div>
@@ -523,7 +523,7 @@
       <section id="risks" class="section split">
         <div>
           <div class="section-title">
-            <p class="eyebrow">Risk Operations</p>
+            <p class="eyebrow">风险运营</p>
             <h2>风险事件</h2>
             <p>按状态、场景、用户、订单号和创建日期筛选风险事件，并完成处置闭环。</p>
           </div>
@@ -576,7 +576,7 @@
         </div>
         <div class="side-panel">
           <div class="section-title">
-            <p class="eyebrow">Risk Summary</p>
+            <p class="eyebrow">风险报表</p>
             <h2>风险运营报表</h2>
             <p>按状态和场景聚合风险处置压力。</p>
           </div>
@@ -605,8 +605,8 @@
 
       <section id="outbox" class="section">
         <div class="section-title">
-          <p class="eyebrow">Event Center</p>
-          <h2>Outbox 事件中心</h2>
+          <p class="eyebrow">事件中心</p>
+          <h2>事件中心</h2>
           <p>查看交易事件、派发状态、积压情况、失败原因和手动重试结果。</p>
         </div>
         <div class="metric-grid outbox-summary-grid">
@@ -631,7 +631,7 @@
           </label>
           <label>
             事件类型
-            <input id="outbox-event-type" type="text" placeholder="如 ORDER_PAID">
+            <input id="outbox-event-type" type="text" placeholder="事件类型代码，可留空">
           </label>
           <button id="load-outbox-events" class="secondary-button" type="button">查询事件</button>
           <button id="dispatch-outbox-events" class="primary-button" type="button">派发一次</button>
@@ -676,7 +676,7 @@
 
       <section id="notifications" class="section">
         <div class="section-title">
-          <p class="eyebrow">Notification Center</p>
+          <p class="eyebrow">站内通知</p>
           <h2>站内通知中心</h2>
           <p>查看乘客侧订单、支付、出票、退票和退款消息记录。</p>
         </div>
@@ -748,7 +748,7 @@
 
       <section id="logs" class="section">
         <div class="section-title">
-          <p class="eyebrow">Audit Trail</p>
+          <p class="eyebrow">审计日志</p>
           <h2>审计日志</h2>
           <p>记录登录、下单、支付回调、退票、风险处置、缓存清理和事件派发过程。</p>
         </div>
@@ -768,7 +768,7 @@
     <div class="purchase-modal" role="dialog" aria-modal="true" aria-labelledby="buy-modal-title">
       <button id="buy-modal-close" class="modal-close" type="button" aria-label="关闭购票弹窗"></button>
       <div class="modal-head">
-        <p class="eyebrow">Ticket Checkout</p>
+        <p class="eyebrow">购票确认</p>
         <h2 id="buy-modal-title">确认购票信息</h2>
         <p>核对车次、席别和票价后填写乘客信息，确认后系统将创建待支付订单并锁定库存。</p>
       </div>
@@ -794,6 +794,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./app.js?v=20260617-flow-closure"></script>
+  <script src="./app.js?v=20260617-experience-polish"></script>
 </body>
 </html>
