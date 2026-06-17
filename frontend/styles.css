@@ -217,6 +217,47 @@ body:not([data-authenticated="true"]) .app-shell {
   margin-top: 22px;
 }
 
+.login-form[hidden] {
+  display: none;
+}
+
+.passenger-auth-switch {
+  margin-top: 20px;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  border: 1px solid rgba(15, 107, 87, 0.14);
+  border-radius: 14px;
+  background: rgba(236, 253, 245, 0.78);
+}
+
+.auth-mode-button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 11px;
+  color: var(--muted-strong);
+  font-weight: 800;
+  background: transparent;
+  cursor: pointer;
+  transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.auth-mode-button:hover {
+  color: var(--primary);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.auth-mode-button.active {
+  color: var(--primary);
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 107, 87, 0.12);
+}
+
+.auth-mode-button:active {
+  transform: translateY(1px);
+}
+
 .demo-accounts {
   margin-top: 20px;
   display: grid;

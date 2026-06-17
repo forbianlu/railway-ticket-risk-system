@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>乘客购票服务 - 铁路客运票务与风控运营平台</title>
-  <link rel="stylesheet" href="./styles.css?v=20260616-message-guide">
+  <link rel="stylesheet" href="./styles.css?v=20260617-register-flow">
 </head>
 <body class="passenger-page passenger-consumer-page">
   <section class="passenger-login passenger-gateway" aria-label="乘客登录">
@@ -33,8 +33,12 @@
     <div class="login-card passenger-login-card">
       <div class="login-card-head">
         <p class="eyebrow">Passenger Access</p>
-        <h2>登录乘客端</h2>
-        <p>使用普通乘客账号进入购票服务。</p>
+        <h2>进入乘客端</h2>
+        <p>登录已有账号，或注册新的普通乘客账号后开始购票。</p>
+      </div>
+      <div class="passenger-auth-switch" role="tablist" aria-label="乘客账号入口">
+        <button id="passenger-show-login" class="auth-mode-button active" type="button">账号登录</button>
+        <button id="passenger-show-register" class="auth-mode-button" type="button">注册账号</button>
       </div>
       <form id="passenger-login-form" class="login-form">
         <label>
@@ -46,6 +50,26 @@
           <input id="passenger-login-password" type="password" value="123456" autocomplete="current-password">
         </label>
         <button class="primary-button wide-button" type="submit">登录乘客端</button>
+      </form>
+      <form id="passenger-register-form" class="login-form passenger-register-form" hidden>
+        <label>
+          昵称
+          <input id="passenger-register-display-name" type="text" maxlength="64" placeholder="例如：张三" autocomplete="name">
+        </label>
+        <label>
+          用户名
+          <input id="passenger-register-username" type="text" maxlength="64" placeholder="3-64 位字母、数字、下划线" autocomplete="username">
+        </label>
+        <label>
+          密码
+          <input id="passenger-register-password" type="password" minlength="6" maxlength="64" placeholder="至少 6 位" autocomplete="new-password">
+        </label>
+        <label>
+          确认密码
+          <input id="passenger-register-confirm-password" type="password" minlength="6" maxlength="64" autocomplete="new-password">
+        </label>
+        <div id="passenger-register-error" class="form-error" aria-live="polite"></div>
+        <button class="primary-button wide-button" type="submit">注册并进入</button>
       </form>
       <div class="demo-accounts">
         <span>乘客演示账号</span>
@@ -557,6 +581,6 @@
   </div>
 
   <div id="passenger-toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./passenger.js?v=20260616-message-guide"></script>
+  <script src="./passenger.js?v=20260617-register-flow"></script>
 </body>
 </html>

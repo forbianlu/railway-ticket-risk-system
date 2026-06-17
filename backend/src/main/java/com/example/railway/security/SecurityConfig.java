@@ -33,6 +33,7 @@ public class SecurityConfig {
                 .authorizeRequests()
                 .antMatchers(
                         "/api/auth/login",
+                        "/api/auth/register",
                         "/api/health",
                         "/h2-console/**",
                         "/swagger-ui.html",

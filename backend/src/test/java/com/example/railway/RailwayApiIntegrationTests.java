@@ -55,6 +55,7 @@ import com.example.railway.domain.TicketRecord;
 import com.example.railway.domain.TicketChangeRecord;
 import com.example.railway.domain.TicketStatus;
 import com.example.railway.domain.Train;
+import com.example.railway.domain.UserRole;
 import com.example.railway.dto.AuthResponse;
 import com.example.railway.dto.AdminGlobalSearchResponse;
 import com.example.railway.dto.CreateOrderRequest;
@@ -87,6 +88,7 @@ import com.example.railway.dto.RateLimitSummary;
 import com.example.railway.dto.RefundCallbackRequest;
 import com.example.railway.dto.RefundPageResponse;
 import com.example.railway.dto.RefundResponse;
+import com.example.railway.dto.RegisterRequest;
 import com.example.railway.dto.RiskEventHandleRecordResponse;
 import com.example.railway.dto.RiskEventPageResponse;
 import com.example.railway.dto.RiskEventResponse;
@@ -386,6 +388,131 @@ class RailwayApiIntegrationTests {
         assertThat(afterCreate.getRemainingSeats()).isEqualTo(before.getRemainingSeats() - 1);
         assertThat(refunded.getStatus()).isEqualTo("REFUNDED");
         assertThat(afterRefund.getRemainingSeats()).isEqualTo(before.getRemainingSeats());
+    }
+
+    @Test
+    void shouldRegisterPassengerAndCompleteTicketingFlow() {
+        String suffix = Long.toString(System.nanoTime(), 36);
+        String username = "reguser" + suffix.substring(Math.max(0, suffix.length() - 8));
+        AuthResponse admin = login("admin", "admin123");
+
+        RegisterRequest request = new RegisterRequest();
+        request.setUsername(username);
+        request.setDisplayName("Registered Passenger");
+        request.setPassword("123456");
+        request.setConfirmPassword("123456");
+
+        ResponseEntity<AuthResponse> registerResponse = restTemplate.postForEntity(
+                "/api/auth/register",
+                request,
+                AuthResponse.class
+        );
+        assertThat(registerResponse.getStatusCodeValue()).isEqualTo(200);
+        AuthResponse registered = registerResponse.getBody();
+        assertThat(registered).isNotNull();
+        assertThat(registered.getToken()).isNotBlank();
+        assertThat(registered.getRole()).isEqualTo("USER");
+        assertThat(appUserRepository.findByUsername(username))
+                .isPresent()
+                .get()
+                .extracting(user -> user.getRole())
+                .isEqualTo(UserRole.USER);
+
+        ResponseEntity<String> duplicateResponse = restTemplate.postForEntity(
+                "/api/auth/register",
+                request,
+                String.class
+        );
+        assertThat(duplicateResponse.getStatusCodeValue()).isEqualTo(400);
+
+        ResponseEntity<PassengerSummaryResponse> summaryResponse = restTemplate.exchange(
+                "/api/passenger/summary",
+                HttpMethod.GET,
+                authorizedEntity(registered),
+                PassengerSummaryResponse.class
+        );
+        assertThat(summaryResponse.getStatusCodeValue()).isEqualTo(200);
+
+        TrainSearchResponse train = firstTrainInventory();
+        OrderResponse pending = createPassengerOrder(registered, train, "RegisteredFlowUser");
+        assertThat(pending.getUserId()).isEqualTo(appUserRepository.findByUsername(username).orElseThrow(() -> new AssertionError("expected user")).getId());
+
+        ResponseEntity<OrderResponse> paidResponse = restTemplate.exchange(
+                "/api/passenger/orders/{id}/pay",
+                HttpMethod.POST,
+                authorizedEntity(registered),
+                OrderResponse.class,
+                pending.getId()
+        );
+        assertThat(paidResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(paidResponse.getBody()).isNotNull();
+        assertThat(paidResponse.getBody().getStatus()).isEqualTo("PAID");
+
+        ResponseEntity<PaymentPageResponse> passengerPayments = restTemplate.exchange(
+                "/api/passenger/payments?size=50",
+                HttpMethod.GET,
+                authorizedEntity(registered),
+                PaymentPageResponse.class
+        );
+        assertThat(passengerPayments.getBody()).isNotNull();
+        assertThat(passengerPayments.getBody().getContent()).extracting(PaymentResponse::getOrderNo)
+                .contains(pending.getOrderNo());
+
+        ResponseEntity<OrderResponse> refundedResponse = restTemplate.exchange(
+                "/api/passenger/orders/{id}/refund",
+                HttpMethod.POST,
+                authorizedEntity(registered),
+                OrderResponse.class,
+                pending.getId()
+        );
+        assertThat(refundedResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(refundedResponse.getBody()).isNotNull();
+        assertThat(refundedResponse.getBody().getStatus()).isEqualTo("REFUNDED");
+
+        ResponseEntity<RefundPageResponse> passengerRefunds = restTemplate.exchange(
+                "/api/passenger/refunds?size=50",
+                HttpMethod.GET,
+                authorizedEntity(registered),
+                RefundPageResponse.class
+        );
+        assertThat(passengerRefunds.getBody()).isNotNull();
+        assertThat(passengerRefunds.getBody().getContent()).extracting(RefundResponse::getOrderNo)
+                .contains(pending.getOrderNo());
+
+        ResponseEntity<OrderPageResponse> adminOrders = restTemplate.exchange(
+                "/api/orders?orderNo={orderNo}",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                OrderPageResponse.class,
+                pending.getOrderNo()
+        );
+        assertThat(adminOrders.getBody()).isNotNull();
+        assertThat(adminOrders.getBody().getContent()).extracting(OrderResponse::getOrderNo)
+                .contains(pending.getOrderNo());
+
+        ResponseEntity<PaymentPageResponse> adminPayments = restTemplate.exchange(
+                "/api/payments?orderId={orderId}&size=50",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                PaymentPageResponse.class,
+                pending.getId()
+        );
+        ResponseEntity<RefundPageResponse> adminRefunds = restTemplate.exchange(
+                "/api/refunds?orderId={orderId}&size=50",
+                HttpMethod.GET,
+                authorizedEntity(admin),
+                RefundPageResponse.class,
+                pending.getId()
+        );
+        assertThat(adminPayments.getBody()).isNotNull();
+        assertThat(adminPayments.getBody().getContent()).extracting(PaymentResponse::getOrderNo)
+                .contains(pending.getOrderNo());
+        assertThat(adminRefunds.getBody()).isNotNull();
+        assertThat(adminRefunds.getBody().getContent()).extracting(RefundResponse::getOrderNo)
+                .contains(pending.getOrderNo());
+
+        assertThat(userGetStatus(registered, "/api/orders")).isEqualTo(403);
+        assertThat(userGetStatus(registered, "/api/outbox-events")).isEqualTo(403);
     }
 
     @Test

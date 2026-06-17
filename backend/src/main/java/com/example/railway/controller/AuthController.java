@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.railway.dto.AuthResponse;
 import com.example.railway.dto.LoginRequest;
+import com.example.railway.dto.RegisterRequest;
 import com.example.railway.security.RequiredRole;
 import com.example.railway.service.AuthService;
 
@@ -31,6 +32,12 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    @Operation(summary = "注册普通乘客账号并获取 JWT")
+    @PostMapping("/register")
+    public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
+        return authService.register(request);
     }
 
     @Operation(summary = "查询当前登录用户")

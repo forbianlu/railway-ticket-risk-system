@@ -3,9 +3,12 @@ package com.example.railway.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.railway.common.BusinessException;
 import com.example.railway.domain.AppUser;
+import com.example.railway.domain.UserRole;
 import com.example.railway.dto.AuthResponse;
 import com.example.railway.dto.LoginRequest;
+import com.example.railway.dto.RegisterRequest;
 import com.example.railway.repository.AppUserRepository;
 import com.example.railway.security.AuthContext;
 import com.example.railway.security.AuthPrincipal;
@@ -48,9 +51,49 @@ public class AuthService {
         return new AuthResponse(token, user.getUsername(), user.getDisplayName(), user.getRole().name(), authTokenService.expiresAt(token));
     }
 
+    @Transactional
+    public AuthResponse register(RegisterRequest request) {
+        String username = normalize(request.getUsername());
+        String displayName = normalize(request.getDisplayName());
+        if (displayName == null) {
+            displayName = username;
+        }
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessException("两次输入的密码不一致");
+        }
+        if (appUserRepository.existsByUsername(username)) {
+            throw new BusinessException("用户名已存在");
+        }
+
+        AppUser user = appUserRepository.save(new AppUser(
+                username,
+                passwordService.hash(request.getPassword()),
+                displayName,
+                UserRole.USER
+        ));
+
+        String token = authTokenService.generate(user);
+        operationLogService.record(
+                user.getUsername(),
+                "REGISTER",
+                "APP_USER",
+                String.valueOf(user.getId()),
+                "乘客账号注册"
+        );
+        return new AuthResponse(token, user.getUsername(), user.getDisplayName(), user.getRole().name(), authTokenService.expiresAt(token));
+    }
+
     @Transactional(readOnly = true)
     public AuthResponse me() {
         AuthPrincipal principal = AuthContext.current();
         return new AuthResponse(null, principal.getUsername(), principal.getDisplayName(), principal.getRole().name(), principal.getExpiresAt());
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

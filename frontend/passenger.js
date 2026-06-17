@@ -36,6 +36,14 @@ const elements = {
   loginForm: document.querySelector("#passenger-login-form"),
   loginUsername: document.querySelector("#passenger-login-username"),
   loginPassword: document.querySelector("#passenger-login-password"),
+  registerForm: document.querySelector("#passenger-register-form"),
+  registerDisplayName: document.querySelector("#passenger-register-display-name"),
+  registerUsername: document.querySelector("#passenger-register-username"),
+  registerPassword: document.querySelector("#passenger-register-password"),
+  registerConfirmPassword: document.querySelector("#passenger-register-confirm-password"),
+  registerError: document.querySelector("#passenger-register-error"),
+  showLogin: document.querySelector("#passenger-show-login"),
+  showRegister: document.querySelector("#passenger-show-register"),
   apiStatus: document.querySelector("#passenger-api-status"),
   apiStatusText: document.querySelector("#passenger-api-status-text"),
   authRole: document.querySelector("#passenger-auth-role"),
@@ -149,6 +157,12 @@ elements.loginForm.addEventListener("submit", event => {
   event.preventDefault();
   loginPassenger();
 });
+elements.registerForm.addEventListener("submit", event => {
+  event.preventDefault();
+  registerPassenger();
+});
+elements.showLogin.addEventListener("click", () => switchPassengerAuthMode("login"));
+elements.showRegister.addEventListener("click", () => switchPassengerAuthMode("register"));
 elements.logoutButton.addEventListener("click", logoutPassenger);
 elements.refreshPassenger.addEventListener("click", refreshPassengerData);
 elements.refreshTransactions.addEventListener("click", loadPassengerTransactionSummary);
@@ -311,6 +325,51 @@ async function loginPassenger() {
   } catch (error) {
     showToast(error.message || "登录失败");
   }
+}
+
+async function registerPassenger() {
+  const username = elements.registerUsername.value.trim();
+  const password = elements.registerPassword.value;
+  const confirmPassword = elements.registerConfirmPassword.value;
+  elements.registerError.textContent = "";
+  if (password !== confirmPassword) {
+    elements.registerError.textContent = "两次输入的密码不一致";
+    return;
+  }
+  try {
+    const auth = await passengerRequest("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username,
+        password,
+        confirmPassword,
+        displayName: elements.registerDisplayName.value.trim() || username,
+      }),
+    }, false);
+    if (auth.role !== "USER") {
+      throw new Error("注册账号角色异常，请联系管理员");
+    }
+    passengerState.auth = auth;
+    passengerState.authExpiredNotified = false;
+    localStorage.setItem(PASSENGER_AUTH_KEY, JSON.stringify(auth));
+    renderAuthState();
+    showToast("注册成功，已进入乘客购票服务");
+    await refreshPassengerData();
+    await loadAvailablePassengerTrains();
+  } catch (error) {
+    elements.registerError.textContent = error.message || "注册失败";
+    showToast(error.message || "注册失败");
+  }
+}
+
+function switchPassengerAuthMode(mode) {
+  const isRegister = mode === "register";
+  elements.loginForm.hidden = isRegister;
+  elements.registerForm.hidden = !isRegister;
+  elements.showLogin.classList.toggle("active", !isRegister);
+  elements.showRegister.classList.toggle("active", isRegister);
+  elements.registerError.textContent = "";
 }
 
 function logoutPassenger() {
