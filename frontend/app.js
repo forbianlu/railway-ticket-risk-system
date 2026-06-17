@@ -1948,7 +1948,7 @@ function renderNotifications(notifications) {
         <td><span class="muted-text">${escapeHtml(notification.notificationNo)}</span></td>
         <td>${notification.userId}</td>
         <td>${notificationTypeText(notification.type)}</td>
-        <td><strong>${escapeHtml(notification.title)}</strong><br><span class="muted-text">${escapeHtml(notification.content)}</span></td>
+        <td><strong>${escapeHtml(notificationTitleText(notification))}</strong><br><span class="muted-text">${escapeHtml(notificationContentText(notification))}</span></td>
         <td><span class="status ${notificationStatusClass(notification.status)}">${notificationStatusText(notification.status)}</span></td>
         <td>${businessTypeText(notification.businessType)}<br><span class="muted-text">${businessIdText(notification.businessId)}</span></td>
         <td>${escapeHtml(notification.orderNo || "-")}</td>
@@ -2582,6 +2582,60 @@ function ticketStatusClass(value) {
   return map[value] || "";
 }
 
+function notificationTitleText(notification) {
+  const rawTitle = String(notification && notification.title ? notification.title : "").trim();
+  const map = {
+    "Order created": "下单成功",
+    "Payment confirmed": "支付成功",
+    "Ticket issued": "出票成功",
+    "Order closed": "订单已关闭",
+    "Order refunded": "退票成功",
+    "Refund succeeded": "退款成功",
+    "Refund failed": "退款失败",
+    "Ticket change created": "已发起改签",
+    "Ticket change pending payment": "改签待支付",
+    "Ticket change succeeded": "改签成功",
+    "Ticket change failed": "改签失败",
+  };
+  return map[rawTitle] || notificationTypeText(notification && notification.type) || rawTitle || "-";
+}
+
+function notificationContentText(notification) {
+  const content = String(notification && notification.content ? notification.content : "").trim();
+  if (!content) {
+    return actionTargetText(notification && notification.actionHint);
+  }
+  const paymentMatch = content.match(/^Order\s+(\S+)\s+payment succeeded\.\s+Amount\s+([^,]+),\s+paymentNo\s+(\S+)\.?$/i);
+  if (paymentMatch) {
+    return `订单 ${paymentMatch[1]} 已支付成功，金额 ¥${paymentMatch[2]}，支付流水 ${paymentMatch[3]}。`;
+  }
+  const ticketMatch = content.match(/^Ticket\s+(\S+)\s+for train\s+(\S+)\s+(.+?)\s+to\s+(.+?)\s+on\s+([0-9-]+)\s+has been issued\.?$/i);
+  if (ticketMatch) {
+    return `电子票 ${ticketMatch[1]} 已出票，车次 ${ticketMatch[2]}，${ticketMatch[3]} 至 ${ticketMatch[4]}，乘车日期 ${ticketMatch[5]}。`;
+  }
+  const orderMatch = content.match(/^Order\s+(\S+)\s+is pending payment\.\s+Amount\s+([^,]+),\s+payment deadline\s+(.+)\.?$/i);
+  if (orderMatch) {
+    return `订单 ${orderMatch[1]} 已创建，金额 ¥${orderMatch[2]}，请在 ${orderMatch[3]} 前完成支付。`;
+  }
+  const type = notification && notification.type;
+  const orderNo = notification && notification.orderNo ? notification.orderNo : "当前订单";
+  const ticketNo = notification && notification.ticketNo ? notification.ticketNo : "电子票";
+  const fallback = {
+    ORDER_CREATED: `${orderNo} 已创建，请及时完成后续操作。`,
+    PAYMENT_SUCCEEDED: `${orderNo} 已支付成功，电子票状态会同步更新。`,
+    TICKET_ISSUED: `${ticketNo} 已出票，可在电子票夹查看。`,
+    ORDER_CLOSED: `${orderNo} 已关闭。`,
+    ORDER_REFUNDED: `${orderNo} 已退票，退款记录会同步更新。`,
+    REFUND_SUCCEEDED: `${orderNo} 退款已成功。`,
+    REFUND_FAILED: `${orderNo} 退款失败，请稍后查看或联系运营处理。`,
+    TICKET_CHANGE_CREATED: `${orderNo} 已发起改签。`,
+    TICKET_CHANGE_PENDING_PAYMENT: `${orderNo} 改签待支付差额。`,
+    TICKET_CHANGE_SUCCEEDED: `${orderNo} 改签已完成。`,
+    TICKET_CHANGE_FAILED: `${orderNo} 改签失败。`,
+  };
+  return fallback[type] || content;
+}
+
 function riskTypeText(value) {
   const map = {
     RAPID_PURCHASE: "短时多次购票",
@@ -2767,6 +2821,13 @@ function actionTargetText(value) {
     risks: "风险事件",
     outbox: "事件中心",
     notifications: "通知中心",
+    "View Order": "查看订单",
+    "View Ticket": "查看电子票",
+    "Go To Payment": "去支付",
+    "View Refund": "查看退款",
+    "Payment Succeeded. Check The Order And Ticket Timeline.": "支付已完成，请查看订单详情和电子票。",
+    "The E-Ticket Is Ready In Your Ticket Wallet.": "电子票已生成，可在电子票夹查看。",
+    "This Order Is Waiting For Payment.": "订单待支付，请尽快完成支付。",
   };
   return map[value] || humanizeCode(value);
 }

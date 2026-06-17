@@ -56,6 +56,7 @@ const elements = {
   authUser: document.querySelector("#passenger-auth-user"),
   logoutButton: document.querySelector("#passenger-logout-button"),
   refreshPassenger: document.querySelector("#refresh-passenger"),
+  onboardingNav: document.querySelector('.passenger-nav a[href="#passenger-onboarding"]'),
   onboardingSection: document.querySelector("#passenger-onboarding"),
   onboardingSteps: document.querySelector("#passenger-onboarding-steps"),
   onboardingAction: document.querySelector("#passenger-onboarding-action"),
@@ -857,10 +858,12 @@ function renderPassengerOnboarding() {
     if (elements.onboardingSection) {
       elements.onboardingSection.hidden = true;
     }
+    syncPassengerOnboardingNav(true);
     return;
   }
   const dismissed = isPassengerOnboardingDismissed();
   elements.onboardingSection.hidden = !passengerState.showOnboarding || dismissed;
+  syncPassengerOnboardingNav(elements.onboardingSection.hidden);
   if (elements.onboardingSection.hidden) {
     elements.onboardingSteps.innerHTML = "";
     elements.onboardingAction.dataset.target = "passenger-search";
@@ -926,6 +929,14 @@ function renderPassengerOnboarding() {
   const allDone = steps.every(step => step.done);
   elements.onboardingAction.dataset.target = allDone ? "dismiss-onboarding" : next.target;
   elements.onboardingAction.textContent = allDone ? "我已知晓" : next.title;
+}
+
+function syncPassengerOnboardingNav(hidden) {
+  if (!elements.onboardingNav) {
+    return;
+  }
+  elements.onboardingNav.hidden = Boolean(hidden);
+  elements.onboardingNav.classList.toggle("active", false);
 }
 
 function passengerOnboardingKey() {
@@ -1420,7 +1431,7 @@ function showPassengerOrderDetail(detail) {
   modal.querySelector(".order-detail-body").innerHTML = `
     <div class="detail-hero order-chain-hero">
       <div>
-        <p class="eyebrow">Order Chain Center</p>
+        <p class="eyebrow">订单详情</p>
         <h2>${escapeHtml(order.trainNo || "-")} / ${escapeHtml(order.orderNo || "-")}</h2>
         <span>${formatDate(order.travelDate)} · ${seatTypeText(order.seatType)} · ${escapeHtml(order.passengerName || "-")}</span>
       </div>
@@ -1472,7 +1483,7 @@ function renderTicketDetail(ticket) {
     <div class="ticket-itinerary ticket-detail-card ${ticketStatusClass(ticket.status)}">
       <div class="ticket-detail-main">
         <div>
-          <span>Ticket No</span>
+          <span>电子票号</span>
           <strong>${escapeHtml(ticket.ticketNo)}</strong>
         </div>
         <span class="status ${ticketStatusClass(ticket.status)}">${ticketStatusText(ticket.status)}</span>
@@ -1680,8 +1691,8 @@ function renderNotificationDetailRecord(notification) {
   return `
     <div class="detail-record chain-record ${notificationStatusClass(notification.status)}">
       <span>${notificationTypeText(notification.type)}</span>
-      <strong>${escapeHtml(notification.title || notification.notificationNo || "-")}</strong>
-      <small>${escapeHtml(notification.content || notification.actionHint || "-")}</small>
+      <strong>${escapeHtml(notificationTitleText(notification))}</strong>
+      <small>${escapeHtml(notificationContentText(notification))}</small>
       <small>${formatDateTime(notification.createdAt) || "-"}</small>
     </div>
   `;
@@ -1866,12 +1877,6 @@ function renderFullOrderTimeline(order, ticket, payments, refunds, ticketChanges
       done: Boolean(latestRefund && latestRefund.status === "SUCCESS"),
       detail: latestRefund ? `${refundStatusText(latestRefund.status)} / ${latestRefund.refundNo}` : "等待退款结果",
     }] : []),
-    ...notifications.slice(0, 4).map(notification => ({
-      label: "通知触达",
-      time: notification.createdAt,
-      done: notification.status === "READ",
-      detail: `${notificationTypeText(notification.type)} / ${notification.title || notification.notificationNo || "-"}`,
-    })),
   ].sort((leftStep, rightStep) => {
     const left = leftStep.time ? new Date(leftStep.time).getTime() : Number.MAX_SAFE_INTEGER;
     const right = rightStep.time ? new Date(rightStep.time).getTime() : Number.MAX_SAFE_INTEGER;
@@ -2473,11 +2478,11 @@ function renderPassengerNotifications(notifications) {
       <div class="record-title-row">
         <div>
           <span>${notificationTypeText(notification.type)}</span>
-          <strong>${escapeHtml(notification.title)}</strong>
+          <strong>${escapeHtml(notificationTitleText(notification))}</strong>
         </div>
         <span class="status ${notificationStatusClass(notification.status)}">${notificationStatusText(notification.status)}</span>
       </div>
-      <p class="notification-content">${escapeHtml(notification.content)}</p>
+      <p class="notification-content">${escapeHtml(notificationContentText(notification))}</p>
       <div class="record-detail-grid">
         <div><span>订单号</span><strong>${escapeHtml(notification.orderNo || "-")}</strong></div>
         <div><span>关联业务</span><strong>${businessTypeText(notification.businessType)} / ${businessIdText(notification.businessId)}</strong></div>
@@ -2996,6 +3001,60 @@ function ticketStatusClass(value) {
   return map[value] || "";
 }
 
+function notificationTitleText(notification) {
+  const rawTitle = String(notification && notification.title ? notification.title : "").trim();
+  const map = {
+    "Order created": "下单成功",
+    "Payment confirmed": "支付成功",
+    "Ticket issued": "出票成功",
+    "Order closed": "订单已关闭",
+    "Order refunded": "退票成功",
+    "Refund succeeded": "退款成功",
+    "Refund failed": "退款失败",
+    "Ticket change created": "已发起改签",
+    "Ticket change pending payment": "改签待支付",
+    "Ticket change succeeded": "改签成功",
+    "Ticket change failed": "改签失败",
+  };
+  return map[rawTitle] || notificationTypeText(notification && notification.type) || rawTitle || "-";
+}
+
+function notificationContentText(notification) {
+  const content = String(notification && notification.content ? notification.content : "").trim();
+  if (!content) {
+    return userFacingHint(notification && notification.actionHint);
+  }
+  const paymentMatch = content.match(/^Order\s+(\S+)\s+payment succeeded\.\s+Amount\s+([^,]+),\s+paymentNo\s+(\S+)\.?$/i);
+  if (paymentMatch) {
+    return `订单 ${paymentMatch[1]} 已支付成功，金额 ¥${paymentMatch[2]}，支付流水 ${paymentMatch[3]}。`;
+  }
+  const ticketMatch = content.match(/^Ticket\s+(\S+)\s+for train\s+(\S+)\s+(.+?)\s+to\s+(.+?)\s+on\s+([0-9-]+)\s+has been issued\.?$/i);
+  if (ticketMatch) {
+    return `电子票 ${ticketMatch[1]} 已出票，车次 ${ticketMatch[2]}，${ticketMatch[3]} 至 ${ticketMatch[4]}，乘车日期 ${ticketMatch[5]}。`;
+  }
+  const orderMatch = content.match(/^Order\s+(\S+)\s+is pending payment\.\s+Amount\s+([^,]+),\s+payment deadline\s+(.+)\.?$/i);
+  if (orderMatch) {
+    return `订单 ${orderMatch[1]} 已创建，金额 ¥${orderMatch[2]}，请在 ${orderMatch[3]} 前完成支付。`;
+  }
+  const type = notification && notification.type;
+  const orderNo = notification && notification.orderNo ? notification.orderNo : "当前订单";
+  const ticketNo = notification && notification.ticketNo ? notification.ticketNo : "电子票";
+  const fallback = {
+    ORDER_CREATED: `${orderNo} 已创建，请及时完成后续操作。`,
+    PAYMENT_SUCCEEDED: `${orderNo} 已支付成功，电子票状态会同步更新。`,
+    TICKET_ISSUED: `${ticketNo} 已出票，可在电子票夹查看。`,
+    ORDER_CLOSED: `${orderNo} 已关闭。`,
+    ORDER_REFUNDED: `${orderNo} 已退票，退款记录会同步更新。`,
+    REFUND_SUCCEEDED: `${orderNo} 退款已成功。`,
+    REFUND_FAILED: `${orderNo} 退款失败，请稍后查看或联系运营处理。`,
+    TICKET_CHANGE_CREATED: `${orderNo} 已发起改签。`,
+    TICKET_CHANGE_PENDING_PAYMENT: `${orderNo} 改签待支付差额。`,
+    TICKET_CHANGE_SUCCEEDED: `${orderNo} 改签已完成。`,
+    TICKET_CHANGE_FAILED: `${orderNo} 改签失败。`,
+  };
+  return fallback[type] || content;
+}
+
 function notificationTypeText(value) {
   const map = {
     ORDER_CREATED: "下单提醒",
@@ -3083,6 +3142,13 @@ function userFacingHint(value) {
     REFUND_RECORDS: "查看退款记录",
     NOTIFICATIONS: "查看消息提醒",
     TICKET_WALLET: "查看电子票",
+    "View Order": "查看订单",
+    "View Ticket": "查看电子票",
+    "Go To Payment": "去支付",
+    "View Refund": "查看退款",
+    "Payment Succeeded. Check The Order And Ticket Timeline.": "支付已完成，请查看订单详情和电子票。",
+    "The E-Ticket Is Ready In Your Ticket Wallet.": "电子票已生成，可在电子票夹查看。",
+    "This Order Is Waiting For Payment.": "订单待支付，请尽快完成支付。",
   };
   return map[value] || humanizeCode(value);
 }
