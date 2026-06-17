@@ -7423,7 +7423,109 @@ body.passenger-consumer-page {
   }
 
   .passenger-ticket-card:hover,
-  .admin-chain-node:hover {
+.admin-chain-node:hover {
     transform: none !important;
+  }
+}
+
+/* Passenger information architecture consolidation */
+.passenger-nav a[hidden] {
+  display: none !important;
+}
+
+.passenger-section-embedded {
+  margin-top: 22px;
+  padding: clamp(16px, 2vw, 22px);
+  border: 1px solid rgba(22, 49, 44, 0.10);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 14px 34px rgba(22, 49, 44, 0.06);
+}
+
+.passenger-section-embedded .passenger-section-head {
+  margin-bottom: 14px;
+}
+
+.passenger-section-embedded .passenger-section-head h2 {
+  font-size: clamp(20px, 2vw, 26px);
+}
+
+.merged-travelers .traveler-layout,
+.merged-order-changes .passenger-record-list,
+.merged-refunds .passenger-record-list {
+  margin-top: 0;
+}
+
+.ticket-detail-priority-section {
+  padding: 14px;
+  border: 1px solid rgba(15, 107, 87, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.ticket-detail-card.ticket-itinerary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.96fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.ticket-detail-card .ticket-detail-route {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+  padding: 16px 18px;
+  border: 1px solid rgba(15, 107, 87, 0.14);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(22, 49, 44, 0.06);
+}
+
+.ticket-detail-card .ticket-detail-route strong {
+  font-size: clamp(22px, 2vw, 30px);
+}
+
+.ticket-detail-card .ticket-detail-grid {
+  align-content: start;
+  gap: 8px;
+}
+
+.ticket-detail-card .ticket-detail-grid div {
+  padding: 9px 11px;
+}
+
+.ticket-detail-secondary {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px dashed rgba(15, 107, 87, 0.18);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.72);
+  color: #64716d;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ticket-detail-secondary .status {
+  width: max-content;
+}
+
+.ticket-state-inline {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #245e53;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.ticket-state-inline.refunded,
+.ticket-state-inline.closed {
+  color: #566376;
+}
+
+@media (max-width: 860px) {
+  .ticket-detail-card.ticket-itinerary {
+    grid-template-columns: 1fr;
   }
 }

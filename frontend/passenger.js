@@ -340,6 +340,7 @@ document.querySelector("[data-jump-refunds]").addEventListener("click", () => {
 initPassenger();
 
 async function initPassenger() {
+  organizePassengerSections();
   setupPassengerNavigation();
   setupPassengerScrollSpy();
   renderAuthState();
@@ -378,6 +379,33 @@ async function loginPassenger() {
   } catch (error) {
     showToast(error.message || "登录失败");
   }
+}
+
+function organizePassengerSections() {
+  mergePassengerSection("passenger-transactions", "passenger-summary", "merged-journey-reminders");
+  mergePassengerSection("passenger-travelers", "passenger-account", "merged-travelers");
+  mergePassengerSection("passenger-changes", "passenger-orders", "merged-order-changes");
+  mergePassengerSection("passenger-refunds", "passenger-payments", "merged-refunds");
+  if (elements.loadPayments) {
+    const heading = document.querySelector("#passenger-payments .passenger-section-head h2");
+    const eyebrow = document.querySelector("#passenger-payments .passenger-section-head .eyebrow");
+    if (heading) {
+      heading.textContent = "我的支付与退款";
+    }
+    if (eyebrow) {
+      eyebrow.textContent = "支付退款";
+    }
+  }
+}
+
+function mergePassengerSection(childId, parentId, className) {
+  const child = document.getElementById(childId);
+  const parent = document.getElementById(parentId);
+  if (!child || !parent || child.parentElement === parent) {
+    return;
+  }
+  child.classList.add("passenger-section-embedded", className);
+  parent.appendChild(child);
 }
 
 async function registerPassenger() {
@@ -935,7 +963,11 @@ function syncPassengerOnboardingNav(hidden) {
   if (!elements.onboardingNav) {
     return;
   }
-  elements.onboardingNav.hidden = Boolean(hidden);
+  const shouldHide = Boolean(hidden || !elements.onboardingSection || elements.onboardingSection.hidden);
+  elements.onboardingNav.hidden = shouldHide;
+  elements.onboardingNav.setAttribute("aria-hidden", shouldHide ? "true" : "false");
+  elements.onboardingNav.tabIndex = shouldHide ? -1 : 0;
+  elements.onboardingNav.style.display = shouldHide ? "none" : "";
   elements.onboardingNav.classList.toggle("active", false);
 }
 
@@ -1440,18 +1472,17 @@ function showPassengerOrderDetail(detail) {
         <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
       </div>
     </div>
+    <section class="detail-section ticket-detail-priority-section">
+      <h3>车票与行程</h3>
+      ${ticket ? renderTicketDetail(ticket) : renderOrderItineraryFallback(order)}
+    </section>
     ${renderOrderDetailSummary(order, ticket, payments, refunds, ticketChanges)}
     ${renderOrderDetailActions(order, ticket, refunds, ticketChanges)}
-    ${renderPassengerOrderChainNotice(order, ticket, payments, refunds, ticketChanges)}
     <div class="detail-center-layout passenger-order-center">
       <div class="detail-center-main">
         <section class="detail-section transaction-chain-section">
           <h3>订单全链路时间线</h3>
           ${renderFullOrderTimeline(order, ticket, payments, refunds, ticketChanges, notifications)}
-        </section>
-        <section class="detail-section">
-          <h3>车票与行程</h3>
-          ${ticket ? renderTicketDetail(ticket) : renderOrderItineraryFallback(order)}
         </section>
       </div>
       <aside class="detail-center-side">
@@ -1481,13 +1512,6 @@ function showPassengerOrderDetail(detail) {
 function renderTicketDetail(ticket) {
   return `
     <div class="ticket-itinerary ticket-detail-card ${ticketStatusClass(ticket.status)}">
-      <div class="ticket-detail-main">
-        <div>
-          <span>电子票号</span>
-          <strong>${escapeHtml(ticket.ticketNo)}</strong>
-        </div>
-        <span class="status ${ticketStatusClass(ticket.status)}">${ticketStatusText(ticket.status)}</span>
-      </div>
       <div class="ticket-detail-route">
         <strong>${escapeHtml(ticket.departureStation)}</strong>
         <span></span>
@@ -1503,7 +1527,11 @@ function renderTicketDetail(ticket) {
         <div><span>手机号</span><strong>${escapeHtml(ticket.passengerPhoneMasked || "-")}</strong></div>
         <div><span>出票时间</span><strong>${formatDateTime(ticket.issuedAt) || "-"}</strong></div>
       </div>
-      ${renderTicketStateNote(ticket)}
+      <div class="ticket-detail-secondary">
+        <span>电子票号：${escapeHtml(ticket.ticketNo || "-")}</span>
+        <span class="status ${ticketStatusClass(ticket.status)}">${ticketStatusText(ticket.status)}</span>
+      </div>
+      <p class="ticket-state-inline ${ticketStatusClass(ticket.status)}">${escapeHtml(ticketStateMessage(ticket))}</p>
       ${ticket.invalidatedAt ? `<div class="ticket-detail-note">票面失效时间：${formatDateTime(ticket.invalidatedAt)}</div>` : ""}
     </div>
   `;
@@ -1754,12 +1782,17 @@ async function runOrderDetailAction(orderId, action) {
 
 function renderTicketStateNote(ticket) {
   const status = ticket && ticket.status;
+  return `<div class="ticket-state-note ${ticketStatusClass(status)}">${escapeHtml(ticketStateMessage(ticket))}</div>`;
+}
+
+function ticketStateMessage(ticket) {
+  const status = ticket && ticket.status;
   const message = {
     ISSUED: "当前电子票有效。请以乘车日期、车次和站点信息为准，进站时核对本人证件。",
     REFUNDED: "该电子票已随退票失效，不能继续用于乘车。退款进度请查看退款流水。",
     CANCELLED: "该电子票已取消，不能继续用于乘车。",
   }[status] || "票面状态会随订单支付、取消和退票动作同步更新。";
-  return `<div class="ticket-state-note ${ticketStatusClass(status)}">${escapeHtml(message)}</div>`;
+  return message;
 }
 
 function orderActionTitle(status) {
@@ -2648,6 +2681,7 @@ function renderLoggedOutPlaceholders() {
   if (elements.onboardingSection) {
     elements.onboardingSection.hidden = true;
   }
+  syncPassengerOnboardingNav(true);
   elements.onboardingSteps.innerHTML = recordEmpty("注册后可选择是否开启首单引导");
   elements.onboardingAction.dataset.target = "passenger-search";
   elements.onboardingAction.textContent = "开始第一段行程";
@@ -2791,10 +2825,11 @@ function setupPassengerScrollSpy() {
     passengerState.scrollTicking = true;
     window.requestAnimationFrame(() => {
       updateHeaderDensity();
+      const visibleSections = sections.filter(section => !section.hidden && section.offsetParent !== null);
       const headerOffset = getPassengerHeaderOffset();
       const anchorY = window.scrollY + headerOffset + 28;
-      let current = sections[0].id;
-      sections.forEach(section => {
+      let current = visibleSections[0] ? visibleSections[0].id : "passenger-search";
+      visibleSections.forEach(section => {
         if (section.offsetTop <= anchorY) {
           current = section.id;
         }
@@ -2809,8 +2844,14 @@ function setupPassengerScrollSpy() {
 }
 
 function updateActiveNav(sectionId) {
+  const navSectionId = navSectionAlias(sectionId);
+  syncPassengerOnboardingNav(!elements.onboardingSection || elements.onboardingSection.hidden);
   document.querySelectorAll(".passenger-nav a").forEach(link => {
-    link.classList.toggle("active", link.getAttribute("href") === `#${sectionId}`);
+    if (link.hidden) {
+      link.classList.remove("active");
+      return;
+    }
+    link.classList.toggle("active", link.getAttribute("href") === `#${navSectionId}`);
   });
 }
 
@@ -2824,6 +2865,16 @@ function activateSection(sectionId) {
   window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
   section.classList.add("section-highlight");
   window.setTimeout(() => section.classList.remove("section-highlight"), 1200);
+}
+
+function navSectionAlias(sectionId) {
+  const aliases = {
+    "passenger-transactions": "passenger-summary",
+    "passenger-travelers": "passenger-account",
+    "passenger-changes": "passenger-orders",
+    "passenger-refunds": "passenger-payments",
+  };
+  return aliases[sectionId] || sectionId;
 }
 
 function getPassengerHeaderOffset() {
@@ -3004,19 +3055,19 @@ function ticketStatusClass(value) {
 function notificationTitleText(notification) {
   const rawTitle = String(notification && notification.title ? notification.title : "").trim();
   const map = {
-    "Order created": "下单成功",
-    "Payment confirmed": "支付成功",
-    "Ticket issued": "出票成功",
-    "Order closed": "订单已关闭",
-    "Order refunded": "退票成功",
-    "Refund succeeded": "退款成功",
-    "Refund failed": "退款失败",
-    "Ticket change created": "已发起改签",
-    "Ticket change pending payment": "改签待支付",
-    "Ticket change succeeded": "改签成功",
-    "Ticket change failed": "改签失败",
+    "order created": "下单成功",
+    "payment confirmed": "支付成功",
+    "ticket issued": "出票成功",
+    "order closed": "订单已关闭",
+    "order refunded": "退票成功",
+    "refund succeeded": "退款成功",
+    "refund failed": "退款失败",
+    "ticket change created": "已发起改签",
+    "ticket change pending payment": "改签待支付",
+    "ticket change succeeded": "改签成功",
+    "ticket change failed": "改签失败",
   };
-  return map[rawTitle] || notificationTypeText(notification && notification.type) || rawTitle || "-";
+  return map[rawTitle.toLowerCase()] || notificationTypeText(notification && notification.type) || rawTitle || "-";
 }
 
 function notificationContentText(notification) {
@@ -3142,15 +3193,22 @@ function userFacingHint(value) {
     REFUND_RECORDS: "查看退款记录",
     NOTIFICATIONS: "查看消息提醒",
     TICKET_WALLET: "查看电子票",
-    "View Order": "查看订单",
-    "View Ticket": "查看电子票",
-    "Go To Payment": "去支付",
-    "View Refund": "查看退款",
-    "Payment Succeeded. Check The Order And Ticket Timeline.": "支付已完成，请查看订单详情和电子票。",
-    "The E-Ticket Is Ready In Your Ticket Wallet.": "电子票已生成，可在电子票夹查看。",
-    "This Order Is Waiting For Payment.": "订单待支付，请尽快完成支付。",
   };
-  return map[value] || humanizeCode(value);
+  const phraseMap = {
+    "view order": "查看订单",
+    "view ticket": "查看电子票",
+    "go to payment": "去支付",
+    "view refund": "查看退款",
+    "refund -> order_detail": "查看退款相关订单",
+    "payment -> order_detail": "查看支付相关订单",
+    "ticket_change -> order_detail": "查看改签相关订单",
+    "payment succeeded. check the order and ticket timeline": "支付已完成，请查看订单详情和电子票。",
+    "the e-ticket is ready in your ticket wallet": "电子票已生成，可在电子票夹查看。",
+    "this order is waiting for payment": "订单待支付，请尽快完成支付。",
+  };
+  const text = String(value || "").trim();
+  const normalized = text.toLowerCase().replace(/\s+/g, " ").replace(/\.+$/g, "");
+  return map[value] || phraseMap[normalized] || humanizeCode(value);
 }
 
 function humanizeCode(value) {

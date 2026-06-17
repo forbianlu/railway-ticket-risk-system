@@ -578,7 +578,7 @@ function renderTrains(trains) {
     .map(train => `
       <tr>
         <td><strong class="train-no">${train.trainNo}</strong></td>
-        <td><span class="route">${train.departureStation} -> ${train.arrivalStation}</span></td>
+        <td><span class="route">${train.departureStation} 至 ${train.arrivalStation}</span></td>
         <td>${formatTime(train.departureTime)} - ${formatTime(train.arrivalTime)}</td>
         <td>${seatTypeText(train.seatType)}</td>
         <td><span class="${Number(train.remainingSeats || 0) <= 5 ? "inventory-low" : "inventory-ok"}">${train.remainingSeats}</span></td>
@@ -1009,7 +1009,7 @@ function renderAdminTransactionChain(order, ticket, payments, refunds, ticketCha
     title: "改签记录",
     status: changeStatusText(change.status),
     time: change.completedAt || change.updatedAt || change.createdAt,
-    detail: `${change.changeNo || "-"} / ${change.originalTrainNo || "-"} -> ${change.newTrainNo || "-"}`,
+    detail: `${change.changeNo || "-"} / ${change.originalTrainNo || "-"} 至 ${change.newTrainNo || "-"}`,
   }));
   notifications.forEach(notification => nodes.push({
     type: "NOTICE",
@@ -1574,7 +1574,7 @@ function renderAdminWorkbench(summary) {
                   data-workbench-action="${escapeHtml(item.actionTarget || "")}"
                   data-workbench-status="${escapeHtml(item.status || "")}"
                   data-workbench-order="${escapeHtml(item.orderId || "")}">
-            ${escapeHtml(item.actionLabel || "查看")}
+            ${escapeHtml(actionTargetText(item.actionLabel || "查看"))}
           </button>
         </div>
       `)
@@ -2585,19 +2585,19 @@ function ticketStatusClass(value) {
 function notificationTitleText(notification) {
   const rawTitle = String(notification && notification.title ? notification.title : "").trim();
   const map = {
-    "Order created": "下单成功",
-    "Payment confirmed": "支付成功",
-    "Ticket issued": "出票成功",
-    "Order closed": "订单已关闭",
-    "Order refunded": "退票成功",
-    "Refund succeeded": "退款成功",
-    "Refund failed": "退款失败",
-    "Ticket change created": "已发起改签",
-    "Ticket change pending payment": "改签待支付",
-    "Ticket change succeeded": "改签成功",
-    "Ticket change failed": "改签失败",
+    "order created": "下单成功",
+    "payment confirmed": "支付成功",
+    "ticket issued": "出票成功",
+    "order closed": "订单已关闭",
+    "order refunded": "退票成功",
+    "refund succeeded": "退款成功",
+    "refund failed": "退款失败",
+    "ticket change created": "已发起改签",
+    "ticket change pending payment": "改签待支付",
+    "ticket change succeeded": "改签成功",
+    "ticket change failed": "改签失败",
   };
-  return map[rawTitle] || notificationTypeText(notification && notification.type) || rawTitle || "-";
+  return map[rawTitle.toLowerCase()] || notificationTypeText(notification && notification.type) || rawTitle || "-";
 }
 
 function notificationContentText(notification) {
@@ -2821,15 +2821,22 @@ function actionTargetText(value) {
     risks: "风险事件",
     outbox: "事件中心",
     notifications: "通知中心",
-    "View Order": "查看订单",
-    "View Ticket": "查看电子票",
-    "Go To Payment": "去支付",
-    "View Refund": "查看退款",
-    "Payment Succeeded. Check The Order And Ticket Timeline.": "支付已完成，请查看订单详情和电子票。",
-    "The E-Ticket Is Ready In Your Ticket Wallet.": "电子票已生成，可在电子票夹查看。",
-    "This Order Is Waiting For Payment.": "订单待支付，请尽快完成支付。",
   };
-  return map[value] || humanizeCode(value);
+  const phraseMap = {
+    "view order": "查看订单",
+    "view ticket": "查看电子票",
+    "go to payment": "去支付",
+    "view refund": "查看退款",
+    "refund -> order_detail": "查看退款相关订单",
+    "payment -> order_detail": "查看支付相关订单",
+    "ticket_change -> order_detail": "查看改签相关订单",
+    "payment succeeded. check the order and ticket timeline": "支付已完成，请查看订单详情和电子票。",
+    "the e-ticket is ready in your ticket wallet": "电子票已生成，可在电子票夹查看。",
+    "this order is waiting for payment": "订单待支付，请尽快完成支付。",
+  };
+  const text = String(value || "").trim();
+  const normalized = text.toLowerCase().replace(/\s+/g, " ").replace(/\.+$/g, "");
+  return map[value] || phraseMap[normalized] || humanizeCode(value);
 }
 
 function operationActionText(value) {
