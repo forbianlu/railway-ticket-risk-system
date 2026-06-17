@@ -1056,9 +1056,9 @@ function showPassengerOrderDetail(detail) {
   const ticketChanges = detail.ticketChanges || [];
   const notifications = detail.notifications || [];
   modal.querySelector(".order-detail-body").innerHTML = `
-    <div class="detail-hero">
+    <div class="detail-hero order-chain-hero">
       <div>
-        <p class="eyebrow">Order Detail</p>
+        <p class="eyebrow">Order Chain Center</p>
         <h2>${escapeHtml(order.trainNo || "-")} / ${escapeHtml(order.orderNo || "-")}</h2>
         <span>${formatDate(order.travelDate)} · ${seatTypeText(order.seatType)} · ${escapeHtml(order.passengerName || "-")}</span>
       </div>
@@ -1067,43 +1067,39 @@ function showPassengerOrderDetail(detail) {
         <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
       </div>
     </div>
-    ${renderOrderDetailSummary(order, ticket, payments, refunds)}
-    ${renderOrderDetailActions(order)}
-    <section class="detail-section">
-      <h3>订单进度</h3>
-      ${renderFullOrderTimeline(order, ticket, payments, refunds, ticketChanges, notifications)}
-    </section>
-    <section class="detail-section">
-      <h3>电子票 / 行程单</h3>
-      ${ticket ? renderTicketDetail(ticket) : `<div class="detail-empty">订单支付成功后自动生成电子票。</div>`}
-    </section>
-    <section class="detail-section">
-      <h3>支付记录</h3>
-      ${renderDetailRecords(payments, payment => `
-        <div class="detail-record">
-          <strong>${escapeHtml(payment.paymentNo)}</strong>
-          <span>${paymentStatusText(payment.status)} · ¥${formatAmount(payment.amount)} · ${formatDateTime(payment.paidAt) || "-"}</span>
-        </div>
-      `, "暂无支付记录")}
-    </section>
-    <section class="detail-section">
-      <h3>退款记录</h3>
-      ${renderDetailRecords(refunds, refund => `
-        <div class="detail-record">
-          <strong>${escapeHtml(refund.refundNo)}</strong>
-          <span>${refundStatusText(refund.status)} · ¥${formatAmount(refund.amount)} · ${formatDateTime(refund.refundedAt) || "-"}</span>
-        </div>
-      `, "暂无退款记录")}
-    </section>
-    <section class="detail-section">
-      <h3>改签记录</h3>
-      ${renderDetailRecords(ticketChanges, change => `
-        <div class="detail-record ticket-change-detail-record">
-          <strong>${escapeHtml(change.changeNo)}</strong>
-          <span>${escapeHtml(change.originalTrainNo || "-")} → ${escapeHtml(change.newTrainNo || "-")} · ${changeStatusText(change.status)} · 差额 ¥${formatAmount(change.priceDifference)}</span>
-        </div>
-      `, "暂无改签记录")}
-    </section>
+    ${renderOrderDetailSummary(order, ticket, payments, refunds, ticketChanges)}
+    ${renderOrderDetailActions(order, ticket, refunds, ticketChanges)}
+    ${renderPassengerOrderChainNotice(order, ticket, payments, refunds, ticketChanges)}
+    <div class="detail-center-layout passenger-order-center">
+      <div class="detail-center-main">
+        <section class="detail-section transaction-chain-section">
+          <h3>订单全链路时间线</h3>
+          ${renderFullOrderTimeline(order, ticket, payments, refunds, ticketChanges, notifications)}
+        </section>
+        <section class="detail-section">
+          <h3>车票与行程</h3>
+          ${ticket ? renderTicketDetail(ticket) : renderOrderItineraryFallback(order)}
+        </section>
+      </div>
+      <aside class="detail-center-side">
+        <section class="detail-section">
+          <h3>支付记录</h3>
+          ${renderDetailRecords(payments, payment => renderPaymentDetailRecord(payment), "暂无支付记录")}
+        </section>
+        <section class="detail-section">
+          <h3>退款记录</h3>
+          ${renderDetailRecords(refunds, refund => renderRefundDetailRecord(refund), "暂无退款记录")}
+        </section>
+        <section class="detail-section">
+          <h3>改签记录</h3>
+          ${renderDetailRecords(ticketChanges, change => renderChangeDetailRecord(change), "暂无改签记录")}
+        </section>
+        <section class="detail-section">
+          <h3>消息提醒</h3>
+          ${renderDetailRecords(notifications.slice(0, 4), notification => renderNotificationDetailRecord(notification), "暂无消息提醒")}
+        </section>
+      </aside>
+    </div>
   `;
   bindOrderDetailActions(modal);
   openDetailModal(modal);
@@ -1140,10 +1136,11 @@ function renderTicketDetail(ticket) {
   `;
 }
 
-function renderOrderDetailSummary(order, ticket, payments, refunds) {
+function renderOrderDetailSummary(order, ticket, payments, refunds, ticketChanges = []) {
   const successPayment = payments.find(payment => payment.status === "SUCCESS");
   const latestPayment = payments[0];
   const latestRefund = refunds[0];
+  const latestChange = ticketChanges[0];
   return `
     <section class="detail-status-grid" aria-label="订单状态总览">
       <article>
@@ -1166,12 +1163,18 @@ function renderOrderDetailSummary(order, ticket, payments, refunds) {
         <strong>${latestRefund ? refundStatusText(latestRefund.status) : "暂无退款"}</strong>
         <small>${latestRefund ? latestRefund.refundNo : "退票后会生成退款流水"}</small>
       </article>
+      <article class="${latestChange ? changeStatusClass(latestChange.status) : ""}">
+        <span>改签状态</span>
+        <strong>${latestChange ? changeStatusText(latestChange.status) : "暂无改签"}</strong>
+        <small>${latestChange ? latestChange.changeNo : "已支付订单可在详情内发起改签"}</small>
+      </article>
     </section>
   `;
 }
 
-function renderOrderDetailActions(order) {
+function renderOrderDetailActions(order, ticket, refunds = [], ticketChanges = []) {
   const actions = [];
+  const pendingChange = ticketChanges.find(change => change.status === "PENDING_PAYMENT");
   if (order.status === "PENDING_PAYMENT") {
     actions.push(`<button class="primary-button compact-button" type="button" data-detail-pay-order="${order.id}">立即支付</button>`);
     actions.push(`<button class="secondary-button compact-button" type="button" data-detail-close-order="${order.id}">取消订单</button>`);
@@ -1179,6 +1182,15 @@ function renderOrderDetailActions(order) {
   if (order.status === "PAID") {
     actions.push(`<button class="secondary-button compact-button" type="button" data-detail-change-order="${order.id}">申请改签</button>`);
     actions.push(`<button class="secondary-button compact-button danger-soft" type="button" data-detail-refund-order="${order.id}">申请退票</button>`);
+  }
+  if (pendingChange) {
+    actions.push(`<button class="primary-button compact-button" type="button" data-detail-pay-change="${pendingChange.id}">支付改签差额</button>`);
+  }
+  if (ticket) {
+    actions.push(`<button class="secondary-button compact-button" type="button" data-detail-jump="passenger-tickets">查看电子票</button>`);
+  }
+  if (refunds.length) {
+    actions.push(`<button class="secondary-button compact-button" type="button" data-detail-jump="passenger-refunds">查看退款</button>`);
   }
   actions.push(`<button class="secondary-button compact-button" type="button" data-detail-refresh-order="${order.id}">刷新详情</button>`);
   return `
@@ -1189,6 +1201,110 @@ function renderOrderDetailActions(order) {
       </div>
       <div class="inline-actions">${actions.join("")}</div>
     </section>
+  `;
+}
+
+function renderPassengerOrderChainNotice(order, ticket, payments, refunds, ticketChanges) {
+  const latestPayment = payments[0];
+  const latestRefund = refunds[0];
+  const pendingChange = ticketChanges.find(change => change.status === "PENDING_PAYMENT");
+  const notes = [];
+  if (order.status === "PENDING_PAYMENT") {
+    notes.push("该订单仍待支付，完成支付后会自动出票并同步电子票夹。");
+  }
+  if (ticket && ticket.status === "ISSUED") {
+    notes.push("电子票当前有效，可继续在本详情内发起退票或改签。");
+  }
+  if (latestPayment && latestPayment.status === "FAILED") {
+    notes.push("最近一次支付失败，可重新支付或取消订单。");
+  }
+  if (latestRefund && latestRefund.status === "PENDING") {
+    notes.push("退票已受理，退款仍在处理中，管理端模拟退款回调后会同步结果。");
+  }
+  if (pendingChange) {
+    notes.push("存在待支付改签单，支付差额后新票会自动生成。");
+  }
+  if (!notes.length) {
+    notes.push("订单、电子票、支付、退款和改签状态已汇总在本页。");
+  }
+  return `
+    <section class="detail-chain-notice">
+      <strong>当前链路提示</strong>
+      <div>${notes.map(note => `<span>${escapeHtml(note)}</span>`).join("")}</div>
+    </section>
+  `;
+}
+
+function renderOrderItineraryFallback(order) {
+  return `
+    <div class="ticket-itinerary ticket-detail-card muted-ticket-card">
+      <div class="ticket-detail-main">
+        <div>
+          <span>Order No</span>
+          <strong>${escapeHtml(order.orderNo || "-")}</strong>
+        </div>
+        <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
+      </div>
+      <div class="ticket-detail-route">
+        <strong>${escapeHtml(order.trainNo || "-")}</strong>
+        <span></span>
+        <strong>${formatDate(order.travelDate) || "-"}</strong>
+      </div>
+      <div class="ticket-detail-grid">
+        <div><span>订单号</span><strong>${escapeHtml(order.orderNo || "-")}</strong></div>
+        <div><span>金额</span><strong>¥${formatAmount(order.amount)}</strong></div>
+        <div><span>席别</span><strong>${seatTypeText(order.seatType)}</strong></div>
+        <div><span>乘车人</span><strong>${escapeHtml(order.passengerName || "-")}</strong></div>
+        <div><span>证件</span><strong>${escapeHtml(order.passengerIdNoMasked || "-")}</strong></div>
+        <div><span>支付截止</span><strong>${formatDateTime(order.paymentDeadlineAt) || "-"}</strong></div>
+      </div>
+      <div class="ticket-state-note">支付成功后会自动生成电子票，并同步到电子票夹。</div>
+    </div>
+  `;
+}
+
+function renderPaymentDetailRecord(payment) {
+  return `
+    <div class="detail-record chain-record ${paymentStatusClass(payment.status)}">
+      <span>支付流水</span>
+      <strong>${escapeHtml(payment.paymentNo)}</strong>
+      <small>${paymentStatusText(payment.status)} · ¥${formatAmount(payment.amount)} · ${formatDateTime(payment.paidAt || payment.updatedAt || payment.createdAt) || "-"}</small>
+      <small>渠道：${escapeHtml(payment.channelPaymentNo || payment.channel || "-")}</small>
+    </div>
+  `;
+}
+
+function renderRefundDetailRecord(refund) {
+  return `
+    <div class="detail-record chain-record ${refundStatusClass(refund.status)}">
+      <span>退款流水</span>
+      <strong>${escapeHtml(refund.refundNo)}</strong>
+      <small>${refundStatusText(refund.status)} · ¥${formatAmount(refund.amount)} · ${formatDateTime(refund.refundedAt || refund.updatedAt || refund.createdAt) || "-"}</small>
+      <small>关联支付：${escapeHtml(refund.paymentNo || "-")}</small>
+    </div>
+  `;
+}
+
+function renderChangeDetailRecord(change) {
+  const diff = formatSignedAmount(change.priceDifference);
+  return `
+    <div class="detail-record chain-record ${changeStatusClass(change.status)}">
+      <span>改签单</span>
+      <strong>${escapeHtml(change.changeNo)}</strong>
+      <small>${escapeHtml(change.originalTrainNo || "-")} → ${escapeHtml(change.newTrainNo || "-")} · ${changeStatusText(change.status)} · ${diff}</small>
+      <small>${formatDateTime(change.completedAt || change.updatedAt || change.createdAt) || "-"}</small>
+    </div>
+  `;
+}
+
+function renderNotificationDetailRecord(notification) {
+  return `
+    <div class="detail-record chain-record ${notificationStatusClass(notification.status)}">
+      <span>${notificationTypeText(notification.type)}</span>
+      <strong>${escapeHtml(notification.title || notification.notificationNo || "-")}</strong>
+      <small>${escapeHtml(notification.content || notification.actionHint || "-")}</small>
+      <small>${formatDateTime(notification.createdAt) || "-"}</small>
+    </div>
   `;
 }
 
@@ -1207,6 +1323,17 @@ function bindOrderDetailActions(modal) {
       const orderId = button.dataset.detailChangeOrder;
       closeDetailModal(modal);
       openChangeFromOrderId(orderId);
+    });
+  });
+  modal.querySelectorAll("[data-detail-pay-change]").forEach(button => {
+    button.addEventListener("click", async () => {
+      await payPassengerChange(button.dataset.detailPayChange, { stayOnDetail: true });
+    });
+  });
+  modal.querySelectorAll("[data-detail-jump]").forEach(button => {
+    button.addEventListener("click", () => {
+      closeDetailModal(modal);
+      activateSection(button.dataset.detailJump);
     });
   });
   modal.querySelectorAll("[data-detail-refresh-order]").forEach(button => {
@@ -1523,7 +1650,7 @@ async function payPassengerOrder(orderId) {
     await loadPassengerTickets();
     await loadPassengerChanges();
     await loadPassengerTransactionSummary();
-    activateSection("passenger-orders");
+    await openPassengerOrderDetail(orderId);
   } catch (error) {
     showToast(error.message || "支付失败");
   }
@@ -1534,6 +1661,7 @@ async function closePassengerOrder(orderId) {
     await passengerRequest(`/passenger/orders/${orderId}/close`, { method: "POST" });
     showToast("订单已取消，库存已释放");
     await refreshPassengerData();
+    await openPassengerOrderDetail(orderId);
   } catch (error) {
     showToast(error.message || "取消订单失败");
   }
@@ -1547,6 +1675,7 @@ async function refundPassengerOrder(orderId) {
     passengerState.tickets.page = 0;
     await loadPassengerTickets();
     await loadPassengerRefunds();
+    await openPassengerOrderDetail(orderId);
   } catch (error) {
     showToast(error.message || "退票失败");
   }
@@ -1792,7 +1921,7 @@ async function submitTicketChange() {
     passengerState.tickets.page = 0;
     showToast(result.status === "PENDING_PAYMENT" ? "改签已提交，请完成新票支付" : "改签成功，电子票已更新");
     await refreshPassengerData();
-    activateSection("passenger-changes");
+    await openPassengerOrderDetail(result.newOrderId || order.id);
   } catch (error) {
     elements.changeError.textContent = error.message || "提交改签失败";
     elements.changeConfirm.disabled = false;
@@ -1872,14 +2001,18 @@ function renderPassengerChanges(changes) {
   });
 }
 
-async function payPassengerChange(changeId) {
+async function payPassengerChange(changeId, options = {}) {
   try {
-    await passengerRequest(`/passenger/changes/${changeId}/pay`, { method: "POST" });
+    const result = await passengerRequest(`/passenger/changes/${changeId}/pay`, { method: "POST" });
     showToast("改签补差支付完成，电子票已更新");
     passengerState.changes.page = 0;
     passengerState.tickets.page = 0;
     await refreshPassengerData();
-    activateSection("passenger-changes");
+    if (result && result.newOrderId) {
+      await openPassengerOrderDetail(result.newOrderId);
+    } else if (!options.stayOnDetail) {
+      activateSection("passenger-changes");
+    }
   } catch (error) {
     showToast(error.message || "改签支付失败");
   }

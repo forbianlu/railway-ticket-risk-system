@@ -791,17 +791,20 @@ function showAdminOrderDetail(detail) {
   const outboxEvents = detail.outboxEvents || [];
   const logs = detail.operationLogs || [];
   modal.querySelector(".order-detail-body").innerHTML = `
-    <div class="detail-hero">
+    <div class="detail-hero admin-investigation-hero">
       <div>
-        <p class="eyebrow">Admin Order Detail</p>
+        <p class="eyebrow">Transaction Investigation</p>
         <h2>${escapeHtml(order.orderNo || "-")}</h2>
-        <span>User ${order.userId || "-"} · ${escapeHtml(order.trainNo || "-")} · ${formatDate(order.travelDate)}</span>
+        <span>User ${order.userId || "-"} · ${escapeHtml(order.trainNo || "-")} · ${formatDate(order.travelDate)} · ${escapeHtml(order.passengerName || "-")}</span>
       </div>
       <div class="detail-amount">
         <strong>¥${formatAmount(order.amount)}</strong>
         <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
       </div>
     </div>
+    ${renderAdminInvestigationSummary(order, ticket, payments, refunds, ticketChanges, notifications, risks, outboxEvents)}
+    ${renderAdminIssueList(order, payments, refunds, ticketChanges, risks, outboxEvents)}
+    ${renderAdminDetailQuickActions(order, payments, refunds, ticketChanges, risks, outboxEvents, notifications)}
     <section class="detail-section">
       <h3>电子票 / 行程单</h3>
       ${ticket ? renderTicketDetail(ticket) : `<div class="detail-empty">暂无电子票。</div>`}
@@ -850,7 +853,110 @@ function showAdminOrderDetail(detail) {
       ${renderAdminTransactionChain(order, ticket, payments, refunds, ticketChanges, notifications, risks, outboxEvents, logs)}
     </section>
   `);
+  bindAdminDetailActions(modal);
   openDetailModal(modal);
+}
+
+function renderAdminInvestigationSummary(order, ticket, payments, refunds, ticketChanges, notifications, risks, outboxEvents) {
+  const latestPayment = payments[0];
+  const latestRefund = refunds[0];
+  const latestChange = ticketChanges[0];
+  const failedOutbox = outboxEvents.filter(event => event.status === "FAILED").length;
+  const pendingRisk = risks.filter(risk => risk.status === "PENDING").length;
+  const unreadNotice = notifications.filter(notification => notification.status === "UNREAD").length;
+  const cards = [
+    { label: "订单", value: statusText(order.status), note: order.orderNo || "-", className: orderStatusClass(order.status) },
+    { label: "电子票", value: ticket ? ticketStatusText(ticket.status) : "未出票", note: ticket ? ticket.ticketNo : "无票据", className: ticket ? ticketStatusClass(ticket.status) : "" },
+    { label: "支付", value: latestPayment ? paymentStatusText(latestPayment.status) : "无流水", note: latestPayment ? latestPayment.paymentNo : "待生成", className: latestPayment ? paymentStatusClass(latestPayment.status) : "" },
+    { label: "退款", value: latestRefund ? refundStatusText(latestRefund.status) : "无退款", note: latestRefund ? latestRefund.refundNo : "未退票", className: latestRefund ? refundStatusClass(latestRefund.status) : "" },
+    { label: "改签", value: latestChange ? changeStatusText(latestChange.status) : "无改签", note: latestChange ? latestChange.changeNo : "未发起", className: latestChange ? changeStatusClass(latestChange.status) : "" },
+    { label: "异常", value: `${pendingRisk + failedOutbox} 项`, note: `风险 ${pendingRisk} / 事件 ${failedOutbox} / 未读 ${unreadNotice}`, className: pendingRisk + failedOutbox > 0 ? "failed" : "" },
+  ];
+  return `
+    <section class="detail-status-grid admin-investigation-summary" aria-label="交易链路状态总览">
+      ${cards.map(card => `
+        <article class="${card.className || ""}">
+          <span>${escapeHtml(card.label)}</span>
+          <strong>${escapeHtml(card.value)}</strong>
+          <small>${escapeHtml(card.note)}</small>
+        </article>
+      `).join("")}
+    </section>
+  `;
+}
+
+function renderAdminIssueList(order, payments, refunds, ticketChanges, risks, outboxEvents) {
+  const issues = [];
+  payments.filter(payment => payment.status === "FAILED").forEach(payment => {
+    issues.push({ tone: "danger", title: "支付失败", text: `${payment.paymentNo} / ${payment.callbackMessage || "需要确认支付回调或重新支付"}` });
+  });
+  refunds.filter(refund => refund.status !== "SUCCESS").forEach(refund => {
+    issues.push({ tone: refund.status === "FAILED" ? "danger" : "warn", title: `退款${refundStatusText(refund.status)}`, text: `${refund.refundNo} / ${refund.callbackMessage || "等待退款回调或人工确认"}` });
+  });
+  ticketChanges.filter(change => change.status !== "SUCCESS").forEach(change => {
+    issues.push({ tone: change.status === "FAILED" ? "danger" : "warn", title: `改签${changeStatusText(change.status)}`, text: `${change.changeNo} / ${change.failureReason || "等待乘客补差或系统完成"}` });
+  });
+  risks.filter(risk => risk.status === "PENDING").forEach(risk => {
+    issues.push({ tone: "danger", title: "风险待处置", text: `${riskTypeText(risk.riskType)} / ${risk.reason || order.orderNo || "-"}` });
+  });
+  outboxEvents.filter(event => event.status === "FAILED").forEach(event => {
+    issues.push({ tone: "warn", title: "Outbox 失败", text: `${event.eventType} / ${event.lastError || "可在事件中心重试"}` });
+  });
+  if (!issues.length) {
+    return `
+      <section class="admin-issue-strip clear">
+        <strong>当前链路未发现待排查异常</strong>
+        <span>订单、支付、票据、退款、改签、事件链路均可在本面板核对。</span>
+      </section>
+    `;
+  }
+  return `
+    <section class="admin-issue-strip">
+      <strong>需要关注 ${issues.length} 项</strong>
+      <div>
+        ${issues.slice(0, 5).map(issue => `
+          <span class="${issue.tone}">
+            <b>${escapeHtml(issue.title)}</b>
+            ${escapeHtml(issue.text)}
+          </span>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderAdminDetailQuickActions(order, payments, refunds, ticketChanges, risks, outboxEvents, notifications) {
+  const latestPayment = payments[0];
+  const latestRefund = refunds[0];
+  const latestChange = ticketChanges[0];
+  const hasRisk = risks.length > 0;
+  const hasOutbox = outboxEvents.length > 0;
+  const hasNotice = notifications.length > 0;
+  return `
+    <section class="detail-action-strip admin-investigation-actions" aria-label="交易链路跳转">
+      <div>
+        <strong>排查入口</strong>
+        <span>从订单详情直接打开关联模块，避免在多张列表中重新拼线索。</span>
+      </div>
+      <div class="inline-actions">
+        ${latestPayment ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="payments" data-admin-detail-order="${order.id}">支付流水</button>` : ""}
+        ${latestRefund ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="refunds" data-admin-detail-order="${order.id}">退款流水</button>` : ""}
+        ${latestChange ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="ticket-changes" data-admin-detail-change="${escapeHtml(latestChange.changeNo || "")}">改签记录</button>` : ""}
+        ${hasRisk ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="risks" data-admin-detail-order-no="${escapeHtml(order.orderNo || "")}">风险事件</button>` : ""}
+        ${hasOutbox ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="outbox">Outbox</button>` : ""}
+        ${hasNotice ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="notifications" data-admin-detail-order-no="${escapeHtml(order.orderNo || "")}">通知记录</button>` : ""}
+      </div>
+    </section>
+  `;
+}
+
+function bindAdminDetailActions(modal) {
+  modal.querySelectorAll("[data-admin-detail-target]").forEach(button => {
+    button.addEventListener("click", () => {
+      closeDetailModal(modal);
+      openAdminDetailTarget(button);
+    });
+  });
 }
 
 function renderAdminTransactionChain(order, ticket, payments, refunds, ticketChanges, notifications, risks, outboxEvents, logs) {
@@ -2434,8 +2540,26 @@ function changeStatusText(value) {
 function changeStatusClass(value) {
   const map = {
     PENDING_PAYMENT: "pending",
-    SUCCESS: "",
+    SUCCESS: "issued",
     FAILED: "closed",
+    CANCELLED: "closed",
+  };
+  return map[value] || "";
+}
+
+function ticketStatusText(value) {
+  const map = {
+    ISSUED: "有效票",
+    REFUNDED: "已退票",
+    CANCELLED: "已取消",
+  };
+  return map[value] || value || "-";
+}
+
+function ticketStatusClass(value) {
+  const map = {
+    ISSUED: "issued",
+    REFUNDED: "refunded",
     CANCELLED: "closed",
   };
   return map[value] || "";
@@ -2666,6 +2790,16 @@ async function openPaymentsByStatus(status, label) {
   showToast(`已切换到${label}`);
 }
 
+async function openPaymentsByOrder(orderId) {
+  elements.paymentStatus.value = "";
+  elements.paymentNoFilter.value = "";
+  elements.paymentOrderId.value = orderId || "";
+  state.paymentPage.page = 0;
+  navigateToSection("payments");
+  await loadPaymentsPage();
+  showToast("已定位到该订单的支付流水");
+}
+
 async function openTicketChangesByStatus(status, label) {
   elements.ticketChangeStatus.value = status;
   elements.ticketChangeNo.value = "";
@@ -2674,6 +2808,16 @@ async function openTicketChangesByStatus(status, label) {
   navigateToSection("ticket-changes");
   await loadTicketChangesPage();
   showToast(`已切换到${label}`);
+}
+
+async function openTicketChangeByNo(changeNo) {
+  elements.ticketChangeStatus.value = "";
+  elements.ticketChangeNo.value = changeNo || "";
+  elements.ticketChangeUserId.value = "";
+  state.ticketChangePage.page = 0;
+  navigateToSection("ticket-changes");
+  await loadTicketChangesPage();
+  showToast("已定位到关联改签记录");
 }
 
 async function openOutboxByStatus(status, label) {
@@ -2685,6 +2829,29 @@ async function openOutboxByStatus(status, label) {
   showToast(`已切换到${label}`);
 }
 
+async function openRefundsByOrder(orderId) {
+  elements.refundStatus.value = "";
+  elements.refundNoFilter.value = "";
+  elements.refundOrderId.value = orderId || "";
+  state.refundPage.page = 0;
+  navigateToSection("refunds");
+  await loadRefundsPage();
+  showToast("已定位到该订单的退款流水");
+}
+
+async function openRisksByOrder(orderNo) {
+  elements.riskStatus.value = "";
+  elements.riskScene.value = "";
+  elements.riskUserId.value = "";
+  elements.riskOrderNo.value = orderNo || "";
+  elements.riskFromDate.value = "";
+  elements.riskToDate.value = "";
+  state.riskPage.page = 0;
+  navigateToSection("risks");
+  await Promise.all([loadRisksPage(), loadRiskSummary()]);
+  showToast("已定位到该订单的风险事件");
+}
+
 async function openNotificationsByStatus(status, label) {
   elements.notificationStatus.value = status;
   elements.notificationType.value = "";
@@ -2694,6 +2861,47 @@ async function openNotificationsByStatus(status, label) {
   navigateToSection("notifications");
   await Promise.all([loadNotificationSummary(), loadNotificationsPage()]);
   showToast(`已切换到${label}`);
+}
+
+async function openNotificationsByOrder(orderNo) {
+  elements.notificationStatus.value = "";
+  elements.notificationType.value = "";
+  elements.notificationOrderNo.value = orderNo || "";
+  elements.notificationUserId.value = "";
+  state.notificationPage.page = 0;
+  navigateToSection("notifications");
+  await Promise.all([loadNotificationSummary(), loadNotificationsPage()]);
+  showToast("已定位到该订单的通知记录");
+}
+
+function openAdminDetailTarget(button) {
+  const target = button.dataset.adminDetailTarget;
+  const orderId = button.dataset.adminDetailOrder;
+  const orderNo = button.dataset.adminDetailOrderNo;
+  const changeNo = button.dataset.adminDetailChange;
+  switch (target) {
+    case "payments":
+      openPaymentsByOrder(orderId);
+      break;
+    case "refunds":
+      openRefundsByOrder(orderId);
+      break;
+    case "ticket-changes":
+      openTicketChangeByNo(changeNo);
+      break;
+    case "risks":
+      openRisksByOrder(orderNo);
+      break;
+    case "outbox":
+      openOutboxByStatus("", "关联 Outbox 事件");
+      break;
+    case "notifications":
+      openNotificationsByOrder(orderNo);
+      break;
+    default:
+      navigateToSection("dashboard");
+      break;
+  }
 }
 
 function openWorkbenchTarget(target, status) {
