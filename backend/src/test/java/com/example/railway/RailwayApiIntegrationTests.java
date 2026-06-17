@@ -60,6 +60,7 @@ import com.example.railway.dto.AuthResponse;
 import com.example.railway.dto.AdminGlobalSearchResponse;
 import com.example.railway.dto.CreateOrderRequest;
 import com.example.railway.dto.CreatePaymentRequest;
+import com.example.railway.dto.ChangePasswordRequest;
 import com.example.railway.dto.AdminWorkbenchResponse;
 import com.example.railway.dto.DashboardSummary;
 import com.example.railway.dto.LoginRequest;
@@ -76,6 +77,7 @@ import com.example.railway.dto.OutboxEventSummaryResponse;
 import com.example.railway.dto.OutboxRetryResponse;
 import com.example.railway.dto.PassengerCreateOrderRequest;
 import com.example.railway.dto.PassengerChangeTicketRequest;
+import com.example.railway.dto.PassengerProfileResponse;
 import com.example.railway.dto.PassengerSummaryResponse;
 import com.example.railway.dto.PassengerTodoItemResponse;
 import com.example.railway.dto.PassengerTransactionSummaryResponse;
@@ -101,6 +103,7 @@ import com.example.railway.dto.TicketChangePageResponse;
 import com.example.railway.dto.TicketChangeResponse;
 import com.example.railway.dto.TrainSearchCacheStats;
 import com.example.railway.dto.TrainSearchResponse;
+import com.example.railway.dto.UpdatePassengerProfileRequest;
 import com.example.railway.repository.AppUserRepository;
 import com.example.railway.repository.OperationLogRepository;
 import com.example.railway.repository.NotificationRecordRepository;
@@ -391,7 +394,7 @@ class RailwayApiIntegrationTests {
     }
 
     @Test
-    void shouldRegisterPassengerAndCompleteTicketingFlow() {
+    void shouldRegisterPassengerAndCompleteTicketingFlow() throws Exception {
         String suffix = Long.toString(System.nanoTime(), 36);
         String username = "reguser" + suffix.substring(Math.max(0, suffix.length() - 8));
         AuthResponse admin = login("admin", "admin123");
@@ -417,6 +420,44 @@ class RailwayApiIntegrationTests {
                 .get()
                 .extracting(user -> user.getRole())
                 .isEqualTo(UserRole.USER);
+
+        ResponseEntity<PassengerProfileResponse> profileResponse = restTemplate.exchange(
+                "/api/passenger/profile",
+                HttpMethod.GET,
+                authorizedEntity(registered),
+                PassengerProfileResponse.class
+        );
+        assertThat(profileResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(profileResponse.getBody()).isNotNull();
+        assertThat(profileResponse.getBody().getUsername()).isEqualTo(username);
+        assertThat(profileResponse.getBody().getTravelerCount()).isEqualTo(0);
+
+        UpdatePassengerProfileRequest profileRequest = new UpdatePassengerProfileRequest();
+        profileRequest.setDisplayName("Registered Passenger Updated");
+        ResponseEntity<AuthResponse> profileUpdateResponse = restTemplate.exchange(
+                "/api/passenger/profile",
+                HttpMethod.PUT,
+                authorizedEntity(registered, profileRequest),
+                AuthResponse.class
+        );
+        assertThat(profileUpdateResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(profileUpdateResponse.getBody()).isNotNull();
+        assertThat(profileUpdateResponse.getBody().getDisplayName()).isEqualTo("Registered Passenger Updated");
+        registered = profileUpdateResponse.getBody();
+
+        ChangePasswordRequest passwordRequest = new ChangePasswordRequest();
+        passwordRequest.setOldPassword("123456");
+        passwordRequest.setNewPassword("654321");
+        passwordRequest.setConfirmPassword("654321");
+        ResponseEntity<Void> passwordResponse = restTemplate.exchange(
+                "/api/passenger/password",
+                HttpMethod.PUT,
+                authorizedEntity(registered, passwordRequest),
+                Void.class
+        );
+        assertThat(passwordResponse.getStatusCodeValue()).isEqualTo(200);
+        assertThat(postLoginStatus(username, "123456")).isEqualTo(401);
+        assertThat(login(username, "654321").getRole()).isEqualTo("USER");
 
         ResponseEntity<String> duplicateResponse = restTemplate.postForEntity(
                 "/api/auth/register",

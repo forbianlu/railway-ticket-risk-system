@@ -19,6 +19,8 @@ public interface PassengerTravelerRepository extends JpaRepository<PassengerTrav
 
     Optional<PassengerTraveler> findByUserIdAndDefaultTravelerTrue(Long userId);
 
+    long countByUserId(Long userId);
+
     boolean existsByUserIdAndPassengerNameAndIdTypeAndIdNo(Long userId, String passengerName, PassengerIdType idType, String idNo);
 
     boolean existsByUserIdAndPassengerNameAndIdTypeAndIdNoAndIdNot(Long userId, String passengerName, PassengerIdType idType, String idNo, Long id);

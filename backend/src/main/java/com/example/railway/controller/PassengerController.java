@@ -22,8 +22,11 @@ import com.example.railway.dto.NotificationSummaryResponse;
 import com.example.railway.dto.OrderDetailResponse;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
+import com.example.railway.dto.AuthResponse;
+import com.example.railway.dto.ChangePasswordRequest;
 import com.example.railway.dto.PassengerChangeTicketRequest;
 import com.example.railway.dto.PassengerCreateOrderRequest;
+import com.example.railway.dto.PassengerProfileResponse;
 import com.example.railway.dto.PassengerSummaryResponse;
 import com.example.railway.dto.PassengerTransactionSummaryResponse;
 import com.example.railway.dto.PassengerTravelerRequest;
@@ -33,6 +36,7 @@ import com.example.railway.dto.RefundPageResponse;
 import com.example.railway.dto.TicketChangePageResponse;
 import com.example.railway.dto.TicketChangeResponse;
 import com.example.railway.dto.TicketPageResponse;
+import com.example.railway.dto.UpdatePassengerProfileRequest;
 import com.example.railway.security.AuthContext;
 import com.example.railway.security.RequiredRole;
 import com.example.railway.service.NotificationService;
@@ -68,6 +72,24 @@ public class PassengerController {
     @GetMapping("/summary")
     public PassengerSummaryResponse summary() {
         return passengerService.summary();
+    }
+
+    @Operation(summary = "Query my passenger profile")
+    @GetMapping("/profile")
+    public PassengerProfileResponse profile() {
+        return passengerService.profile();
+    }
+
+    @Operation(summary = "Update my display name")
+    @PutMapping("/profile")
+    public AuthResponse updateProfile(@Valid @RequestBody UpdatePassengerProfileRequest request) {
+        return passengerService.updateProfile(request.getDisplayName());
+    }
+
+    @Operation(summary = "Change my password")
+    @PutMapping("/password")
+    public void changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        passengerService.changePassword(request);
     }
 
     @Operation(summary = "Query my orders")

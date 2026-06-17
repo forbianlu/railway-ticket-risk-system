@@ -30,6 +30,8 @@ public interface TicketOrderRepository extends JpaRepository<TicketOrder, Long>,
 
     long countByStatus(OrderStatus status);
 
+    long countByUserId(Long userId);
+
     long countByUserIdAndStatus(Long userId, OrderStatus status);
 
     long countByUserIdAndCreatedAtAfter(Long userId, LocalDateTime createdAt);

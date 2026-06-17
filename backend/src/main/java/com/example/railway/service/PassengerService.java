@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.railway.common.BusinessException;
 import com.example.railway.domain.OrderStatus;
+import com.example.railway.domain.AppUser;
 import com.example.railway.domain.PassengerIdType;
 import com.example.railway.domain.PassengerTraveler;
 import com.example.railway.domain.TicketOrder;
@@ -21,11 +22,14 @@ import com.example.railway.domain.TicketStatus;
 import com.example.railway.domain.UserRole;
 import com.example.railway.dto.CreateOrderRequest;
 import com.example.railway.dto.CreatePaymentRequest;
+import com.example.railway.dto.AuthResponse;
+import com.example.railway.dto.ChangePasswordRequest;
 import com.example.railway.dto.OrderDetailResponse;
 import com.example.railway.dto.OrderPageResponse;
 import com.example.railway.dto.OrderResponse;
 import com.example.railway.dto.PassengerChangeTicketRequest;
 import com.example.railway.dto.PassengerCreateOrderRequest;
+import com.example.railway.dto.PassengerProfileResponse;
 import com.example.railway.dto.PassengerSummaryResponse;
 import com.example.railway.dto.PassengerTravelerRequest;
 import com.example.railway.dto.PassengerTravelerResponse;
@@ -36,6 +40,7 @@ import com.example.railway.dto.TicketChangePageResponse;
 import com.example.railway.dto.TicketChangeResponse;
 import com.example.railway.dto.TicketPageResponse;
 import com.example.railway.repository.PassengerTravelerRepository;
+import com.example.railway.repository.AppUserRepository;
 import com.example.railway.repository.PaymentRecordRepository;
 import com.example.railway.repository.RefundRecordRepository;
 import com.example.railway.repository.TicketOrderRepository;
@@ -61,6 +66,9 @@ public class PassengerService {
     private final OrderDetailService orderDetailService;
     private final PassengerTravelerRepository passengerTravelerRepository;
     private final TicketChangeService ticketChangeService;
+    private final AppUserRepository appUserRepository;
+    private final PasswordService passwordService;
+    private final AuthTokenService authTokenService;
 
     public PassengerService(TicketOrderRepository ticketOrderRepository,
                             TicketRecordRepository ticketRecordRepository,
@@ -71,7 +79,10 @@ public class PassengerService {
                             RefundService refundService,
                             OrderDetailService orderDetailService,
                             PassengerTravelerRepository passengerTravelerRepository,
-                            TicketChangeService ticketChangeService) {
+                            TicketChangeService ticketChangeService,
+                            AppUserRepository appUserRepository,
+                            PasswordService passwordService,
+                            AuthTokenService authTokenService) {
         this.ticketOrderRepository = ticketOrderRepository;
         this.ticketRecordRepository = ticketRecordRepository;
         this.paymentRecordRepository = paymentRecordRepository;
@@ -82,6 +93,55 @@ public class PassengerService {
         this.orderDetailService = orderDetailService;
         this.passengerTravelerRepository = passengerTravelerRepository;
         this.ticketChangeService = ticketChangeService;
+        this.appUserRepository = appUserRepository;
+        this.passwordService = passwordService;
+        this.authTokenService = authTokenService;
+    }
+
+    @Transactional(readOnly = true)
+    public PassengerProfileResponse profile() {
+        AuthPrincipal principal = currentUser();
+        AppUser user = appUserRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new BusinessException("Passenger user not found"));
+        PassengerProfileResponse response = new PassengerProfileResponse();
+        response.setUserId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setDisplayName(user.getDisplayName());
+        response.setRole(user.getRole().name());
+        response.setTravelerCount(passengerTravelerRepository.countByUserId(user.getId()));
+        response.setDefaultTravelerName(passengerTravelerRepository.findByUserIdAndDefaultTravelerTrue(user.getId())
+                .map(PassengerTraveler::getPassengerName)
+                .orElse(null));
+        response.setOrderCount(ticketOrderRepository.countByUserId(user.getId()));
+        response.setActiveTicketCount(ticketRecordRepository.countByUserIdAndStatus(user.getId(), TicketStatus.ISSUED));
+        return response;
+    }
+
+    @Transactional
+    public AuthResponse updateProfile(String displayName) {
+        AuthPrincipal principal = currentUser();
+        String normalizedName = normalizeRequired(displayName, "Display name is required");
+        AppUser user = appUserRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new BusinessException("Passenger user not found"));
+        user.setDisplayName(normalizedName);
+        AppUser saved = appUserRepository.save(user);
+        String token = authTokenService.generate(saved);
+        return new AuthResponse(token, saved.getUsername(), saved.getDisplayName(), saved.getRole().name(), authTokenService.expiresAt(token));
+    }
+
+    @Transactional
+    public void changePassword(ChangePasswordRequest request) {
+        AuthPrincipal principal = currentUser();
+        AppUser user = appUserRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new BusinessException("Passenger user not found"));
+        if (!passwordService.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new BusinessException("旧密码不正确");
+        }
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessException("两次输入的新密码不一致");
+        }
+        user.setPasswordHash(passwordService.hash(request.getNewPassword()));
+        appUserRepository.save(user);
     }
 
     @Transactional(readOnly = true)

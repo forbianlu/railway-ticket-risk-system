@@ -12,6 +12,8 @@ const passengerState = {
   selectedChangeTrain: null,
   changeCandidates: [],
   authExpiredNotified: false,
+  profile: null,
+  summary: null,
   navObserver: null,
   scrollTicking: false,
   lastScrollY: 0,
@@ -50,6 +52,22 @@ const elements = {
   authUser: document.querySelector("#passenger-auth-user"),
   logoutButton: document.querySelector("#passenger-logout-button"),
   refreshPassenger: document.querySelector("#refresh-passenger"),
+  onboardingSteps: document.querySelector("#passenger-onboarding-steps"),
+  onboardingAction: document.querySelector("#passenger-onboarding-action"),
+  profileRole: document.querySelector("#passenger-profile-role"),
+  profileDisplay: document.querySelector("#passenger-profile-display"),
+  profileUsername: document.querySelector("#passenger-profile-username"),
+  profileDefaultTraveler: document.querySelector("#passenger-profile-default-traveler"),
+  profileOrderCount: document.querySelector("#passenger-profile-order-count"),
+  profileTicketCount: document.querySelector("#passenger-profile-ticket-count"),
+  profileForm: document.querySelector("#passenger-profile-form"),
+  profileDisplayName: document.querySelector("#passenger-profile-display-name"),
+  profileError: document.querySelector("#passenger-profile-error"),
+  passwordForm: document.querySelector("#passenger-password-form"),
+  oldPassword: document.querySelector("#passenger-old-password"),
+  newPassword: document.querySelector("#passenger-new-password"),
+  confirmPassword: document.querySelector("#passenger-confirm-password"),
+  passwordError: document.querySelector("#passenger-password-error"),
   metricTotal: document.querySelector("#passenger-metric-total"),
   metricPending: document.querySelector("#passenger-metric-pending"),
   metricPaid: document.querySelector("#passenger-metric-paid"),
@@ -165,6 +183,17 @@ elements.showLogin.addEventListener("click", () => switchPassengerAuthMode("logi
 elements.showRegister.addEventListener("click", () => switchPassengerAuthMode("register"));
 elements.logoutButton.addEventListener("click", logoutPassenger);
 elements.refreshPassenger.addEventListener("click", refreshPassengerData);
+elements.onboardingAction.addEventListener("click", () => {
+  activateSection(elements.onboardingAction.dataset.target || "passenger-search");
+});
+elements.profileForm.addEventListener("submit", event => {
+  event.preventDefault();
+  savePassengerProfile();
+});
+elements.passwordForm.addEventListener("submit", event => {
+  event.preventDefault();
+  changePassengerPassword();
+});
 elements.refreshTransactions.addEventListener("click", loadPassengerTransactionSummary);
 elements.searchForm.addEventListener("submit", event => {
   event.preventDefault();
@@ -357,6 +386,7 @@ async function registerPassenger() {
     showToast("注册成功，已进入乘客购票服务");
     await refreshPassengerData();
     await loadAvailablePassengerTrains();
+    activateSection("passenger-account");
   } catch (error) {
     elements.registerError.textContent = error.message || "注册失败";
     showToast(error.message || "注册失败");
@@ -374,6 +404,8 @@ function switchPassengerAuthMode(mode) {
 
 function logoutPassenger() {
   passengerState.auth = null;
+  passengerState.profile = null;
+  passengerState.summary = null;
   localStorage.removeItem(PASSENGER_AUTH_KEY);
   sessionStorage.removeItem(PASSENGER_AUTH_KEY);
   renderAuthState();
@@ -430,6 +462,7 @@ async function refreshPassengerData() {
     return;
   }
   await Promise.all([
+    loadPassengerProfile(),
     loadPassengerSummary(),
     loadPassengerTravelers(),
     loadPassengerOrders(),
@@ -443,9 +476,84 @@ async function refreshPassengerData() {
   ]);
 }
 
+async function loadPassengerProfile() {
+  try {
+    const profile = await passengerRequest("/passenger/profile");
+    passengerState.profile = profile;
+    renderPassengerProfile(profile);
+    renderPassengerOnboarding();
+  } catch (error) {
+    showToast(error.message || "无法加载账号资料");
+  }
+}
+
+function renderPassengerProfile(profile) {
+  elements.profileRole.textContent = roleText(profile.role || "USER");
+  elements.profileDisplay.textContent = profile.displayName || profile.username || "-";
+  elements.profileUsername.textContent = profile.username ? `@${profile.username}` : "-";
+  elements.profileDefaultTraveler.textContent = profile.defaultTravelerName || "未设置";
+  elements.profileOrderCount.textContent = profile.orderCount || 0;
+  elements.profileTicketCount.textContent = profile.activeTicketCount || 0;
+  elements.profileDisplayName.value = profile.displayName || "";
+}
+
+async function savePassengerProfile() {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  const displayName = elements.profileDisplayName.value.trim();
+  elements.profileError.textContent = "";
+  if (!displayName) {
+    elements.profileError.textContent = "请填写昵称";
+    return;
+  }
+  try {
+    const auth = await passengerRequest("/passenger/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ displayName }),
+    });
+    passengerState.auth = auth;
+    localStorage.setItem(PASSENGER_AUTH_KEY, JSON.stringify(auth));
+    renderAuthState();
+    await loadPassengerProfile();
+    showToast("个人资料已更新");
+  } catch (error) {
+    elements.profileError.textContent = error.message || "保存资料失败";
+  }
+}
+
+async function changePassengerPassword() {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  const oldPassword = elements.oldPassword.value;
+  const newPassword = elements.newPassword.value;
+  const confirmPassword = elements.confirmPassword.value;
+  elements.passwordError.textContent = "";
+  if (newPassword !== confirmPassword) {
+    elements.passwordError.textContent = "两次输入的新密码不一致";
+    return;
+  }
+  try {
+    await passengerRequest("/passenger/password", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ oldPassword, newPassword, confirmPassword }),
+    });
+    elements.oldPassword.value = "";
+    elements.newPassword.value = "";
+    elements.confirmPassword.value = "";
+    showToast("密码已更新，请妥善保管新密码");
+  } catch (error) {
+    elements.passwordError.textContent = error.message || "更新密码失败";
+  }
+}
+
 async function loadPassengerSummary() {
   try {
     const summary = await passengerRequest("/passenger/summary");
+    passengerState.summary = summary;
     const totalOrders = Number(summary.pendingPaymentOrderCount || 0)
       + Number(summary.paidOrderCount || 0)
       + Number(summary.closedOrderCount || 0)
@@ -459,6 +567,7 @@ async function loadPassengerSummary() {
     elements.metricRefunds.textContent = summary.refundCount || 0;
     renderMiniOrders(elements.latestOrders, summary.latestOrders || [], "暂无最近订单");
     renderMiniOrders(elements.upcomingTrips, summary.upcomingTrips || [], "暂无即将出行");
+    renderPassengerOnboarding();
   } catch (error) {
     showToast(error.message || "无法加载乘客概览");
   }
@@ -609,6 +718,7 @@ async function loadPassengerTravelers(options = {}) {
     });
     renderPassengerTravelers();
     renderBuyTravelerOptions();
+    renderPassengerOnboarding();
   } catch (error) {
     if (!options.silent) {
       elements.travelerList.innerHTML = recordEmpty(error.message || "无法加载常用乘车人");
@@ -649,6 +759,70 @@ function renderPassengerTravelers() {
   elements.travelerList.querySelectorAll("[data-delete-traveler]").forEach(button => {
     button.addEventListener("click", () => deleteTraveler(button.dataset.deleteTraveler));
   });
+}
+
+function renderPassengerOnboarding() {
+  if (!passengerState.auth || !elements.onboardingSteps) {
+    return;
+  }
+  const summary = passengerState.summary || {};
+  const profile = passengerState.profile || {};
+  const totalOrders = Number(summary.pendingPaymentOrderCount || 0)
+    + Number(summary.paidOrderCount || 0)
+    + Number(summary.closedOrderCount || 0)
+    + Number(summary.refundedOrderCount || 0);
+  const hasPaid = Number(summary.paidOrderCount || 0) > 0
+    || Number(summary.paymentCount || 0) > 0
+    || Number(profile.activeTicketCount || 0) > 0;
+  const steps = [
+    {
+      key: "profile",
+      title: "账号已创建",
+      desc: profile.username ? `当前账号 @${profile.username}` : "注册或登录乘客账号",
+      done: Boolean(profile.username),
+      target: "passenger-account",
+    },
+    {
+      key: "traveler",
+      title: "添加常用乘车人",
+      desc: passengerState.travelers.length ? `已维护 ${passengerState.travelers.length} 位乘车人` : "先维护实名乘车人，购票时可直接选择",
+      done: passengerState.travelers.length > 0,
+      target: "passenger-travelers",
+    },
+    {
+      key: "order",
+      title: "查询车票并下单",
+      desc: totalOrders > 0 ? `已有 ${totalOrders} 笔订单` : "选择车次后提交第一笔待支付订单",
+      done: totalOrders > 0,
+      target: "passenger-search",
+    },
+    {
+      key: "pay",
+      title: "完成支付",
+      desc: hasPaid ? "已产生支付记录或有效电子票" : "在我的订单中支付待支付订单",
+      done: hasPaid,
+      target: "passenger-orders",
+    },
+    {
+      key: "ticket",
+      title: "查看电子票",
+      desc: Number(profile.activeTicketCount || 0) > 0 ? `有效电子票 ${profile.activeTicketCount} 张` : "支付后到电子票夹查看票面",
+      done: Number(profile.activeTicketCount || 0) > 0,
+      target: "passenger-tickets",
+    },
+  ];
+  elements.onboardingSteps.innerHTML = steps.map((step, index) => `
+    <button class="onboarding-step ${step.done ? "done" : ""}" type="button" data-onboarding-target="${step.target}">
+      <span class="step-index">${step.done ? "✓" : index + 1}</span>
+      <span><strong>${escapeHtml(step.title)}</strong><small>${escapeHtml(step.desc)}</small></span>
+    </button>
+  `).join("");
+  elements.onboardingSteps.querySelectorAll("[data-onboarding-target]").forEach(button => {
+    button.addEventListener("click", () => activateSection(button.dataset.onboardingTarget));
+  });
+  const next = steps.find(step => !step.done) || steps[steps.length - 1];
+  elements.onboardingAction.dataset.target = next.target;
+  elements.onboardingAction.textContent = steps.every(step => step.done) ? "查看我的电子票" : next.title;
 }
 
 function renderBuyTravelerOptions() {
@@ -2317,6 +2491,8 @@ function renderPagination(type) {
 }
 
 function renderLoggedOutPlaceholders() {
+  passengerState.profile = null;
+  passengerState.summary = null;
   elements.metricTotal.textContent = "0";
   elements.metricPending.textContent = "0";
   elements.metricPaid.textContent = "0";
@@ -2326,6 +2502,18 @@ function renderLoggedOutPlaceholders() {
   elements.metricRefunds.textContent = "0";
   elements.latestOrders.innerHTML = emptyItem("登录后查看最近订单");
   elements.upcomingTrips.innerHTML = emptyItem("登录后查看即将出行");
+  elements.onboardingSteps.innerHTML = recordEmpty("登录或注册后查看首单引导");
+  elements.onboardingAction.dataset.target = "passenger-search";
+  elements.onboardingAction.textContent = "开始第一段行程";
+  elements.profileRole.textContent = "USER";
+  elements.profileDisplay.textContent = "-";
+  elements.profileUsername.textContent = "-";
+  elements.profileDefaultTraveler.textContent = "未设置";
+  elements.profileOrderCount.textContent = "0";
+  elements.profileTicketCount.textContent = "0";
+  elements.profileDisplayName.value = "";
+  elements.profileError.textContent = "";
+  elements.passwordError.textContent = "";
   passengerState.travelers = [];
   passengerState.travelerById = {};
   elements.travelerList.innerHTML = recordEmpty("登录后维护常用乘车人");

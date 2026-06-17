@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>乘客购票服务 - 铁路客运票务与风控运营平台</title>
-  <link rel="stylesheet" href="./styles.css?v=20260617-register-flow">
+  <link rel="stylesheet" href="./styles.css?v=20260617-onboarding-profile">
 </head>
 <body class="passenger-page passenger-consumer-page">
   <section class="passenger-login passenger-gateway" aria-label="乘客登录">
@@ -96,6 +96,7 @@
       <nav class="passenger-nav passenger-site-nav" aria-label="乘客端导航">
         <a href="#passenger-search">查票</a>
         <a href="#passenger-summary">行程</a>
+        <a href="#passenger-account">账号</a>
         <a href="#passenger-travelers">乘车人</a>
         <a href="#passenger-orders">订单</a>
         <a href="#passenger-transactions">状态</a>
@@ -211,6 +212,77 @@
             </div>
             <div id="passenger-upcoming-trips" class="event-list compact-list"></div>
           </article>
+        </div>
+      </section>
+
+      <section id="passenger-account" class="passenger-section passenger-account-section">
+        <div class="passenger-section-head">
+          <div>
+            <p class="eyebrow">Account Guide</p>
+            <h2>账号与首单引导</h2>
+            <p>注册后按步骤完成常用乘车人、查票、下单、支付和电子票查看。</p>
+          </div>
+          <button id="passenger-onboarding-action" class="primary-button" type="button">开始第一段行程</button>
+        </div>
+        <div class="passenger-account-layout">
+          <article class="onboarding-card">
+            <div class="panel-head">
+              <div>
+                <h3>首单进度</h3>
+                <p>系统会根据你的真实操作自动更新完成状态。</p>
+              </div>
+            </div>
+            <div id="passenger-onboarding-steps" class="onboarding-steps"></div>
+          </article>
+          <article class="profile-card">
+            <div class="profile-header">
+              <div class="profile-avatar" aria-hidden="true">RT</div>
+              <div>
+                <span id="passenger-profile-role" class="soft-pill">USER</span>
+                <h3 id="passenger-profile-display">-</h3>
+                <p id="passenger-profile-username">-</p>
+              </div>
+            </div>
+            <div class="profile-facts">
+              <div><span>默认乘车人</span><strong id="passenger-profile-default-traveler">未设置</strong></div>
+              <div><span>订单数</span><strong id="passenger-profile-order-count">0</strong></div>
+              <div><span>有效电子票</span><strong id="passenger-profile-ticket-count">0</strong></div>
+            </div>
+          </article>
+          <form id="passenger-profile-form" class="account-form-card">
+            <div>
+              <h3>个人资料</h3>
+              <p>修改昵称后会立即刷新当前登录信息。</p>
+            </div>
+            <label>
+              昵称
+              <input id="passenger-profile-display-name" type="text" maxlength="64" autocomplete="name">
+            </label>
+            <div id="passenger-profile-error" class="form-error" aria-live="polite"></div>
+            <button class="secondary-button" type="submit">保存资料</button>
+          </form>
+          <form id="passenger-password-form" class="account-form-card">
+            <div>
+              <h3>安全设置</h3>
+              <p>修改密码后，新密码立即生效，旧密码无法继续登录。</p>
+            </div>
+            <label>
+              旧密码
+              <input id="passenger-old-password" type="password" autocomplete="current-password">
+            </label>
+            <div class="form-grid">
+              <label>
+                新密码
+                <input id="passenger-new-password" type="password" minlength="6" maxlength="64" autocomplete="new-password">
+              </label>
+              <label>
+                确认新密码
+                <input id="passenger-confirm-password" type="password" minlength="6" maxlength="64" autocomplete="new-password">
+              </label>
+            </div>
+            <div id="passenger-password-error" class="form-error" aria-live="polite"></div>
+            <button class="secondary-button" type="submit">更新密码</button>
+          </form>
         </div>
       </section>
 
@@ -581,6 +653,6 @@
   </div>
 
   <div id="passenger-toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./passenger.js?v=20260617-register-flow"></script>
+  <script src="./passenger.js?v=20260617-onboarding-profile"></script>
 </body>
 </html>
