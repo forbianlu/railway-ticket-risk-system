@@ -1992,6 +1992,43 @@ body.modal-open {
   transform: translateY(0);
 }
 
+.passenger-flow-refreshing .passenger-order-card,
+.passenger-flow-refreshing .passenger-ticket-card,
+.passenger-flow-refreshing .money-record-card,
+.passenger-flow-refreshing .ticket-change-card,
+.passenger-flow-refreshing .transaction-stat-card,
+.passenger-flow-refreshing .order-detail-dialog {
+  transition: opacity 180ms ease, filter 180ms ease;
+}
+
+.passenger-flow-refreshing .passenger-order-card,
+.passenger-flow-refreshing .passenger-ticket-card,
+.passenger-flow-refreshing .money-record-card,
+.passenger-flow-refreshing .ticket-change-card,
+.passenger-flow-refreshing .transaction-stat-card {
+  opacity: 0.72;
+  filter: saturate(0.88);
+}
+
+.passenger-flow-refreshing .order-detail-dialog::after {
+  content: "同步最新交易状态...";
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: block;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  margin: 0 auto 10px;
+  border: 1px solid rgba(15, 107, 87, 0.16);
+  border-radius: 999px;
+  padding: 7px 12px;
+  color: #0f6b57;
+  background: rgba(236, 253, 245, 0.96);
+  box-shadow: 0 10px 24px rgba(15, 107, 87, 0.12);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .entry-page {
   min-height: 100dvh;
   background:

@@ -11,6 +11,8 @@ const passengerState = {
   selectedChangeOrder: null,
   selectedChangeTrain: null,
   changeCandidates: [],
+  activeDetailOrderId: null,
+  refreshingFlow: false,
   authExpiredNotified: false,
   profile: null,
   summary: null,
@@ -474,6 +476,30 @@ async function refreshPassengerData() {
     loadPassengerNotifications(),
     loadPassengerNotificationSummary(),
   ]);
+}
+
+async function refreshPassengerFlow(options = {}) {
+  if (!ensureSignedIn() || passengerState.refreshingFlow) {
+    return;
+  }
+  passengerState.refreshingFlow = true;
+  document.body.classList.add("passenger-flow-refreshing");
+  try {
+    passengerState.orders.page = 0;
+    passengerState.tickets.page = 0;
+    passengerState.payments.page = 0;
+    passengerState.refunds.page = 0;
+    passengerState.changes.page = 0;
+    passengerState.notifications.page = 0;
+    await refreshPassengerData();
+    const detailOrderId = options.detailOrderId || passengerState.activeDetailOrderId;
+    if (detailOrderId) {
+      await openPassengerOrderDetail(detailOrderId, { preserveScroll: true });
+    }
+  } finally {
+    passengerState.refreshingFlow = false;
+    window.setTimeout(() => document.body.classList.remove("passenger-flow-refreshing"), 240);
+  }
 }
 
 async function loadPassengerProfile() {
@@ -1167,16 +1193,14 @@ async function submitPassengerOrder() {
       body.passengerIdType = elements.buyIdType.value;
       body.passengerPhone = elements.buyPhone.value.trim();
     }
-    await passengerRequest("/passenger/orders", {
+    const order = await passengerRequest("/passenger/orders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     closeBuyModal();
     showToast("订单已创建，库存已锁定，请及时支付");
-    await Promise.all([loadPassengerSummary(), loadPassengerTravelers(), loadPassengerOrders(), loadAvailablePassengerTrains()]);
-    await loadPassengerNotifications();
-    await loadPassengerNotificationSummary();
+    await refreshPassengerFlow({ detailOrderId: order && order.id });
     activateSection("passenger-orders");
   } catch (error) {
     elements.buyError.textContent = error.message || "购票失败，请稍后重试";
@@ -1271,10 +1295,17 @@ function decoratePassengerOrderDetailButtons(orders) {
   });
 }
 
-async function openPassengerOrderDetail(orderId) {
+async function openPassengerOrderDetail(orderId, options = {}) {
   try {
+    passengerState.activeDetailOrderId = orderId;
     const detail = await passengerRequest(`/passenger/orders/${orderId}/detail`);
     showPassengerOrderDetail(detail);
+    if (!options.preserveScroll) {
+      const body = document.querySelector("#passenger-order-detail-modal .order-detail-body");
+      if (body) {
+        body.scrollTop = 0;
+      }
+    }
   } catch (error) {
     showToast(error.message || "无法加载订单详情");
   }
@@ -1417,7 +1448,7 @@ function renderOrderDetailActions(order, ticket, refunds = [], ticketChanges = [
     actions.push(`<button class="secondary-button compact-button danger-soft" type="button" data-detail-refund-order="${order.id}">申请退票</button>`);
   }
   if (pendingChange) {
-    actions.push(`<button class="primary-button compact-button" type="button" data-detail-pay-change="${pendingChange.id}">支付改签差额</button>`);
+    actions.push(`<button class="primary-button compact-button" type="button" data-detail-pay-change="${pendingChange.id}" data-detail-pay-change-order="${order.id}">支付改签差额</button>`);
   }
   if (ticket) {
     actions.push(`<button class="secondary-button compact-button" type="button" data-detail-jump="passenger-tickets">查看电子票</button>`);
@@ -1560,7 +1591,10 @@ function bindOrderDetailActions(modal) {
   });
   modal.querySelectorAll("[data-detail-pay-change]").forEach(button => {
     button.addEventListener("click", async () => {
-      await payPassengerChange(button.dataset.detailPayChange, { stayOnDetail: true });
+      await payPassengerChange(button.dataset.detailPayChange, {
+        stayOnDetail: true,
+        orderId: button.dataset.detailPayChangeOrder,
+      });
     });
   });
   modal.querySelectorAll("[data-detail-jump]").forEach(button => {
@@ -1570,7 +1604,7 @@ function bindOrderDetailActions(modal) {
     });
   });
   modal.querySelectorAll("[data-detail-refresh-order]").forEach(button => {
-    button.addEventListener("click", () => openPassengerOrderDetail(button.dataset.detailRefreshOrder));
+    button.addEventListener("click", () => refreshPassengerFlow({ detailOrderId: button.dataset.detailRefreshOrder }));
   });
 }
 
@@ -1586,9 +1620,7 @@ async function runOrderDetailAction(orderId, action) {
   try {
     await passengerRequest(config.path, { method: "POST" });
     showToast(config.success);
-    passengerState.tickets.page = 0;
-    await refreshPassengerData();
-    await openPassengerOrderDetail(orderId);
+    await refreshPassengerFlow({ detailOrderId: orderId });
   } catch (error) {
     showToast(error.message || "订单操作失败");
   }
@@ -1791,6 +1823,9 @@ function closeDetailModal(modal) {
   modal.classList.remove("show");
   modal.setAttribute("aria-hidden", "true");
   document.body.classList.remove("modal-open");
+  if (modal.id === "passenger-order-detail-modal") {
+    passengerState.activeDetailOrderId = null;
+  }
 }
 
 function renderOrderActions(order) {
@@ -1878,12 +1913,7 @@ async function payPassengerOrder(orderId) {
   try {
     await passengerRequest(`/passenger/orders/${orderId}/pay`, { method: "POST" });
     showToast("支付成功，订单状态已更新");
-    await refreshPassengerData();
-    passengerState.tickets.page = 0;
-    await loadPassengerTickets();
-    await loadPassengerChanges();
-    await loadPassengerTransactionSummary();
-    await openPassengerOrderDetail(orderId);
+    await refreshPassengerFlow({ detailOrderId: orderId });
   } catch (error) {
     showToast(error.message || "支付失败");
   }
@@ -1893,8 +1923,7 @@ async function closePassengerOrder(orderId) {
   try {
     await passengerRequest(`/passenger/orders/${orderId}/close`, { method: "POST" });
     showToast("订单已取消，库存已释放");
-    await refreshPassengerData();
-    await openPassengerOrderDetail(orderId);
+    await refreshPassengerFlow({ detailOrderId: orderId });
   } catch (error) {
     showToast(error.message || "取消订单失败");
   }
@@ -1904,11 +1933,7 @@ async function refundPassengerOrder(orderId) {
   try {
     await passengerRequest(`/passenger/orders/${orderId}/refund`, { method: "POST" });
     showToast("退票成功，已创建退款流水");
-    await refreshPassengerData();
-    passengerState.tickets.page = 0;
-    await loadPassengerTickets();
-    await loadPassengerRefunds();
-    await openPassengerOrderDetail(orderId);
+    await refreshPassengerFlow({ detailOrderId: orderId });
   } catch (error) {
     showToast(error.message || "退票失败");
   }
@@ -2153,8 +2178,7 @@ async function submitTicketChange() {
     passengerState.changes.page = 0;
     passengerState.tickets.page = 0;
     showToast(result.status === "PENDING_PAYMENT" ? "改签已提交，请完成新票支付" : "改签成功，电子票已更新");
-    await refreshPassengerData();
-    await openPassengerOrderDetail(result.newOrderId || order.id);
+    await refreshPassengerFlow({ detailOrderId: result.newOrderId || order.id });
   } catch (error) {
     elements.changeError.textContent = error.message || "提交改签失败";
     elements.changeConfirm.disabled = false;
@@ -2238,12 +2262,8 @@ async function payPassengerChange(changeId, options = {}) {
   try {
     const result = await passengerRequest(`/passenger/changes/${changeId}/pay`, { method: "POST" });
     showToast("改签补差支付完成，电子票已更新");
-    passengerState.changes.page = 0;
-    passengerState.tickets.page = 0;
-    await refreshPassengerData();
-    if (result && result.newOrderId) {
-      await openPassengerOrderDetail(result.newOrderId);
-    } else if (!options.stayOnDetail) {
+    await refreshPassengerFlow({ detailOrderId: result && result.newOrderId ? result.newOrderId : options.orderId });
+    if (!result && !options.stayOnDetail) {
       activateSection("passenger-changes");
     }
   } catch (error) {

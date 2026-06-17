@@ -68,6 +68,7 @@ const state = {
   logs: [],
   visibleLogCount: 10,
   openRiskHistoryId: null,
+  activeAdminDetailOrderId: null,
   navObserver: null,
   activeSectionId: "",
   authExpiredNotified: false,
@@ -772,10 +773,19 @@ function decorateAdminOrderDetailButtons(orders) {
 
 async function openAdminOrderDetail(orderId) {
   try {
+    state.activeAdminDetailOrderId = orderId;
     const detail = await request(`/orders/${orderId}/detail`);
     showAdminOrderDetail(detail);
   } catch (error) {
     showToast(error.message || "无法加载订单详情");
+  }
+}
+
+async function refreshAdminFlow(orderId) {
+  const detailOrderId = orderId || state.activeAdminDetailOrderId;
+  await refreshAll();
+  if (detailOrderId) {
+    await openAdminOrderDetail(detailOrderId);
   }
 }
 
@@ -945,6 +955,7 @@ function renderAdminDetailQuickActions(order, payments, refunds, ticketChanges, 
         ${hasRisk ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="risks" data-admin-detail-order-no="${escapeHtml(order.orderNo || "")}">风险事件</button>` : ""}
         ${hasOutbox ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="outbox">Outbox</button>` : ""}
         ${hasNotice ? `<button class="secondary-button compact-button" type="button" data-admin-detail-target="notifications" data-admin-detail-order-no="${escapeHtml(order.orderNo || "")}">通知记录</button>` : ""}
+        <button class="secondary-button compact-button" type="button" data-admin-detail-refresh="${order.id}">刷新链路</button>
       </div>
     </section>
   `;
@@ -956,6 +967,9 @@ function bindAdminDetailActions(modal) {
       closeDetailModal(modal);
       openAdminDetailTarget(button);
     });
+  });
+  modal.querySelectorAll("[data-admin-detail-refresh]").forEach(button => {
+    button.addEventListener("click", () => refreshAdminFlow(button.dataset.adminDetailRefresh));
   });
 }
 
@@ -1105,6 +1119,9 @@ function closeDetailModal(modal) {
   modal.classList.remove("show");
   modal.setAttribute("aria-hidden", "true");
   document.body.classList.remove("modal-open");
+  if (modal.id === "admin-order-detail-modal") {
+    state.activeAdminDetailOrderId = null;
+  }
 }
 
 function buildOrderQueryPath() {
@@ -1173,7 +1190,7 @@ async function payOrder(orderId) {
   try {
     const order = await request(`/orders/${orderId}/pay`, { method: "POST" });
     showToast(order.status === "PAID" ? "支付成功，已触发风控校验" : "订单已超时关闭，库存已释放");
-    await refreshAll();
+    await refreshAdminFlow(orderId);
   } catch (error) {
     showToast(error.message || "支付失败");
   }
@@ -1183,7 +1200,7 @@ async function closeOrder(orderId) {
   try {
     await request(`/orders/${orderId}/close`, { method: "POST" });
     showToast("订单已关闭，库存已释放");
-    await refreshAll();
+    await refreshAdminFlow(orderId);
   } catch (error) {
     showToast(error.message || "关闭订单失败");
   }
@@ -1194,7 +1211,7 @@ async function refundOrder(orderId) {
     await request(`/orders/${orderId}/refund`, { method: "POST" });
     elements.refundOrderId.value = orderId;
     showToast("退票成功，库存已释放，退款流水已创建");
-    await refreshAll();
+    await refreshAdminFlow(orderId);
   } catch (error) {
     showToast(error.message || "退票失败");
   }
@@ -1222,7 +1239,7 @@ async function createPayment(orderId) {
     elements.paymentOrderId.value = payment.orderId;
     showToast("支付流水已创建：" + payment.paymentNo);
     state.paymentPage.page = 0;
-    await loadPaymentsPage();
+    await refreshAdminFlow(payment.orderId);
   } catch (error) {
     showToast(error.message || "创建支付流水失败");
   }
@@ -1318,7 +1335,7 @@ async function callbackPayment(paymentNo, success) {
     });
     showToast(success ? "支付成功回调已处理" : "支付失败回调已处理");
     elements.paymentOrderId.value = payment.orderId;
-    await refreshAll();
+    await refreshAdminFlow(payment.orderId);
   } catch (error) {
     showToast(error.message || "支付回调失败");
   }
@@ -1415,7 +1432,7 @@ async function callbackRefund(refundNo, success) {
     });
     showToast(success ? "退款成功回调已处理" : "退款失败回调已处理");
     elements.refundOrderId.value = refund.orderId;
-    await refreshAll();
+    await refreshAdminFlow(refund.orderId);
   } catch (error) {
     showToast(error.message || "退款回调失败");
   }
