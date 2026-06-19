@@ -84,8 +84,8 @@
     </div>
   </section>
 
-  <div class="passenger-shell passenger-consumer-shell">
-    <header class="passenger-site-header">
+  <div class="passenger-shell passenger-consumer-shell mercury-shell">
+    <aside class="passenger-site-header passenger-app-sidebar">
       <a class="product-brand passenger-site-brand" href="#passenger-search" aria-label="返回查票首页">
         <span class="brand-mark passenger-main-mark">RT</span>
         <span>
@@ -103,16 +103,34 @@
         <a href="#passenger-payments">支付退款</a>
         <a href="#passenger-notifications">消息 <span id="passenger-nav-unread" class="nav-badge">0</span></a>
       </nav>
-      <div class="passenger-userbar passenger-account">
-        <div class="auth-summary">
-          <span id="passenger-auth-role">未登录</span>
-          <strong id="passenger-auth-user">访客模式</strong>
-        </div>
-        <button id="passenger-logout-button" class="ghost-button" type="button">退出</button>
+      <div class="passenger-sidebar-footer">
+        <span>本地服务</span>
+        <strong>Spring Boot / H2</strong>
       </div>
-    </header>
+    </aside>
 
-    <main class="passenger-site-main">
+    <div class="passenger-main passenger-app-main">
+      <header class="passenger-app-topbar">
+        <div class="passenger-top-search" aria-label="搜索入口">
+          <span class="search-icon" aria-hidden="true"></span>
+          <input type="search" placeholder="搜索订单、车次、消息" aria-label="搜索订单、车次、消息">
+          <kbd>⌘ K</kbd>
+        </div>
+        <div class="passenger-top-actions">
+          <button class="mercury-action-button" type="button" data-topbar-jump="passenger-search">查询车票</button>
+          <button class="round-icon-button" type="button" data-topbar-jump="passenger-notifications" aria-label="查看消息"><span class="bell-icon" aria-hidden="true"></span></button>
+          <div class="passenger-userbar passenger-account">
+            <div class="auth-summary">
+              <span id="passenger-auth-role">未登录</span>
+              <strong id="passenger-auth-user">访客模式</strong>
+            </div>
+            <div class="passenger-avatar" aria-hidden="true">乘</div>
+            <button id="passenger-logout-button" class="ghost-button" type="button">退出</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="passenger-site-main">
       <section id="passenger-search" class="passenger-section booking-landing">
         <div class="booking-hero-panel">
           <div class="booking-copy">
@@ -576,7 +594,8 @@
           </div>
         </div>
       </section>
-    </main>
+      </main>
+    </div>
   </div>
 
   <div id="passenger-buy-modal" class="modal-backdrop" aria-hidden="true">

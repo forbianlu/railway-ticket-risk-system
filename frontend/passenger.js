@@ -2821,6 +2821,26 @@ function setupPassengerNavigation() {
       activateSection(link.getAttribute("href").slice(1));
     });
   });
+  document.querySelectorAll("[data-topbar-jump]").forEach(button => {
+    button.addEventListener("click", () => activateSection(button.dataset.topbarJump));
+  });
+  const quickSearch = document.querySelector(".passenger-top-search input");
+  if (quickSearch) {
+    quickSearch.addEventListener("keydown", event => {
+      if (event.key !== "Enter") {
+        return;
+      }
+      event.preventDefault();
+      const keyword = quickSearch.value.trim();
+      if (!keyword) {
+        activateSection("passenger-search");
+        return;
+      }
+      elements.orderStatus.value = "";
+      activateSection("passenger-orders");
+      showToast("已切换到订单页，可在订单详情中核对相关记录");
+    });
+  }
 }
 
 function setupPassengerScrollSpy() {
@@ -2829,29 +2849,7 @@ function setupPassengerScrollSpy() {
     updateActiveNav("passenger-search");
     return;
   }
-  const onScroll = () => {
-    if (passengerState.scrollTicking) {
-      return;
-    }
-    passengerState.scrollTicking = true;
-    window.requestAnimationFrame(() => {
-      updateHeaderDensity();
-      const visibleSections = sections.filter(section => !section.hidden && section.offsetParent !== null);
-      const headerOffset = getPassengerHeaderOffset();
-      const anchorY = window.scrollY + headerOffset + 28;
-      let current = visibleSections[0] ? visibleSections[0].id : "passenger-search";
-      visibleSections.forEach(section => {
-        if (section.offsetTop <= anchorY) {
-          current = section.id;
-        }
-      });
-      updateActiveNav(current);
-      passengerState.scrollTicking = false;
-    });
-  };
-  window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", onScroll);
-  onScroll();
+  activateSection("passenger-search", { silent: true });
 }
 
 function updateActiveNav(sectionId) {
@@ -2866,16 +2864,28 @@ function updateActiveNav(sectionId) {
   });
 }
 
-function activateSection(sectionId) {
-  const section = document.querySelector(`#${sectionId}`);
+function activateSection(sectionId, options = {}) {
+  const rootSectionId = navSectionAlias(sectionId);
+  const section = document.querySelector(`#${rootSectionId}`);
   if (!section) {
     return;
   }
-  updateActiveNav(sectionId);
-  const top = section.getBoundingClientRect().top + window.scrollY - getPassengerHeaderOffset() - 14;
-  window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-  section.classList.add("section-highlight");
-  window.setTimeout(() => section.classList.remove("section-highlight"), 1200);
+  document.querySelectorAll(".passenger-site-main > .passenger-section").forEach(item => {
+    item.classList.toggle("is-active", item.id === rootSectionId);
+  });
+  updateActiveNav(rootSectionId);
+  const page = document.querySelector(".passenger-site-main");
+  if (page) {
+    const target = sectionId !== rootSectionId ? document.querySelector(`#${sectionId}`) : null;
+    const top = target && section.contains(target)
+      ? Math.max(0, target.offsetTop - section.offsetTop - 18)
+      : 0;
+    page.scrollTo({ top, behavior: options.silent ? "auto" : "smooth" });
+  }
+  if (!options.silent) {
+    section.classList.add("section-highlight");
+    window.setTimeout(() => section.classList.remove("section-highlight"), 900);
+  }
 }
 
 function navSectionAlias(sectionId) {
