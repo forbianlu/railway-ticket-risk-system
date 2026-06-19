@@ -2605,6 +2605,10 @@ function notificationContentText(notification) {
   if (!content) {
     return actionTargetText(notification && notification.actionHint);
   }
+  const directHint = actionTargetText(content);
+  if (directHint !== humanizeCode(content)) {
+    return directHint;
+  }
   const paymentMatch = content.match(/^Order\s+(\S+)\s+payment succeeded\.\s+Amount\s+([^,]+),\s+paymentNo\s+(\S+)\.?$/i);
   if (paymentMatch) {
     return `订单 ${paymentMatch[1]} 已支付成功，金额 ¥${paymentMatch[2]}，支付流水 ${paymentMatch[3]}。`;
@@ -2833,6 +2837,11 @@ function actionTargetText(value) {
     "payment succeeded. check the order and ticket timeline": "支付已完成，请查看订单详情和电子票。",
     "the e-ticket is ready in your ticket wallet": "电子票已生成，可在电子票夹查看。",
     "this order is waiting for payment": "订单待支付，请尽快完成支付。",
+    "refund succeeded. check the refund record": "退款已成功，请查看退款记录。",
+    "the order has been closed": "订单已关闭。",
+    "order closed. check the order detail": "订单已关闭，请查看订单详情。",
+    "ticket issued. check the ticket wallet": "电子票已生成，可在电子票夹查看。",
+    "refund failed. check the refund record": "退款失败，请查看退款记录。",
   };
   const text = String(value || "").trim();
   const normalized = text.toLowerCase().replace(/\s+/g, " ").replace(/\.+$/g, "");

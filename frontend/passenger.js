@@ -1130,12 +1130,48 @@ function renderPassengerTrains(trains) {
     renderTrainEmpty("当前线路暂无可售车次，可查看全部可购车次或选择热门线路。");
     return;
   }
-  passengerState.trainByInventory = {};
+  cachePassengerTrains(trains);
+  passengerState.trains = { ...passengerState.trains, items: trains, page: 0 };
+  renderTrainPage();
+}
+
+function cachePassengerTrains(trains) {
+  passengerState.trainByInventory = { ...passengerState.trainByInventory };
   trains.forEach(train => {
     passengerState.trainByInventory[String(train.inventoryId)] = train;
   });
-  passengerState.trains = { ...passengerState.trains, items: trains, page: 0 };
-  renderTrainPage();
+}
+
+async function ensureOrderRouteCache(order) {
+  if (!order || !order.trainNo || findTrainForOrder(order)) {
+    return;
+  }
+  try {
+    const params = new URLSearchParams();
+    if (order.travelDate) {
+      params.set("travelDate", order.travelDate);
+    }
+    params.set("page", "0");
+    params.set("size", "100");
+    const trains = await passengerRequest(`/trains/available?${params.toString()}`);
+    if (Array.isArray(trains)) {
+      cachePassengerTrains(trains);
+    }
+  } catch (error) {
+    // Route cache is only a display enhancement for pending orders.
+  }
+}
+
+function findTrainForOrder(order) {
+  if (!order || !order.trainNo) {
+    return null;
+  }
+  const trains = [
+    ...(passengerState.trains && Array.isArray(passengerState.trains.items) ? passengerState.trains.items : []),
+    ...Object.values(passengerState.trainByInventory || {}),
+  ];
+  return trains.find(train => train && train.trainNo === order.trainNo
+    && (!order.travelDate || !train.travelDate || train.travelDate === order.travelDate)) || null;
 }
 
 function renderTrainPage() {
@@ -1440,6 +1476,7 @@ async function openPassengerOrderDetail(orderId, options = {}) {
   try {
     passengerState.activeDetailOrderId = orderId;
     const detail = await passengerRequest(`/passenger/orders/${orderId}/detail`);
+    await ensureOrderRouteCache(detail.order);
     showPassengerOrderDetail(detail);
     if (!options.preserveScroll) {
       const body = document.querySelector("#passenger-order-detail-modal .order-detail-body");
@@ -1481,7 +1518,7 @@ function showPassengerOrderDetail(detail) {
     <div class="detail-center-layout passenger-order-center">
       <div class="detail-center-main">
         <section class="detail-section transaction-chain-section">
-          <h3>订单全链路时间线</h3>
+          <h3>订单进度</h3>
           ${renderFullOrderTimeline(order, ticket, payments, refunds, ticketChanges, notifications)}
         </section>
       </div>
@@ -1623,38 +1660,12 @@ function renderOrderDetailActions(order, ticket, refunds = [], ticketChanges = [
   `;
 }
 
-function renderPassengerOrderChainNotice(order, ticket, payments, refunds, ticketChanges) {
-  const latestPayment = payments[0];
-  const latestRefund = refunds[0];
-  const pendingChange = ticketChanges.find(change => change.status === "PENDING_PAYMENT");
-  const notes = [];
-  if (order.status === "PENDING_PAYMENT") {
-    notes.push("该订单仍待支付，完成支付后会自动出票并同步电子票夹。");
-  }
-  if (ticket && ticket.status === "ISSUED") {
-    notes.push("电子票当前有效，可继续在本详情内发起退票或改签。");
-  }
-  if (latestPayment && latestPayment.status === "FAILED") {
-    notes.push("最近一次支付失败，可重新支付或取消订单。");
-  }
-  if (latestRefund && latestRefund.status === "PENDING") {
-    notes.push("退票已受理，退款仍在处理中，管理端模拟退款回调后会同步结果。");
-  }
-  if (pendingChange) {
-    notes.push("存在待支付改签单，支付差额后新票会自动生成。");
-  }
-  if (!notes.length) {
-    notes.push("订单、电子票、支付、退款和改签状态已汇总在本页。");
-  }
-  return `
-    <section class="detail-chain-notice">
-      <strong>当前链路提示</strong>
-      <div>${notes.map(note => `<span>${escapeHtml(note)}</span>`).join("")}</div>
-    </section>
-  `;
-}
-
 function renderOrderItineraryFallback(order) {
+  const train = findTrainForOrder(order);
+  const departureStation = order.departureStation || order.fromStation || order.departureStationName || order.fromStationName
+    || (train && train.departureStation) || "-";
+  const arrivalStation = order.arrivalStation || order.toStation || order.arrivalStationName || order.toStationName
+    || (train && train.arrivalStation) || "-";
   return `
     <div class="ticket-itinerary ticket-detail-card muted-ticket-card order-flat-detail-card">
       <div class="ticket-detail-main">
@@ -1665,9 +1676,9 @@ function renderOrderItineraryFallback(order) {
         <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
       </div>
       <div class="ticket-detail-route">
-        <strong>${escapeHtml(order.trainNo || "-")}</strong>
+        <strong>${escapeHtml(departureStation)}</strong>
         <span></span>
-        <strong>${formatDate(order.travelDate) || "-"}</strong>
+        <strong>${escapeHtml(arrivalStation)}</strong>
       </div>
       <div class="order-flat-detail-list">
         <div><span>金额</span><strong>¥${formatAmount(order.amount)}</strong></div>
@@ -1893,7 +1904,7 @@ function renderFullOrderTimeline(order, ticket, payments, refunds, ticketChanges
       detail: ticket ? ticket.ticketNo : "支付成功后生成",
     },
     ...ticketChanges.map(change => ({
-      label: "改签链路",
+      label: "改签进度",
       time: change.completedAt || change.updatedAt || change.createdAt,
       done: change.status === "SUCCESS",
       detail: `${changeStatusText(change.status)} / ${change.changeNo || "-"} / ${change.originalTrainNo || "-"} → ${change.newTrainNo || "-"}`,
@@ -2495,7 +2506,7 @@ function renderPassengerNotificationGuide(summary) {
   elements.notificationGuide.innerHTML = `
     <div>
       <strong>还有 ${unread} 条未读提醒</strong>
-      <span>优先处理待支付、改签补差和退款异常，其他提醒可从订单详情查看完整链路。</span>
+      <span>优先处理待支付、改签补差和退款异常，其他提醒可从订单详情查看完整进度。</span>
     </div>
     <div class="notification-guide-chips">${chips || "<span>查看最新提醒</span>"}</div>
   `;
@@ -3075,6 +3086,10 @@ function notificationContentText(notification) {
   if (!content) {
     return userFacingHint(notification && notification.actionHint);
   }
+  const directHint = userFacingHint(content);
+  if (directHint !== humanizeCode(content)) {
+    return directHint;
+  }
   const paymentMatch = content.match(/^Order\s+(\S+)\s+payment succeeded\.\s+Amount\s+([^,]+),\s+paymentNo\s+(\S+)\.?$/i);
   if (paymentMatch) {
     return `订单 ${paymentMatch[1]} 已支付成功，金额 ¥${paymentMatch[2]}，支付流水 ${paymentMatch[3]}。`;
@@ -3205,6 +3220,11 @@ function userFacingHint(value) {
     "payment succeeded. check the order and ticket timeline": "支付已完成，请查看订单详情和电子票。",
     "the e-ticket is ready in your ticket wallet": "电子票已生成，可在电子票夹查看。",
     "this order is waiting for payment": "订单待支付，请尽快完成支付。",
+    "refund succeeded. check the refund record": "退款已成功，请查看退款记录。",
+    "the order has been closed": "订单已关闭。",
+    "order closed. check the order detail": "订单已关闭，请查看订单详情。",
+    "ticket issued. check the ticket wallet": "电子票已生成，可在电子票夹查看。",
+    "refund failed. check the refund record": "退款失败，请查看退款记录。",
   };
   const text = String(value || "").trim();
   const normalized = text.toLowerCase().replace(/\s+/g, " ").replace(/\.+$/g, "");
