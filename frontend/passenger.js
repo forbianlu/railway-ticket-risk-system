@@ -386,14 +386,15 @@ function organizePassengerSections() {
   mergePassengerSection("passenger-travelers", "passenger-account", "merged-travelers");
   mergePassengerSection("passenger-changes", "passenger-orders", "merged-order-changes");
   mergePassengerSection("passenger-refunds", "passenger-payments", "merged-refunds");
+  mergePassengerSection("passenger-payments", "passenger-orders", "merged-order-payments");
   if (elements.loadPayments) {
     const heading = document.querySelector("#passenger-payments .passenger-section-head h2");
     const eyebrow = document.querySelector("#passenger-payments .passenger-section-head .eyebrow");
     if (heading) {
-      heading.textContent = "我的支付与退款";
+      heading.textContent = "支付与退款记录";
     }
     if (eyebrow) {
-      eyebrow.textContent = "支付退款";
+      eyebrow.textContent = "订单记录";
     }
   }
 }
@@ -2893,7 +2894,8 @@ function navSectionAlias(sectionId) {
     "passenger-transactions": "passenger-summary",
     "passenger-travelers": "passenger-account",
     "passenger-changes": "passenger-orders",
-    "passenger-refunds": "passenger-payments",
+    "passenger-payments": "passenger-orders",
+    "passenger-refunds": "passenger-orders",
   };
   return aliases[sectionId] || sectionId;
 }

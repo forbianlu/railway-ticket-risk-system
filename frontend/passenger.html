@@ -94,37 +94,60 @@
         </span>
       </a>
       <nav class="passenger-nav passenger-site-nav" aria-label="乘客端导航">
-        <a href="#passenger-search">查票</a>
-        <a href="#passenger-summary">行程</a>
-        <a href="#passenger-account">账号</a>
-        <a href="#passenger-onboarding">引导</a>
-        <a href="#passenger-orders">订单</a>
-        <a href="#passenger-tickets">车票</a>
-        <a href="#passenger-payments">支付退款</a>
-        <a href="#passenger-notifications">消息 <span id="passenger-nav-unread" class="nav-badge">0</span></a>
+        <a href="#passenger-search">
+          <span class="passenger-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M5 17.5h14M7 14l2-6h6l2 6M8.5 17.5 7 20M15.5 17.5 17 20M9 14h6"/></svg>
+          </span>
+          <span>查票</span>
+        </a>
+        <a href="#passenger-summary">
+          <span class="passenger-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M5 18V7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5V18M8 9h8M8 13h5M7.5 18 6 20M16.5 18l1.5 2"/></svg>
+          </span>
+          <span>行程</span>
+        </a>
+        <a href="#passenger-onboarding">
+          <span class="passenger-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M7 5h10v14H7zM10 9h4M10 13h4M9 17h6"/></svg>
+          </span>
+          <span>引导</span>
+        </a>
+        <a href="#passenger-orders">
+          <span class="passenger-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M6 6h12M6 11h12M6 16h8M4 6h.01M4 11h.01M4 16h.01"/></svg>
+          </span>
+          <span>订单</span>
+        </a>
+        <a href="#passenger-tickets">
+          <span class="passenger-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M5 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2.2a2 2 0 0 0 0 3.6V16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-2.2a2 2 0 0 0 0-3.6zM9 8v8"/></svg>
+          </span>
+          <span>车票</span>
+        </a>
+        <a href="#passenger-notifications">
+          <span class="passenger-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0v4l2 3H4l2-3zM10 19h4"/></svg>
+          </span>
+          <span>消息</span>
+          <span id="passenger-nav-unread" class="nav-badge">0</span>
+        </a>
+        <a href="#passenger-account">
+          <span class="passenger-nav-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0"/></svg>
+          </span>
+          <span>账号</span>
+        </a>
       </nav>
-      <div class="passenger-sidebar-footer">
-        <span>本地服务</span>
-        <strong>Spring Boot / H2</strong>
-      </div>
     </aside>
 
     <div class="passenger-main passenger-app-main">
       <header class="passenger-app-topbar">
-        <div class="passenger-top-search" aria-label="搜索入口">
-          <span class="search-icon" aria-hidden="true"></span>
-          <input type="search" placeholder="搜索订单、车次、消息" aria-label="搜索订单、车次、消息">
-          <kbd>⌘ K</kbd>
-        </div>
         <div class="passenger-top-actions">
-          <button class="mercury-action-button" type="button" data-topbar-jump="passenger-search">查询车票</button>
           <button class="round-icon-button" type="button" data-topbar-jump="passenger-notifications" aria-label="查看消息"><span class="bell-icon" aria-hidden="true"></span></button>
           <div class="passenger-userbar passenger-account">
-            <div class="auth-summary">
-              <span id="passenger-auth-role">未登录</span>
-              <strong id="passenger-auth-user">访客模式</strong>
-            </div>
-            <div class="passenger-avatar" aria-hidden="true">乘</div>
+            <span id="passenger-auth-role" class="visually-hidden">未登录</span>
+            <strong id="passenger-auth-user">访客模式</strong>
+            <div class="passenger-avatar" aria-label="乘客头像"><span class="person-avatar-icon" aria-hidden="true"></span></div>
             <button id="passenger-logout-button" class="ghost-button" type="button">退出</button>
           </div>
         </div>
