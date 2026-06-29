@@ -192,7 +192,7 @@ elements.registerForm.addEventListener("submit", event => {
 elements.showLogin.addEventListener("click", () => switchPassengerAuthMode("login"));
 elements.showRegister.addEventListener("click", () => switchPassengerAuthMode("register"));
 elements.logoutButton.addEventListener("click", logoutPassenger);
-elements.refreshPassenger.addEventListener("click", refreshPassengerData);
+elements.refreshPassenger?.addEventListener("click", refreshPassengerData);
 elements.onboardingAction.addEventListener("click", () => {
   const target = elements.onboardingAction.dataset.target || "passenger-search";
   if (target === "dismiss-onboarding") {
@@ -217,7 +217,7 @@ elements.passwordForm.addEventListener("submit", event => {
   event.preventDefault();
   changePassengerPassword();
 });
-elements.refreshTransactions.addEventListener("click", loadPassengerTransactionSummary);
+elements.refreshTransactions?.addEventListener("click", loadPassengerTransactionSummary);
 elements.searchForm.addEventListener("submit", event => {
   event.preventDefault();
   searchPassengerTrains();
@@ -284,8 +284,8 @@ elements.loadNotifications.addEventListener("click", () => {
   passengerState.notifications.page = 0;
   loadPassengerNotifications();
 });
-elements.refreshNotifications.addEventListener("click", () => loadPassengerNotifications());
-elements.readAllNotifications.addEventListener("click", markAllPassengerNotificationsRead);
+elements.refreshNotifications?.addEventListener("click", () => loadPassengerNotifications());
+elements.readAllNotifications?.addEventListener("click", markAllPassengerNotificationsRead);
 elements.prevNotifications.addEventListener("click", () => changePassengerPage("notifications", -1));
 elements.nextNotifications.addEventListener("click", () => changePassengerPage("notifications", 1));
 elements.buyForm.addEventListener("submit", event => {
@@ -803,20 +803,30 @@ function renderMiniChanges(container, changes, emptyText) {
 }
 
 function renderMiniOrders(container, orders, emptyText) {
+  if (container === elements.upcomingTrips) {
+    renderUpcomingJourneyTrips(container, orders, emptyText);
+    return;
+  }
   if (!orders.length) {
     container.innerHTML = emptyItem(emptyText);
     return;
   }
-  container.innerHTML = orders.map(order => `
-    <button class="event-item passenger-mini-order" type="button" data-order-status-jump="${escapeHtml(order.status)}">
-      <div class="event-header">
-        <strong>${escapeHtml(order.trainNo)} · ${formatDate(order.travelDate)}</strong>
-        <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
-      </div>
-      <span>${escapeHtml(order.orderNo)} / ${seatTypeText(order.seatType)} / ${escapeHtml(order.passengerName)}</span>
-      <span class="money">¥${formatAmount(order.amount)}</span>
-    </button>
-  `).join("");
+  container.innerHTML = orders.map(order => {
+    const routeText = passengerOrderRouteText(order);
+    return `
+      <button class="event-item passenger-mini-order journey-row-order" type="button" data-order-status-jump="${escapeHtml(order.status || "")}">
+        <div class="journey-row-main">
+          <span class="journey-row-train">${escapeHtml(order.trainNo || "-")}</span>
+          <strong>${escapeHtml(routeText)}</strong>
+          <small>${formatDate(order.travelDate) || "-"} · ${seatTypeText(order.seatType)} · ${escapeHtml(order.passengerName || "-")}</small>
+        </div>
+        <div class="journey-row-side">
+          <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
+          <strong class="money">¥${formatAmount(order.amount)}</strong>
+        </div>
+      </button>
+    `;
+  }).join("");
   container.querySelectorAll("[data-order-status-jump]").forEach(item => {
     item.addEventListener("click", () => {
       elements.orderStatus.value = item.dataset.orderStatusJump || "";
@@ -824,6 +834,124 @@ function renderMiniOrders(container, orders, emptyText) {
       loadPassengerOrders();
     });
   });
+}
+
+function renderUpcomingJourneyTrips(container, orders, emptyText) {
+  if (!orders.length) {
+    container.innerHTML = `
+      <div class="journey-trip-empty">
+        <strong>${escapeHtml(emptyText)}</strong>
+        <span>完成支付后，即将出行的车票会显示在这里。</span>
+      </div>
+    `;
+    return;
+  }
+  container.innerHTML = orders.slice(0, 3).map(order => {
+    const trip = passengerOrderTripInfo(order);
+    const duration = journeyDurationText(trip.departureTime, trip.arrivalTime);
+    const canOperate = order.status === "PAID";
+    return `
+      <article class="journey-trip-card">
+        <div class="journey-trip-meta">
+          <span class="journey-train-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M7 5.5h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"></path>
+              <path d="M8 9h8M8 13h8M8 18l-2 2M16 18l2 2"></path>
+            </svg>
+          </span>
+          <strong>${escapeHtml(trip.trainNo)}</strong>
+          <span>计划出发 ${escapeHtml(formatJourneyDateLabel(order.travelDate))}</span>
+        </div>
+        <div class="journey-trip-route">
+          <div class="journey-trip-stop">
+            <strong>${escapeHtml(trip.departureStation)}</strong>
+            <span>${escapeHtml(trip.departureTime)}</span>
+          </div>
+          <div class="journey-trip-duration">
+            <strong>${escapeHtml(duration)}</strong>
+            <span class="journey-trip-track" aria-hidden="true"></span>
+          </div>
+          <div class="journey-trip-stop is-arrival">
+            <strong>${escapeHtml(trip.arrivalStation)}</strong>
+            <span>${escapeHtml(trip.arrivalTime)}</span>
+          </div>
+        </div>
+        <div class="journey-trip-actions">
+          ${canOperate ? `<button class="secondary-button compact-button" type="button" data-journey-change="${order.id}">改签</button>` : ""}
+          ${canOperate ? `<button class="secondary-button compact-button" type="button" data-journey-refund="${order.id}">退票</button>` : ""}
+          <button class="primary-button compact-button" type="button" data-journey-detail="${order.id}">查看详情</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+  container.querySelectorAll("[data-journey-detail]").forEach(button => {
+    button.addEventListener("click", () => openPassengerOrderDetail(button.dataset.journeyDetail));
+  });
+  container.querySelectorAll("[data-journey-change]").forEach(button => {
+    button.addEventListener("click", () => openChangeFromOrderId(button.dataset.journeyChange));
+  });
+  container.querySelectorAll("[data-journey-refund]").forEach(button => {
+    button.addEventListener("click", () => refundPassengerOrder(button.dataset.journeyRefund));
+  });
+}
+
+function passengerOrderTripInfo(order) {
+  const train = findTrainForOrder(order) || {};
+  const departureStation = order.departureStation || order.fromStation || order.departureStationName
+    || order.fromStationName || train.departureStation || "-";
+  const arrivalStation = order.arrivalStation || order.toStation || order.arrivalStationName
+    || order.toStationName || train.arrivalStation || "-";
+  return {
+    trainNo: order.trainNo || train.trainNo || "-",
+    departureStation,
+    arrivalStation,
+    departureTime: formatTime(order.departureTime || train.departureTime),
+    arrivalTime: formatTime(order.arrivalTime || train.arrivalTime),
+  };
+}
+
+function journeyDurationText(start, end) {
+  const startMinutes = timeToMinutes(start);
+  const endMinutes = timeToMinutes(end);
+  if (startMinutes === null || endMinutes === null) {
+    return "行程";
+  }
+  let diff = endMinutes - startMinutes;
+  if (diff < 0) {
+    diff += 24 * 60;
+  }
+  const hours = Math.floor(diff / 60);
+  const minutes = diff % 60;
+  if (!hours) {
+    return `${minutes}分钟`;
+  }
+  return minutes ? `${hours}时${minutes}分` : `${hours}小时`;
+}
+
+function timeToMinutes(value) {
+  if (!value || value === "-") {
+    return null;
+  }
+  const parts = String(value).split(":").map(Number);
+  if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) {
+    return null;
+  }
+  return parts[0] * 60 + parts[1];
+}
+
+function formatJourneyDateLabel(value) {
+  const dateText = formatDate(value);
+  if (!dateText || dateText === "-") {
+    return "-";
+  }
+  const date = new Date(`${dateText}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return dateText;
+  }
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  return `${month}月${day}日 ${weekdays[date.getDay()]}`;
 }
 
 async function loadPassengerTravelers(options = {}) {
@@ -1413,12 +1541,14 @@ function renderPassengerOrders(orders) {
     elements.orderCards.innerHTML = emptyItem("暂无订单，可先查询车次并下单。");
     return;
   }
-  elements.orderCards.innerHTML = orders.map(order => `
+  elements.orderCards.innerHTML = orders.map(order => {
+    const routeText = passengerOrderRouteText(order);
+    return `
     <article class="passenger-order-card">
       <div class="passenger-order-main">
         <div>
           <p class="eyebrow">${escapeHtml(order.orderNo)}</p>
-          <h3>${escapeHtml(order.trainNo)} · ${formatDate(order.travelDate)}</h3>
+          <h3>${escapeHtml(order.trainNo)} · ${escapeHtml(routeText)}</h3>
           <span>${seatTypeText(order.seatType)} / ${escapeHtml(order.passengerName)} / ${escapeHtml(order.passengerIdNoMasked || "-")}</span>
         </div>
         <div class="passenger-order-price">
@@ -1432,7 +1562,7 @@ function renderPassengerOrders(orders) {
       </div>
       <div class="inline-actions passenger-order-actions">${renderOrderActions(order)}</div>
     </article>
-  `).join("");
+  `}).join("");
   decoratePassengerOrderDetailButtons(orders);
   elements.orderCards.querySelectorAll("[data-pay-order]").forEach(button => {
     button.addEventListener("click", () => payPassengerOrder(button.dataset.payOrder));
@@ -1453,6 +1583,17 @@ function renderPassengerOrders(orders) {
       loadPassengerRefunds();
     });
   });
+}
+
+function passengerOrderRouteText(order) {
+  const train = findTrainForOrder(order) || {};
+  const departureStation = order.departureStation || order.fromStation || order.departureStationName
+    || order.fromStationName || train.departureStation || "";
+  const arrivalStation = order.arrivalStation || order.toStation || order.arrivalStationName
+    || order.toStationName || train.arrivalStation || "";
+  return departureStation && arrivalStation
+    ? `${departureStation} → ${arrivalStation}`
+    : `${order.trainNo || "-"} · ${formatDate(order.travelDate) || "-"}`;
 }
 
 function decoratePassengerOrderDetailButtons(orders) {
@@ -2467,21 +2608,34 @@ async function loadPassengerNotificationSummary() {
   try {
     const summary = await passengerRequest("/passenger/notifications/unread-count");
     const unread = Number(summary.unreadCount || 0);
-    elements.notificationTotal.textContent = summary.totalCount || 0;
-    elements.notificationUnread.textContent = unread;
+    if (elements.notificationTotal) {
+      elements.notificationTotal.textContent = summary.totalCount || 0;
+    }
+    if (elements.notificationUnread) {
+      elements.notificationUnread.textContent = unread;
+    }
     elements.navUnread.textContent = unread;
     elements.navUnread.classList.toggle("is-empty", unread === 0);
     renderPassengerNotificationGuide(summary);
   } catch (error) {
-    elements.notificationTotal.textContent = "0";
-    elements.notificationUnread.textContent = "0";
+    if (elements.notificationTotal) {
+      elements.notificationTotal.textContent = "0";
+    }
+    if (elements.notificationUnread) {
+      elements.notificationUnread.textContent = "0";
+    }
     elements.navUnread.textContent = "0";
     elements.navUnread.classList.add("is-empty");
-    elements.notificationGuide.innerHTML = "";
+    if (elements.notificationGuide) {
+      elements.notificationGuide.innerHTML = "";
+    }
   }
 }
 
 function renderPassengerNotificationGuide(summary) {
+  if (!elements.notificationGuide) {
+    return;
+  }
   const unread = Number(summary.unreadCount || 0);
   const unreadByType = summary.unreadCountByType || {};
   const actionTypes = [
@@ -2520,6 +2674,7 @@ function renderPassengerNotifications(notifications) {
   }
   elements.notificationResults.innerHTML = notifications.map(notification => `
     <article class="money-record-card notification-record-card ${notification.status === "UNREAD" ? "unread" : ""} ${String(notification.priority || "").toLowerCase()}">
+      ${notificationTypeIcon(notification)}
       <div class="record-title-row">
         <div>
           <span>${notificationTypeText(notification.type)}</span>
@@ -2549,6 +2704,24 @@ function renderPassengerNotifications(notifications) {
   elements.notificationResults.querySelectorAll("[data-notification-action]").forEach(button => {
     button.addEventListener("click", () => handlePassengerNotificationAction(button));
   });
+}
+
+function notificationTypeIcon(notification) {
+  const type = notification && notification.type;
+  const title = String(notification && notification.title ? notification.title : "").toLowerCase();
+  const isRefundSuccess = type === "REFUND_SUCCEEDED" || title.includes("refund succeeded") || title.includes("退款成功");
+  if (!isRefundSuccess) {
+    return "";
+  }
+  return `
+    <span class="notification-type-icon refund-success-icon" aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;flex:0 0 42px;border-radius:14px;background:#eef5ff;color:#315cf6;">
+      <svg viewBox="0 0 24 24" focusable="false" style="width:22px;height:22px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;">
+        <path d="M8 7H5v3"></path>
+        <path d="M5.6 10A6.8 6.8 0 0 1 17 5.7a6.3 6.3 0 0 1 1.6 3.1"></path>
+        <path d="m13.2 15.3 2 2 4.2-4.7"></path>
+      </svg>
+    </span>
+  `;
 }
 
 function notificationActionButton(notification) {
@@ -2721,9 +2894,15 @@ function renderLoggedOutPlaceholders() {
   elements.paymentResults.innerHTML = recordEmpty("登录后查看支付流水");
   elements.refundResults.innerHTML = recordEmpty("登录后查看退款流水");
   elements.notificationResults.innerHTML = recordEmpty("登录后查看消息提醒");
-  elements.notificationGuide.innerHTML = "";
-  elements.notificationTotal.textContent = "0";
-  elements.notificationUnread.textContent = "0";
+  if (elements.notificationGuide) {
+    elements.notificationGuide.innerHTML = "";
+  }
+  if (elements.notificationTotal) {
+    elements.notificationTotal.textContent = "0";
+  }
+  if (elements.notificationUnread) {
+    elements.notificationUnread.textContent = "0";
+  }
   elements.navUnread.textContent = "0";
   elements.navUnread.classList.add("is-empty");
 }
