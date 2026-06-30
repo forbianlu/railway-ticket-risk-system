@@ -1,15 +1,27 @@
 package com.example.railway.service;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.railway.common.BusinessException;
 import com.example.railway.domain.OrderStatus;
@@ -69,6 +81,7 @@ public class PassengerService {
     private final AppUserRepository appUserRepository;
     private final PasswordService passwordService;
     private final AuthTokenService authTokenService;
+    private final Path avatarStorageDir;
 
     public PassengerService(TicketOrderRepository ticketOrderRepository,
                             TicketRecordRepository ticketRecordRepository,
@@ -82,7 +95,8 @@ public class PassengerService {
                             TicketChangeService ticketChangeService,
                             AppUserRepository appUserRepository,
                             PasswordService passwordService,
-                            AuthTokenService authTokenService) {
+                            AuthTokenService authTokenService,
+                            @Value("${railway.avatar.storage-dir:data/avatars}") String avatarStorageDir) {
         this.ticketOrderRepository = ticketOrderRepository;
         this.ticketRecordRepository = ticketRecordRepository;
         this.paymentRecordRepository = paymentRecordRepository;
@@ -96,33 +110,18 @@ public class PassengerService {
         this.appUserRepository = appUserRepository;
         this.passwordService = passwordService;
         this.authTokenService = authTokenService;
+        this.avatarStorageDir = Paths.get(avatarStorageDir).toAbsolutePath().normalize();
     }
 
     @Transactional(readOnly = true)
     public PassengerProfileResponse profile() {
-        AuthPrincipal principal = currentUser();
-        AppUser user = appUserRepository.findById(principal.getUserId())
-                .orElseThrow(() -> new BusinessException("Passenger user not found"));
-        PassengerProfileResponse response = new PassengerProfileResponse();
-        response.setUserId(user.getId());
-        response.setUsername(user.getUsername());
-        response.setDisplayName(user.getDisplayName());
-        response.setRole(user.getRole().name());
-        response.setTravelerCount(passengerTravelerRepository.countByUserId(user.getId()));
-        response.setDefaultTravelerName(passengerTravelerRepository.findByUserIdAndDefaultTravelerTrue(user.getId())
-                .map(PassengerTraveler::getPassengerName)
-                .orElse(null));
-        response.setOrderCount(ticketOrderRepository.countByUserId(user.getId()));
-        response.setActiveTicketCount(ticketRecordRepository.countByUserIdAndStatus(user.getId(), TicketStatus.ISSUED));
-        return response;
+        return toProfileResponse(currentAppUser());
     }
 
     @Transactional
     public AuthResponse updateProfile(String displayName) {
-        AuthPrincipal principal = currentUser();
         String normalizedName = normalizeRequired(displayName, "Display name is required");
-        AppUser user = appUserRepository.findById(principal.getUserId())
-                .orElseThrow(() -> new BusinessException("Passenger user not found"));
+        AppUser user = currentAppUser();
         user.setDisplayName(normalizedName);
         AppUser saved = appUserRepository.save(user);
         String token = authTokenService.generate(saved);
@@ -130,10 +129,59 @@ public class PassengerService {
     }
 
     @Transactional
+    public PassengerProfileResponse updateAvatar(MultipartFile avatar) {
+        if (avatar == null || avatar.isEmpty()) {
+            throw new BusinessException("请选择头像图片");
+        }
+        String contentType = avatar.getContentType();
+        if (contentType == null || !contentType.toLowerCase(Locale.ROOT).startsWith("image/")) {
+            throw new BusinessException("请上传图片格式的头像");
+        }
+        AppUser user = currentAppUser();
+        try {
+            Files.createDirectories(avatarStorageDir);
+            try (InputStream inputStream = avatar.getInputStream()) {
+                Files.copy(inputStream, avatarPath(user.getId()), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException exception) {
+            throw new BusinessException("头像保存失败，请稍后重试");
+        }
+        user.setAvatarContentType(contentType);
+        user.setAvatarUpdatedAt(LocalDateTime.now());
+        return toProfileResponse(appUserRepository.save(user));
+    }
+
+    @Transactional(readOnly = true)
+    public PassengerAvatarResource avatar() {
+        AppUser user = currentAppUser();
+        Path avatarPath = avatarPath(user.getId());
+        if (user.getAvatarUpdatedAt() == null || !Files.exists(avatarPath)) {
+            return null;
+        }
+        try {
+            String contentType = isBlank(user.getAvatarContentType()) ? "application/octet-stream" : user.getAvatarContentType();
+            return new PassengerAvatarResource(new UrlResource(avatarPath.toUri()), contentType);
+        } catch (MalformedURLException exception) {
+            throw new BusinessException("头像读取失败，请稍后重试");
+        }
+    }
+
+    @Transactional
+    public void deleteAvatar() {
+        AppUser user = currentAppUser();
+        try {
+            Files.deleteIfExists(avatarPath(user.getId()));
+        } catch (IOException exception) {
+            throw new BusinessException("头像删除失败，请稍后重试");
+        }
+        user.setAvatarContentType(null);
+        user.setAvatarUpdatedAt(null);
+        appUserRepository.save(user);
+    }
+
+    @Transactional
     public void changePassword(ChangePasswordRequest request) {
-        AuthPrincipal principal = currentUser();
-        AppUser user = appUserRepository.findById(principal.getUserId())
-                .orElseThrow(() -> new BusinessException("Passenger user not found"));
+        AppUser user = currentAppUser();
         if (!passwordService.matches(request.getOldPassword(), user.getPasswordHash())) {
             throw new BusinessException("旧密码不正确");
         }
@@ -338,9 +386,36 @@ public class PassengerService {
         return principal;
     }
 
+    private AppUser currentAppUser() {
+        AuthPrincipal principal = currentUser();
+        return appUserRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new BusinessException("Passenger user not found"));
+    }
+
+    private PassengerProfileResponse toProfileResponse(AppUser user) {
+        PassengerProfileResponse response = new PassengerProfileResponse();
+        response.setUserId(user.getId());
+        response.setUsername(user.getUsername());
+        response.setDisplayName(user.getDisplayName());
+        response.setRole(user.getRole().name());
+        response.setTravelerCount(passengerTravelerRepository.countByUserId(user.getId()));
+        response.setDefaultTravelerName(passengerTravelerRepository.findByUserIdAndDefaultTravelerTrue(user.getId())
+                .map(PassengerTraveler::getPassengerName)
+                .orElse(null));
+        response.setOrderCount(ticketOrderRepository.countByUserId(user.getId()));
+        response.setActiveTicketCount(ticketRecordRepository.countByUserIdAndStatus(user.getId(), TicketStatus.ISSUED));
+        response.setAvatarAvailable(user.getAvatarUpdatedAt() != null && Files.exists(avatarPath(user.getId())));
+        response.setAvatarUpdatedAt(user.getAvatarUpdatedAt());
+        return response;
+    }
+
+    private Path avatarPath(Long userId) {
+        return avatarStorageDir.resolve(userId + ".avatar").normalize();
+    }
+
     private void applyTravelerToOrderRequest(PassengerCreateOrderRequest request,
-                                             CreateOrderRequest createOrderRequest,
-                                             Long userId) {
+                                              CreateOrderRequest createOrderRequest,
+                                              Long userId) {
         if (request.getTravelerId() != null) {
             PassengerTraveler traveler = passengerTravelerRepository.findByIdAndUserId(request.getTravelerId(), userId)
                     .orElseThrow(() -> new AuthorizationException("Only current passenger traveler can be used to create order"));
@@ -454,5 +529,23 @@ public class PassengerService {
             responses.add(OrderResponse.from(order));
         }
         return responses;
+    }
+
+    public static class PassengerAvatarResource {
+        private final Resource resource;
+        private final String contentType;
+
+        public PassengerAvatarResource(Resource resource, String contentType) {
+            this.resource = resource;
+            this.contentType = contentType;
+        }
+
+        public Resource getResource() {
+            return resource;
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
     }
 }

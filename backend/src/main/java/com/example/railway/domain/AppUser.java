@@ -1,5 +1,7 @@
 package com.example.railway.domain;
 
+import java.time.LocalDateTime;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -33,6 +35,12 @@ public class AppUser {
 
     @Column(nullable = false)
     private Boolean enabled = true;
+
+    @Column(name = "avatar_content_type", length = 128)
+    private String avatarContentType;
+
+    @Column(name = "avatar_updated_at")
+    private LocalDateTime avatarUpdatedAt;
 
     public AppUser() {
     }
@@ -87,5 +95,21 @@ public class AppUser {
 
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public String getAvatarContentType() {
+        return avatarContentType;
+    }
+
+    public void setAvatarContentType(String avatarContentType) {
+        this.avatarContentType = avatarContentType;
+    }
+
+    public LocalDateTime getAvatarUpdatedAt() {
+        return avatarUpdatedAt;
+    }
+
+    public void setAvatarUpdatedAt(LocalDateTime avatarUpdatedAt) {
+        this.avatarUpdatedAt = avatarUpdatedAt;
     }
 }

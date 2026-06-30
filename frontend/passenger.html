@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>乘客购票服务 - 铁路客运票务与风控运营平台</title>
-    <link rel="stylesheet" href="./styles.css?v=20260628-order-route-title-fix">
+    <link rel="stylesheet" href="./styles.css?v=20260630-passenger-onboarding-guard">
 </head>
 <body class="passenger-page passenger-consumer-page">
   <section class="passenger-login passenger-gateway" aria-label="乘客登录">
@@ -96,7 +96,7 @@
       <nav class="passenger-nav passenger-site-nav" aria-label="乘客端导航">
         <a href="#passenger-search">
           <span class="passenger-nav-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="M5 17.5h14M7 14l2-6h6l2 6M8.5 17.5 7 20M15.5 17.5 17 20M9 14h6"/></svg>
+            <svg class="nav-search-svg" viewBox="0 0 24 24"><path d="M10.8 17.1a6.3 6.3 0 1 0 0-12.6 6.3 6.3 0 0 0 0 12.6zM15.3 15.3 20 20"/></svg>
           </span>
           <span>查票</span>
         </a>
@@ -106,7 +106,7 @@
           </span>
           <span>行程</span>
         </a>
-        <a href="#passenger-onboarding">
+        <a href="#passenger-onboarding" hidden aria-hidden="true" tabindex="-1">
           <span class="passenger-nav-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M7 5h10v14H7zM10 9h4M10 13h4M9 17h6"/></svg>
           </span>
@@ -264,11 +264,17 @@
         <div class="passenger-account-layout">
           <article class="profile-card">
             <div class="profile-header">
-              <div class="profile-avatar" aria-hidden="true">RT</div>
-              <div>
+              <div id="passenger-profile-avatar" class="profile-avatar" aria-label="乘客头像">RT</div>
+              <div class="profile-identity">
                 <span id="passenger-profile-role" class="soft-pill">乘客</span>
                 <h3 id="passenger-profile-display">-</h3>
                 <p id="passenger-profile-username">-</p>
+                <div class="avatar-upload-actions">
+                  <input id="passenger-avatar-file" class="avatar-file-input" type="file" accept="image/*" tabindex="-1">
+                  <button id="passenger-avatar-upload-button" class="secondary-button compact-button" type="button">上传头像</button>
+                  <button id="passenger-avatar-remove-button" class="ghost-button compact-button" type="button" hidden>移除头像</button>
+                </div>
+                <p id="passenger-avatar-status" class="avatar-status" aria-live="polite"></p>
               </div>
             </div>
             <div class="profile-facts">
@@ -717,6 +723,6 @@
   </div>
 
   <div id="passenger-toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./passenger.js?v=20260617-experience-polish"></script>
+  <script src="./passenger.js?v=20260630-passenger-onboarding-guard"></script>
 </body>
 </html>

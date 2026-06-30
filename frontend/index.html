@@ -7,198 +7,43 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>铁路客运票务与风控运营管理系统</title>
-  <link rel="stylesheet" href="./styles.css?v=20260617-experience-polish">
+  <link rel="stylesheet" href="./styles.css?v=20260630-main-portal-sequence-sync">
 </head>
-<body class="landing-redesign-page">
-  <header class="landing-nav" aria-label="平台导航">
-    <a class="landing-brand" href="./index.html" aria-label="Railway RiskOps 首页">
-      <span class="landing-brand-mark">RT</span>
-      <span>
-        <strong>Railway RiskOps</strong>
-        <small>铁路客运票务与风控运营平台</small>
-      </span>
+<body class="main-portal-page">
+  <header class="main-portal-nav" aria-label="系统导航">
+    <a class="main-portal-brand" href="./index.html" aria-label="返回首页">
+      <span class="main-portal-mark">RT</span>
+      <strong>铁路票务</strong>
     </a>
-    <nav class="landing-nav-links" aria-label="页面分区">
-      <a href="#capabilities">功能概览</a>
-      <a href="#gateways">双端入口</a>
-      <a href="#flow">运营链路</a>
-      <a href="#technology">技术能力</a>
+    <nav class="main-portal-links" aria-label="系统入口">
+      <a href="./passenger.html">乘客端</a>
+      <a href="./admin.html">管理端</a>
+      <a href="./passenger.html">查票</a>
+      <a href="./admin.html">风控</a>
     </nav>
-    <div class="landing-nav-actions">
-      <a class="landing-button ghost" href="./passenger.html">乘客端</a>
-      <a class="landing-button solid" href="./admin.html">管理端</a>
-    </div>
+    <a class="main-portal-nav-button" href="./admin.html">管理端</a>
   </header>
 
-  <main class="landing-main">
-    <section class="landing-hero" aria-labelledby="landing-title">
-      <div class="landing-hero-copy">
-        <p class="landing-eyebrow">Railway Ticketing · Risk Operations</p>
-        <h1 id="landing-title">铁路客运票务与风控运营管理系统</h1>
-        <p class="landing-lead">
-          连接查票、下单、支付、出票、退款、通知与风控追踪的一体化运营平台。
-        </p>
-        <div class="landing-hero-actions" aria-label="主要入口">
-          <a class="landing-button primary" href="./passenger.html">进入乘客购票端</a>
-          <a class="landing-button secondary" href="./admin.html">进入运营管理端</a>
-        </div>
-        <div class="landing-signal-row" aria-label="核心链路摘要">
-          <span>电子票闭环</span>
-          <span>站内通知</span>
-          <span>风控运营</span>
-          <span>综合查询</span>
-        </div>
-      </div>
-
-      <div class="landing-hero-visual" aria-hidden="true">
-        <div class="rail-map-card">
-          <div class="rail-map-top">
-            <span>LIVE RAIL OPS</span>
-            <strong>99.8%</strong>
-          </div>
-          <svg viewBox="0 0 520 360" role="img" aria-label="抽象铁路数据链路">
-            <defs>
-              <linearGradient id="railLine" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#7dd3fc"/>
-                <stop offset="55%" stop-color="#34d399"/>
-                <stop offset="100%" stop-color="#f8fafc"/>
-              </linearGradient>
-              <filter id="railGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="4" result="blur"/>
-                <feMerge>
-                  <feMergeNode in="blur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
-            <path class="rail-grid-line" d="M32 298 C145 210 220 208 327 126 C386 82 438 69 492 48"/>
-            <path class="rail-grid-line muted" d="M26 240 C126 198 224 172 300 202 C382 235 439 202 498 160"/>
-            <path class="rail-grid-line muted" d="M58 80 C154 122 221 102 302 62 C392 18 440 36 491 92"/>
-            <path class="rail-active-line" d="M32 298 C145 210 220 208 327 126 C386 82 438 69 492 48"/>
-            <circle cx="32" cy="298" r="7"/>
-            <circle cx="166" cy="198" r="6"/>
-            <circle cx="327" cy="126" r="8"/>
-            <circle cx="492" cy="48" r="7"/>
-          </svg>
-          <div class="rail-map-metrics">
-            <div><span>订单链路</span><strong>可追踪</strong></div>
-            <div><span>支付退款</span><strong>已串联</strong></div>
-            <div><span>风险事件</span><strong>可处置</strong></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="capabilities" class="landing-section" aria-labelledby="capability-title">
-      <div class="landing-section-head">
-        <p class="landing-eyebrow">Capability Map</p>
-        <h2 id="capability-title">覆盖客运票务的核心业务节点</h2>
-        <p>从乘客自助购票到运营端追踪处置，关键记录都能被串联查看。</p>
-      </div>
-      <div class="landing-capability-grid">
-        <article>
-          <span class="capability-icon">01</span>
-          <h3>乘客查票购票</h3>
-          <p>按线路和日期查询余票，选择常用乘车人后完成下单。</p>
-        </article>
-        <article>
-          <span class="capability-icon">02</span>
-          <h3>电子票与行程</h3>
-          <p>支付成功后生成电子票，乘客端可查看订单详情和票面信息。</p>
-        </article>
-        <article>
-          <span class="capability-icon">03</span>
-          <h3>支付退款闭环</h3>
-          <p>支付流水、退款流水和订单状态保持一致，便于后续对账。</p>
-        </article>
-        <article>
-          <span class="capability-icon">04</span>
-          <h3>风控事件处置</h3>
-          <p>高频购票、退款异常等事件进入运营端处理和归档。</p>
-        </article>
-        <article>
-          <span class="capability-icon">05</span>
-          <h3>站内通知中心</h3>
-          <p>订单、支付、出票和退款节点自动生成乘客通知。</p>
-        </article>
-        <article>
-          <span class="capability-icon">06</span>
-          <h3>综合查询追踪</h3>
-          <p>通过订单号、票号和流水号快速定位完整交易链路。</p>
-        </article>
-      </div>
-    </section>
-
-    <section id="gateways" class="landing-section landing-gateway-section" aria-labelledby="gateway-title">
-      <div class="landing-section-head">
-        <p class="landing-eyebrow">Dual Gateway</p>
-        <h2 id="gateway-title">两个入口服务同一套业务数据</h2>
-        <p>乘客端产生的订单、票据、资金流水和通知，会进入运营端视图统一管理。</p>
-      </div>
-      <div class="landing-gateway-grid">
-        <article class="landing-gateway-card passenger">
-          <div>
-            <span class="gateway-label">Passenger Service</span>
-            <h3>乘客购票端</h3>
-            <p>查票、购票、常用乘车人、电子票、订单详情与消息中心。</p>
-          </div>
-          <a class="landing-button primary" href="./passenger.html">进入 passenger.html</a>
-        </article>
-        <article class="landing-gateway-card admin">
-          <div>
-            <span class="gateway-label">Operations Console</span>
-            <h3>运营管理端</h3>
-            <p>订单、支付退款、风险、通知、综合查询和链路追踪。</p>
-          </div>
-          <a class="landing-button secondary" href="./admin.html">进入 admin.html</a>
-        </article>
-      </div>
-    </section>
-
-    <section id="flow" class="landing-section" aria-labelledby="flow-title">
-      <div class="landing-section-head">
-        <p class="landing-eyebrow">Business Flow</p>
-        <h2 id="flow-title">从查票到退款的完整业务链路</h2>
-      </div>
-      <ol class="landing-flow">
-        <li><span>查票</span></li>
-        <li><span>选择乘车人</span></li>
-        <li><span>下单</span></li>
-        <li><span>支付</span></li>
-        <li><span>出票</span></li>
-        <li><span>通知</span></li>
-        <li><span>退票退款</span></li>
-        <li><span>风控追踪</span></li>
-      </ol>
-    </section>
-
-    <section id="technology" class="landing-section landing-tech-section" aria-labelledby="tech-title">
-      <div class="landing-section-head">
-        <p class="landing-eyebrow">Technology Stack</p>
-        <h2 id="tech-title">面向本地演示与工程化扩展的技术能力</h2>
-      </div>
-      <div class="landing-tech-tags" aria-label="技术能力">
-        <span>Spring Boot</span>
-        <span>Spring Security JWT</span>
-        <span>Redis 缓存与限流</span>
-        <span>H2 / MySQL</span>
-        <span>Outbox Event</span>
-        <span>OpenAPI / Swagger</span>
-        <span>Docker Compose</span>
-        <span>原生前端</span>
-      </div>
-    </section>
+  <main class="main-portal-hero" aria-labelledby="main-portal-title">
+    <p class="main-portal-kicker"><span>RT</span> 铁路客运票务</p>
+    <h1 id="main-portal-title" aria-label="智慧票务 风控运营">
+      <span class="main-portal-title-line main-portal-title-primary" aria-hidden="true">
+        <span class="main-portal-title-char" style="--char-delay: 0.18s;">智</span>
+        <span class="main-portal-title-char" style="--char-delay: 0.52s;">慧</span>
+        <span class="main-portal-title-char" style="--char-delay: 0.86s;">票</span>
+        <span class="main-portal-title-char" style="--char-delay: 1.2s;">务</span>
+      </span>
+      <em class="main-portal-title-line main-portal-title-script" aria-hidden="true">
+        <span class="main-portal-title-char" style="--char-delay: 1.54s;">风</span>
+        <span class="main-portal-title-char" style="--char-delay: 1.88s;">控</span>
+        <span class="main-portal-title-char" style="--char-delay: 2.22s;">运</span>
+        <span class="main-portal-title-char" style="--char-delay: 2.56s;">营</span>
+      </em>
+    </h1>
+    <p class="main-portal-copy">
+      连接乘客查票、订单支付、电子票、退款与风险处置，形成清晰的铁路客运票务管理入口。
+    </p>
+    <a class="main-portal-primary" href="./passenger.html">进入乘客端</a>
   </main>
-
-  <footer class="landing-footer">
-    <span>Railway Ticket Risk System</span>
-    <span>Demo System / Local Development</span>
-    <span><a href="./passenger.html">乘客端</a> · <a href="./admin.html">管理端</a></span>
-  </footer>
-
-  <aside class="landing-service-status" aria-label="本地服务状态">
-    <span class="status-dot"></span>
-    <span>本地服务：http://localhost:8080</span>
-  </aside>
 </body>
 </html>

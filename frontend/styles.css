@@ -7187,6 +7187,26 @@ body.passenger-consumer-page {
   box-shadow: 0 12px 24px rgba(15, 107, 87, 0.18);
 }
 
+.profile-avatar.has-image {
+  overflow: hidden;
+  color: transparent;
+  background: #ffffff;
+}
+
+.profile-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.profile-identity {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
 .profile-header h3 {
   margin: 6px 0 2px;
 }
@@ -7194,6 +7214,24 @@ body.passenger-consumer-page {
 .profile-header p {
   margin: 0;
   color: #64716d;
+}
+
+.avatar-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.avatar-file-input {
+  display: none;
+}
+
+.avatar-status {
+  min-height: 18px;
+  margin: 0;
+  color: #64716d;
+  font-size: 12px;
 }
 
 .profile-facts {
@@ -7534,9 +7572,9 @@ body.passenger-consumer-page {
 :root {
   --mercury-bg: #ffffff;
   --mercury-muted-bg: #f7f8fb;
-  --mercury-active: #f0f1f8;
-  --mercury-primary: #5d5fef;
-  --mercury-primary-soft: #ececff;
+  --mercury-active: #edf5ff;
+  --mercury-primary: #4f8cff;
+  --mercury-primary-soft: #eaf3ff;
   --mercury-ink: #24242e;
   --mercury-muted: #71717d;
   --mercury-line: #e5e7ee;
@@ -8318,6 +8356,340 @@ body.passenger-consumer-page #passenger-summary .journey-trip-empty {
   color: var(--passenger-muted, #667085);
 }
 
+/* Passenger color normalization: keep the recovered UI on one light-blue system. */
+body.passenger-consumer-page {
+  --passenger-primary: #4f8cff;
+  --passenger-primary-strong: #2f6ff2;
+  --passenger-primary-soft: #eaf3ff;
+  --passenger-primary-tint: #f5f9ff;
+  --passenger-primary-border: #c9dcff;
+  --passenger-border: #dfe5ef;
+  --passenger-ink: #111827;
+  --passenger-muted: #667085;
+  --primary: #4f8cff;
+  --primary-strong: #2f6ff2;
+  --primary-soft: #eaf3ff;
+  --success: #4f8cff;
+  --success-soft: #eaf3ff;
+}
+
+body.passenger-consumer-page .eyebrow,
+body.passenger-consumer-page .section-kicker,
+body.passenger-consumer-page .passenger-kicker,
+body.passenger-consumer-page .ticket-wallet-route > a,
+body.passenger-consumer-page .ticket-card-route .train-no,
+body.passenger-consumer-page .notification-next-step span,
+body.passenger-consumer-page .passenger-todo-card .todo-type,
+body.passenger-consumer-page .notification-guide-chips span,
+body.passenger-consumer-page .inventory-ok,
+body.passenger-consumer-page .inventory-low,
+body.passenger-consumer-page .ticket-wallet-footer a,
+body.passenger-consumer-page .ticket-wallet-meta a,
+body.passenger-consumer-page .ticket-detail-note a {
+  color: var(--passenger-primary) !important;
+}
+
+body.passenger-consumer-page .primary-button,
+body.passenger-consumer-page .compact-button.primary,
+body.passenger-consumer-page .passenger-site-nav a.active,
+body.passenger-consumer-page .booking-actions .primary-button,
+body.passenger-consumer-page .ticket-card-action .compact-button,
+body.passenger-consumer-page .buy-confirm-button,
+body.passenger-consumer-page .modal-footer .primary-button {
+  background: var(--passenger-primary) !important;
+  border-color: var(--passenger-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 18px rgba(79, 140, 255, 0.22) !important;
+}
+
+body.passenger-consumer-page .primary-button:hover,
+body.passenger-consumer-page .compact-button.primary:hover,
+body.passenger-consumer-page .booking-actions .primary-button:hover,
+body.passenger-consumer-page .ticket-card-action .compact-button:hover,
+body.passenger-consumer-page .buy-confirm-button:hover {
+  background: var(--passenger-primary-strong) !important;
+  border-color: var(--passenger-primary-strong) !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a.active {
+  color: var(--passenger-ink) !important;
+  box-shadow: inset 3px 0 0 var(--passenger-primary) !important;
+  background: var(--passenger-primary-soft) !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a.active .passenger-nav-icon,
+body.passenger-consumer-page .passenger-site-nav a:hover .passenger-nav-icon,
+body.passenger-consumer-page .journey-train-badge,
+body.passenger-consumer-page .step-index {
+  color: var(--passenger-primary) !important;
+  background: var(--passenger-primary-soft) !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav .nav-badge,
+body.passenger-consumer-page .ticket-state-inline,
+body.passenger-consumer-page .status.issued,
+body.passenger-consumer-page .status.paid,
+body.passenger-consumer-page .status.success,
+body.passenger-consumer-page .status.valid,
+body.passenger-consumer-page .ticket-status-valid,
+body.passenger-consumer-page .traveler-card.default-traveler .traveler-default,
+body.passenger-consumer-page .profile-card .role-chip,
+body.passenger-consumer-page .ticket-wallet-route .status-pill,
+body.passenger-consumer-page .status-pill,
+body.passenger-consumer-page .ticket-state-pill,
+body.passenger-consumer-page .read-badge,
+body.passenger-consumer-page .message-status,
+body.passenger-consumer-page .traveler-default,
+body.passenger-consumer-page .default-badge,
+body.passenger-consumer-page .inventory-ok,
+body.passenger-consumer-page .inventory-low,
+body.passenger-consumer-page .ticket-card-route span[class*="inventory"] {
+  color: var(--passenger-primary-strong) !important;
+  border-color: var(--passenger-primary-border) !important;
+  background: var(--passenger-primary-soft) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-route h3,
+body.passenger-consumer-page .ticket-wallet-line strong,
+body.passenger-consumer-page .ticket-detail-route strong,
+body.passenger-consumer-page .ticket-wallet-meta strong,
+body.passenger-consumer-page .ticket-detail-grid strong,
+body.passenger-consumer-page .ticket-detail-main strong,
+body.passenger-consumer-page .ticket-wallet-passenger span,
+body.passenger-consumer-page .passenger-todo-card strong,
+body.passenger-consumer-page .notification-next-step strong,
+body.passenger-consumer-page .order-progress-timeline strong,
+body.passenger-consumer-page .ticket-wallet-passenger,
+body.passenger-consumer-page .ticket-wallet-route,
+body.passenger-consumer-page .ticket-detail-route {
+  color: var(--passenger-ink) !important;
+}
+
+body.passenger-consumer-page .passenger-ticket-wallet-section,
+body.passenger-consumer-page .passenger-ticket-card,
+body.passenger-consumer-page .passenger-ticket-card.issued,
+body.passenger-consumer-page .ticket-detail-card,
+body.passenger-consumer-page .ticket-detail-card.issued,
+body.passenger-consumer-page .passenger-account-section,
+body.passenger-consumer-page .passenger-todo-card,
+body.passenger-consumer-page .notification-record-card.unread,
+body.passenger-consumer-page .onboarding-step.done,
+body.passenger-consumer-page .traveler-card.default-traveler {
+  border-color: var(--passenger-primary-border) !important;
+  box-shadow: 0 10px 26px rgba(79, 140, 255, 0.08) !important;
+}
+
+body.passenger-consumer-page .passenger-ticket-wallet-section,
+body.passenger-consumer-page .passenger-account-section,
+body.passenger-consumer-page .passenger-todo-card,
+body.passenger-consumer-page .traveler-card.default-traveler,
+body.passenger-consumer-page .onboarding-step.done,
+body.passenger-consumer-page .ticket-state-note,
+body.passenger-consumer-page .ticket-state-note.issued,
+body.passenger-consumer-page .notification-guide-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), var(--passenger-primary-tint)) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-meta div,
+body.passenger-consumer-page .ticket-detail-grid div,
+body.passenger-consumer-page .ticket-state-note {
+  background: var(--passenger-primary-tint) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-line span,
+body.passenger-consumer-page .ticket-detail-route span,
+body.passenger-consumer-page .ticket-card-time::before,
+body.passenger-consumer-page .ticket-card-time::after {
+  background: linear-gradient(90deg, rgba(79, 140, 255, 0.12), rgba(79, 140, 255, 0.62), rgba(79, 140, 255, 0.12)) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-line span::after,
+body.passenger-consumer-page .ticket-detail-route span::after {
+  border-color: rgba(79, 140, 255, 0.72) !important;
+}
+
+body.passenger-consumer-page .notification-record-card.unread::before,
+body.passenger-consumer-page .order-progress-timeline li.done .timeline-dot,
+body.passenger-consumer-page .onboarding-step.done .step-index {
+  background: var(--passenger-primary) !important;
+}
+
+body.passenger-consumer-page .order-progress-timeline li.done {
+  border-color: var(--passenger-primary-border) !important;
+  background: var(--passenger-primary-tint) !important;
+}
+
+body.passenger-consumer-page .order-progress-timeline li.done .timeline-dot {
+  box-shadow: 0 0 0 4px rgba(79, 140, 255, 0.14) !important;
+}
+
+body.passenger-consumer-page .train-ticket-card .train-no,
+body.passenger-consumer-page .ticket-card-route .train-no {
+  color: #ffffff !important;
+  background: var(--passenger-primary) !important;
+}
+
+body.passenger-consumer-page .route-chip:hover,
+body.passenger-consumer-page .route-chip.active {
+  color: var(--passenger-primary-strong) !important;
+  border-color: var(--passenger-primary-border) !important;
+  background: var(--passenger-primary-soft) !important;
+}
+
+body.passenger-consumer-page .passenger-ticket-card::before,
+body.passenger-consumer-page .passenger-ticket-card::after,
+body.passenger-consumer-page .ticket-detail-card::before,
+body.passenger-consumer-page .ticket-detail-card::after {
+  border-color: rgba(79, 140, 255, 0.12) !important;
+  background: #ffffff !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-footer,
+body.passenger-consumer-page .ticket-detail-card .ticket-detail-secondary,
+body.passenger-consumer-page .ticket-detail-main {
+  border-color: rgba(79, 140, 255, 0.18) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-line,
+body.passenger-consumer-page .ticket-detail-route {
+  color: var(--passenger-ink) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-line span,
+body.passenger-consumer-page .ticket-detail-route span {
+  color: transparent !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-line span::after,
+body.passenger-consumer-page .ticket-detail-route span::after {
+  background: transparent !important;
+}
+
+body.passenger-consumer-page .notification-type-icon,
+body.passenger-consumer-page .todo-icon,
+body.passenger-consumer-page .journey-alert-icon {
+  color: var(--passenger-primary) !important;
+  background: var(--passenger-primary-soft) !important;
+}
+
+/* Passenger sidebar and frame polish: use the stronger blue system and remove page-level shells. */
+body.passenger-consumer-page {
+  --mercury-active: #eef2ff;
+  --mercury-primary: #4358f6;
+  --mercury-primary-soft: #edf1ff;
+  --passenger-primary: #4358f6;
+  --passenger-primary-strong: #3147e8;
+  --passenger-primary-soft: #edf1ff;
+  --passenger-primary-tint: #f7f9ff;
+  --passenger-primary-border: #cbd4ff;
+  --primary: #4358f6;
+  --primary-strong: #3147e8;
+  --primary-soft: #edf1ff;
+  --success: #4358f6;
+  --success-soft: #edf1ff;
+}
+
+body.passenger-consumer-page .passenger-app-sidebar {
+  padding-left: 6px;
+  padding-right: 12px;
+}
+
+body.passenger-consumer-page .passenger-app-sidebar .passenger-site-brand {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+body.passenger-consumer-page .passenger-site-nav a {
+  width: calc(100% - 2px);
+  padding-left: 8px;
+  padding-right: 10px;
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+body.passenger-consumer-page .passenger-site-nav a.active {
+  background: #eef2ff !important;
+  box-shadow: inset 4px 0 0 var(--passenger-primary) !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a:hover {
+  background: #f5f7ff;
+}
+
+body.passenger-consumer-page .passenger-site-nav .nav-badge {
+  color: var(--passenger-primary) !important;
+  background: #e7ebff !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a[href="#passenger-search"] .passenger-nav-icon svg {
+  transform: rotate(-18deg);
+  transform-origin: center;
+}
+
+body.passenger-consumer-page .passenger-site-nav a[href="#passenger-search"] .passenger-nav-icon svg path {
+  stroke-width: 2.2;
+}
+
+body.passenger-consumer-page .passenger-site-main > .passenger-section,
+body.passenger-consumer-page .passenger-site-main > .passenger-section.is-active {
+  border: 0 !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.passenger-consumer-page .passenger-site-main > .passenger-section::before,
+body.passenger-consumer-page .passenger-site-main > .passenger-section::after {
+  display: none !important;
+}
+
+body.passenger-consumer-page .passenger-ticket-wallet-section,
+body.passenger-consumer-page .passenger-account-section,
+body.passenger-consumer-page .passenger-home-section,
+body.passenger-consumer-page .passenger-order-center,
+body.passenger-consumer-page .passenger-record-section,
+body.passenger-consumer-page .passenger-change-section,
+body.passenger-consumer-page .passenger-transaction-section,
+body.passenger-consumer-page .passenger-onboarding-section,
+body.passenger-consumer-page .passenger-traveler-section,
+body.passenger-consumer-page .passenger-notification-section {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.passenger-consumer-page .primary-button,
+body.passenger-consumer-page .compact-button.primary,
+body.passenger-consumer-page .booking-actions .primary-button,
+body.passenger-consumer-page .ticket-card-action .compact-button,
+body.passenger-consumer-page .buy-confirm-button,
+body.passenger-consumer-page .modal-footer .primary-button {
+  box-shadow: 0 8px 18px rgba(67, 88, 246, 0.22) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-line span,
+body.passenger-consumer-page .ticket-detail-route span,
+body.passenger-consumer-page .ticket-card-time::before,
+body.passenger-consumer-page .ticket-card-time::after {
+  background: linear-gradient(90deg, rgba(67, 88, 246, 0.12), rgba(67, 88, 246, 0.62), rgba(67, 88, 246, 0.12)) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-line span::after,
+body.passenger-consumer-page .ticket-detail-route span::after {
+  border-color: rgba(67, 88, 246, 0.72) !important;
+}
+
+body.passenger-consumer-page .passenger-ticket-card,
+body.passenger-consumer-page .passenger-ticket-card.issued,
+body.passenger-consumer-page .ticket-detail-card,
+body.passenger-consumer-page .ticket-detail-card.issued,
+body.passenger-consumer-page .passenger-todo-card,
+body.passenger-consumer-page .notification-record-card.unread,
+body.passenger-consumer-page .onboarding-step.done,
+body.passenger-consumer-page .traveler-card.default-traveler {
+  box-shadow: 0 10px 26px rgba(67, 88, 246, 0.08) !important;
+}
+
 @media (max-width: 1180px) {
   .mercury-shell.passenger-consumer-shell {
     grid-template-columns: 1fr;
@@ -8326,4 +8698,824 @@ body.passenger-consumer-page #passenger-summary .journey-trip-empty {
   .passenger-site-nav a {
     flex: 1 1 132px;
   }
+}
+
+/* Passenger final visual QA: reference-blue accents, neutral ticket states, tighter shell. */
+body.passenger-consumer-page {
+  --mercury-active: #eef2ff;
+  --mercury-primary: #4f63f6;
+  --mercury-primary-soft: #eef2ff;
+  --passenger-primary: #4f63f6;
+  --passenger-primary-strong: #3147e8;
+  --passenger-primary-soft: #eef2ff;
+  --passenger-primary-tint: #f8faff;
+  --passenger-primary-border: #c7d2fe;
+  --primary: #4f63f6;
+  --primary-strong: #3147e8;
+  --primary-soft: #eef2ff;
+  --success: #4f63f6;
+  --success-soft: #eef2ff;
+}
+
+body.passenger-consumer-page .passenger-app-sidebar {
+  padding-left: 0 !important;
+  padding-right: 8px !important;
+}
+
+body.passenger-consumer-page .passenger-app-sidebar .passenger-site-brand {
+  padding-left: 2px !important;
+  padding-right: 6px !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a {
+  width: 100% !important;
+  margin-left: 0 !important;
+  padding-left: 6px !important;
+  padding-right: 10px !important;
+  gap: 12px !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a.active {
+  background: var(--passenger-primary-soft) !important;
+  box-shadow: inset 4px 0 0 var(--passenger-primary) !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav .passenger-nav-icon,
+body.passenger-consumer-page .passenger-site-nav a:hover .passenger-nav-icon,
+body.passenger-consumer-page .passenger-site-nav a.active .passenger-nav-icon {
+  color: var(--passenger-primary) !important;
+  background: transparent !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav .nav-badge {
+  color: var(--passenger-primary) !important;
+  background: #e6ebff !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a[href="#passenger-search"] .passenger-nav-icon svg {
+  transform: rotate(-18deg) !important;
+  transform-origin: center !important;
+}
+
+body.passenger-consumer-page .passenger-top-actions > .round-icon-button,
+body.passenger-consumer-page .passenger-search-results .passenger-section-head > .soft-pill {
+  display: none !important;
+}
+
+body.passenger-consumer-page .passenger-avatar {
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  color: #111827 !important;
+  background: #f3f5f9 !important;
+  border: 1px solid #dfe3eb !important;
+  box-shadow: none !important;
+}
+
+body.passenger-consumer-page .passenger-avatar img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: inherit !important;
+}
+
+body.passenger-consumer-page .passenger-avatar:has(img) .person-avatar-icon {
+  display: none !important;
+}
+
+body.passenger-consumer-page .primary-button,
+body.passenger-consumer-page .compact-button.primary,
+body.passenger-consumer-page .booking-actions .primary-button,
+body.passenger-consumer-page .ticket-card-action .compact-button,
+body.passenger-consumer-page .buy-confirm-button,
+body.passenger-consumer-page .modal-footer .primary-button {
+  color: #fff !important;
+  background: var(--passenger-primary) !important;
+  border-color: var(--passenger-primary) !important;
+  box-shadow: 0 8px 18px rgba(79, 99, 246, 0.24) !important;
+}
+
+body.passenger-consumer-page .passenger-site-main > .passenger-section,
+body.passenger-consumer-page .passenger-site-main > .passenger-section.is-active,
+body.passenger-consumer-page .passenger-ticket-wallet-section,
+body.passenger-consumer-page .passenger-account-section,
+body.passenger-consumer-page .passenger-home-section,
+body.passenger-consumer-page .passenger-order-center,
+body.passenger-consumer-page .passenger-record-section,
+body.passenger-consumer-page .passenger-change-section,
+body.passenger-consumer-page .passenger-transaction-section,
+body.passenger-consumer-page .passenger-onboarding-section,
+body.passenger-consumer-page .passenger-traveler-section,
+body.passenger-consumer-page .passenger-notification-section {
+  border-color: transparent !important;
+  outline: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.passenger-consumer-page .passenger-site-main > .passenger-section::before,
+body.passenger-consumer-page .passenger-site-main > .passenger-section::after {
+  display: none !important;
+}
+
+body.passenger-consumer-page .profile-avatar {
+  color: #fff !important;
+  background: linear-gradient(135deg, var(--passenger-primary), #2f46dc) !important;
+  box-shadow: 0 12px 24px rgba(79, 99, 246, 0.18) !important;
+}
+
+body.passenger-consumer-page .profile-card .role-chip,
+body.passenger-consumer-page .traveler-default,
+body.passenger-consumer-page .default-badge,
+body.passenger-consumer-page .status.valid,
+body.passenger-consumer-page .status.issued,
+body.passenger-consumer-page .status.success,
+body.passenger-consumer-page .status.paid,
+body.passenger-consumer-page .ticket-status-valid,
+body.passenger-consumer-page .ticket-state-inline,
+body.passenger-consumer-page .ticket-state-pill,
+body.passenger-consumer-page .status-pill,
+body.passenger-consumer-page .inventory-ok,
+body.passenger-consumer-page .inventory-low,
+body.passenger-consumer-page .soft-pill,
+body.passenger-consumer-page .read-badge,
+body.passenger-consumer-page .message-status,
+body.passenger-consumer-page .train-ticket-card .inventory-badge,
+body.passenger-consumer-page .ticket-card-route span[class*="inventory"] {
+  color: var(--passenger-primary-strong) !important;
+  background: var(--passenger-primary-soft) !important;
+  border-color: var(--passenger-primary-border) !important;
+}
+
+body.passenger-consumer-page .passenger-ticket-card.issued,
+body.passenger-consumer-page .passenger-ticket-card:hover,
+body.passenger-consumer-page .ticket-detail-card.issued,
+body.passenger-consumer-page .traveler-card.default-traveler,
+body.passenger-consumer-page .notification-guide-panel,
+body.passenger-consumer-page .passenger-todo-card,
+body.passenger-consumer-page .notification-record-card.unread {
+  border-color: var(--passenger-primary-border) !important;
+  box-shadow: 0 10px 26px rgba(79, 99, 246, 0.08) !important;
+}
+
+body.passenger-consumer-page .traveler-card.default-traveler,
+body.passenger-consumer-page .onboarding-step.done,
+body.passenger-consumer-page .ticket-state-note,
+body.passenger-consumer-page .ticket-state-note.issued,
+body.passenger-consumer-page .notification-guide-panel {
+  background: linear-gradient(135deg, #fff, var(--passenger-primary-tint)) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-meta div,
+body.passenger-consumer-page .ticket-detail-grid div,
+body.passenger-consumer-page .ticket-state-note {
+  background: var(--passenger-primary-tint) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-route h3,
+body.passenger-consumer-page .ticket-wallet-line strong,
+body.passenger-consumer-page .ticket-detail-route strong,
+body.passenger-consumer-page .ticket-wallet-meta strong,
+body.passenger-consumer-page .ticket-detail-grid strong,
+body.passenger-consumer-page .ticket-detail-main strong,
+body.passenger-consumer-page .ticket-wallet-passenger,
+body.passenger-consumer-page .ticket-wallet-passenger span,
+body.passenger-consumer-page .ticket-wallet-route,
+body.passenger-consumer-page .ticket-detail-route {
+  color: var(--passenger-ink) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-line span,
+body.passenger-consumer-page .ticket-detail-route span,
+body.passenger-consumer-page .ticket-card-time::before,
+body.passenger-consumer-page .ticket-card-time::after {
+  background: linear-gradient(90deg, rgba(79, 99, 246, 0.12), rgba(79, 99, 246, 0.66), rgba(79, 99, 246, 0.12)) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-line span::after,
+body.passenger-consumer-page .ticket-detail-route span::after {
+  border-color: rgba(79, 99, 246, 0.72) !important;
+  background: transparent !important;
+}
+
+body.passenger-consumer-page .train-ticket-card .train-no,
+body.passenger-consumer-page .ticket-card-route .train-no {
+  color: #fff !important;
+  background: var(--passenger-primary) !important;
+}
+
+/* Passenger final alignment: compact sidebar rhythm and cleaner railway blue. */
+body.passenger-consumer-page {
+  --mercury-active: #eff6ff;
+  --mercury-primary: #2563eb;
+  --mercury-primary-soft: #eff6ff;
+  --passenger-primary: #2563eb;
+  --passenger-primary-strong: #1d4ed8;
+  --passenger-primary-soft: #eff6ff;
+  --passenger-primary-tint: #f8fbff;
+  --passenger-primary-border: #bfdbfe;
+  --passenger-sidebar-icon-x: 22px;
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+  --primary-soft: #eff6ff;
+  --success: #2563eb;
+  --success-soft: #eff6ff;
+}
+
+body.passenger-consumer-page .passenger-app-sidebar {
+  align-items: stretch !important;
+  padding-left: 0 !important;
+  padding-right: 10px !important;
+}
+
+body.passenger-consumer-page .passenger-app-sidebar .passenger-site-brand {
+  margin-left: 26px !important;
+  padding-left: 0 !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav {
+  width: 100% !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  justify-items: stretch !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a {
+  width: 100% !important;
+  min-height: 44px !important;
+  margin: 0 !important;
+  padding-left: 22px !important;
+  padding-right: 12px !important;
+  border-radius: 0 12px 12px 0 !important;
+  gap: 14px !important;
+  justify-content: flex-start !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav .passenger-nav-icon {
+  flex: 0 0 22px !important;
+  width: 22px !important;
+  height: 22px !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav .nav-badge {
+  margin-left: auto !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a.active {
+  background: var(--passenger-primary-soft) !important;
+  box-shadow: inset 4px 0 0 var(--passenger-primary) !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav .passenger-nav-icon,
+body.passenger-consumer-page .passenger-site-nav a:hover .passenger-nav-icon,
+body.passenger-consumer-page .passenger-site-nav a.active .passenger-nav-icon,
+body.passenger-consumer-page .passenger-page-kicker,
+body.passenger-consumer-page .consumer-section-label,
+body.passenger-consumer-page .section-eyebrow,
+body.passenger-consumer-page .passenger-page-tabs button.active,
+body.passenger-consumer-page .passenger-sub-tabs button.active {
+  color: var(--passenger-primary) !important;
+}
+
+body.passenger-consumer-page .primary-button,
+body.passenger-consumer-page .compact-button.primary,
+body.passenger-consumer-page .booking-actions .primary-button,
+body.passenger-consumer-page .ticket-card-action .compact-button,
+body.passenger-consumer-page .buy-confirm-button,
+body.passenger-consumer-page .modal-footer .primary-button,
+body.passenger-consumer-page .ticket-buy-button {
+  background: var(--passenger-primary) !important;
+  border-color: var(--passenger-primary) !important;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.24) !important;
+}
+
+body.passenger-consumer-page .profile-avatar {
+  overflow: hidden !important;
+  background: linear-gradient(135deg, var(--passenger-primary), var(--passenger-primary-strong)) !important;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18) !important;
+}
+
+body.passenger-consumer-page .profile-avatar.has-image {
+  color: transparent !important;
+  background: #ffffff !important;
+}
+
+body.passenger-consumer-page .profile-avatar img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: inherit !important;
+}
+
+body.passenger-consumer-page .passenger-avatar.has-image {
+  background: #ffffff !important;
+}
+
+body.passenger-consumer-page .avatar-upload-actions .compact-button {
+  min-height: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 12px !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-line span,
+body.passenger-consumer-page .ticket-detail-route span,
+body.passenger-consumer-page .ticket-card-time::before,
+body.passenger-consumer-page .ticket-card-time::after {
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.66), rgba(37, 99, 235, 0.12)) !important;
+}
+
+body.passenger-consumer-page .ticket-wallet-line span::after,
+body.passenger-consumer-page .ticket-detail-route span::after {
+  border-color: rgba(37, 99, 235, 0.72) !important;
+}
+
+body.passenger-consumer-page .passenger-ticket-card.issued,
+body.passenger-consumer-page .passenger-ticket-card:hover,
+body.passenger-consumer-page .ticket-detail-card.issued,
+body.passenger-consumer-page .traveler-card.default-traveler,
+body.passenger-consumer-page .notification-guide-panel,
+body.passenger-consumer-page .passenger-todo-card,
+body.passenger-consumer-page .notification-record-card.unread {
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.08) !important;
+}
+
+/* Passenger reference alignment: nav fills the sidebar like the supplied target. */
+body.passenger-consumer-page .mercury-shell.passenger-consumer-shell {
+  grid-template-columns: 232px minmax(0, 1fr) !important;
+}
+
+body.passenger-consumer-page .passenger-app-sidebar {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  padding: 22px 0 !important;
+}
+
+body.passenger-consumer-page .passenger-app-sidebar .passenger-site-brand {
+  margin-left: var(--passenger-sidebar-icon-x) !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav {
+  display: grid !important;
+  justify-content: stretch !important;
+  justify-items: stretch !important;
+  align-self: stretch !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a {
+  display: flex !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding-left: var(--passenger-sidebar-icon-x) !important;
+  border-radius: 0 12px 12px 0 !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a[hidden] {
+  display: none !important;
+}
+
+body.passenger-consumer-page .passenger-site-nav a:hover,
+body.passenger-consumer-page .passenger-site-nav a.active {
+  background: var(--passenger-primary-soft) !important;
+}
+
+@media (max-width: 1180px) {
+  body.passenger-consumer-page .mercury-shell.passenger-consumer-shell {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.passenger-consumer-page .passenger-app-sidebar {
+    padding: 18px 0 !important;
+  }
+
+  body.passenger-consumer-page .passenger-app-sidebar .passenger-site-brand {
+    margin-left: 0 !important;
+  }
+
+  body.passenger-consumer-page .passenger-site-nav a {
+    border-radius: 12px !important;
+  }
+}
+
+/* Main portal: single-screen layout matched to the provided reference. */
+body.main-portal-page {
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  color: #ffffff;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    linear-gradient(90deg, rgba(8, 33, 92, 0.24) 0%, rgba(8, 33, 92, 0) 15%, rgba(8, 33, 92, 0) 85%, rgba(8, 33, 92, 0.24) 100%),
+    linear-gradient(180deg, #1d4ed8 0%, #2563eb 29%, #4aa3ff 57%, #a7ddff 100%);
+}
+
+body.main-portal-page * {
+  box-sizing: border-box;
+}
+
+.main-portal-nav {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 20;
+  width: min(742px, calc(100% - 48px));
+  min-height: 60px;
+  padding: 10px 30px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 26px;
+  color: #ffffff;
+  background: #050505;
+  border-radius: 0;
+  -webkit-clip-path: path("M 0 0 H 742 C 731 2 727 10 727 21 V 41 C 727 52 719 60 708 60 H 34 C 23 60 15 52 15 41 V 21 C 15 10 11 2 0 0 Z");
+  clip-path: path("M 0 0 H 742 C 731 2 727 10 727 21 V 41 C 727 52 719 60 708 60 H 34 C 23 60 15 52 15 41 V 21 C 15 10 11 2 0 0 Z");
+  overflow: hidden;
+  transform: translateX(-50%);
+  opacity: 0;
+  filter: blur(10px);
+  animation: mainPortalNavReveal 0.76s cubic-bezier(0.16, 1, 0.3, 1) 4.02s both;
+}
+
+.main-portal-brand,
+.main-portal-links,
+.main-portal-nav-button,
+.main-portal-primary {
+  text-decoration: none;
+}
+
+.main-portal-brand {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  color: #ffffff;
+}
+
+.main-portal-brand strong {
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.main-portal-mark {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+  background: linear-gradient(180deg, #8fd5ff 0%, #2563eb 72%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.58);
+}
+
+.main-portal-links {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+}
+
+.main-portal-links a {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.main-portal-links a:hover,
+.main-portal-links a:focus-visible {
+  color: #ffffff;
+}
+
+.main-portal-nav-button {
+  position: relative;
+  z-index: 1;
+  min-height: 40px;
+  padding: 0 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: #050505;
+  font-size: 15px;
+  font-weight: 900;
+  white-space: nowrap;
+  background: #ffffff;
+}
+
+.main-portal-hero {
+  width: min(850px, calc(100% - 40px));
+  margin: 0 auto;
+  padding-top: 166px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.main-portal-kicker,
+.main-portal-copy,
+.main-portal-primary {
+  opacity: 0;
+  transform: translateY(26px);
+  filter: blur(9px);
+  will-change: opacity, transform, filter;
+  animation: mainPortalFloatIn 0.86s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.main-portal-kicker {
+  margin: 0 0 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
+  font-size: 25px;
+  line-height: 1.2;
+  font-weight: 850;
+  transform: translateY(-24px);
+  animation-name: mainPortalTopFloatIn;
+  animation-delay: 4.02s;
+}
+
+.main-portal-kicker span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+  background: #ffffff;
+}
+
+.main-portal-hero h1 {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  color: #ffffff;
+  line-height: 0.9;
+}
+
+.main-portal-title-line {
+  display: flex;
+  justify-content: center;
+  overflow: visible;
+}
+
+.main-portal-title-primary {
+  display: block;
+  font-size: 96px;
+  font-weight: 900;
+}
+
+.main-portal-title-script {
+  display: block;
+  margin-top: 18px;
+  font-family: Georgia, "Times New Roman", "Noto Serif SC", serif;
+  font-size: 72px;
+  line-height: 0.9;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.main-portal-title-char {
+  display: inline-block;
+  opacity: 0;
+  transform: translate3d(0, 0.9em, 0) scale(0.98);
+  transform-origin: 50% 100%;
+  filter: blur(22px);
+  backface-visibility: hidden;
+  will-change: opacity, transform, filter;
+  animation: mainPortalTitleCharIn 0.68s cubic-bezier(0.42, 0, 0.58, 1) var(--char-delay) both;
+}
+
+.main-portal-copy {
+  max-width: 760px;
+  margin: 40px 0 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 24px;
+  line-height: 1.42;
+  font-weight: 400;
+  animation-delay: 2.22s;
+}
+
+.main-portal-primary {
+  min-height: 64px;
+  margin-top: 26px;
+  padding: 0 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22px;
+  color: #ffffff;
+  font-size: 21px;
+  font-weight: 900;
+  background: #050505;
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.18);
+  animation-delay: 3.12s;
+}
+
+.main-portal-primary:hover,
+.main-portal-primary:focus-visible,
+.main-portal-nav-button:hover,
+.main-portal-nav-button:focus-visible {
+  transform: translateY(-1px);
+}
+
+@keyframes mainPortalNavReveal {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-32px) scale(0.985);
+    filter: blur(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes mainPortalTopFloatIn {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+    filter: blur(9px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes mainPortalTitleCharIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0.9em, 0) scale(0.98);
+    filter: blur(22px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes mainPortalFloatIn {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+    filter: blur(9px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-portal-nav,
+  .main-portal-kicker,
+  .main-portal-title-line,
+  .main-portal-title-char,
+  .main-portal-copy,
+  .main-portal-primary {
+    opacity: 1;
+    filter: none;
+    animation: none;
+  }
+
+  .main-portal-nav {
+    transform: translateX(-50%);
+  }
+
+  .main-portal-kicker,
+  .main-portal-title-line,
+  .main-portal-title-char,
+  .main-portal-copy,
+  .main-portal-primary {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 860px) {
+  .main-portal-nav {
+    width: min(100% - 24px, 640px);
+    grid-template-columns: auto auto;
+    gap: 14px;
+    -webkit-clip-path: none;
+    clip-path: none;
+  }
+
+  .main-portal-links {
+    display: none;
+  }
+
+  .main-portal-nav-button {
+    justify-self: end;
+  }
+
+  .main-portal-hero {
+    padding-top: 144px;
+  }
+
+  .main-portal-kicker {
+    margin-bottom: 24px;
+    font-size: 22px;
+  }
+
+  .main-portal-title-primary {
+    font-size: 68px;
+  }
+
+  .main-portal-title-script {
+    font-size: 52px;
+  }
+
+  .main-portal-copy {
+    font-size: 20px;
+  }
+
+}
+
+@media (max-width: 560px) {
+  .main-portal-nav {
+    width: calc(100% - 18px);
+    min-height: 56px;
+    padding: 9px 10px;
+    border-radius: 0 0 18px 18px;
+  }
+
+  .main-portal-brand strong {
+    font-size: 16px;
+  }
+
+  .main-portal-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .main-portal-nav-button {
+    min-height: 36px;
+    padding: 0 16px;
+    font-size: 14px;
+  }
+
+  .main-portal-hero {
+    width: min(100% - 28px, 850px);
+    padding-top: 132px;
+  }
+
+  .main-portal-kicker {
+    font-size: 18px;
+  }
+
+  .main-portal-title-primary {
+    font-size: 48px;
+  }
+
+  .main-portal-title-script {
+    margin-top: 12px;
+    font-size: 38px;
+  }
+
+  .main-portal-copy {
+    margin-top: 30px;
+    font-size: 17px;
+  }
+
+  .main-portal-primary {
+    min-height: 56px;
+    padding: 0 30px;
+    border-radius: 18px;
+    font-size: 18px;
+  }
+
 }

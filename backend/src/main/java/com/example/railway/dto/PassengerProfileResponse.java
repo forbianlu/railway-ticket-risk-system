@@ -1,5 +1,7 @@
 package com.example.railway.dto;
 
+import java.time.LocalDateTime;
+
 public class PassengerProfileResponse {
 
     private Long userId;
@@ -10,6 +12,8 @@ public class PassengerProfileResponse {
     private String defaultTravelerName;
     private long orderCount;
     private long activeTicketCount;
+    private boolean avatarAvailable;
+    private LocalDateTime avatarUpdatedAt;
 
     public Long getUserId() {
         return userId;
@@ -73,5 +77,21 @@ public class PassengerProfileResponse {
 
     public void setActiveTicketCount(long activeTicketCount) {
         this.activeTicketCount = activeTicketCount;
+    }
+
+    public boolean isAvatarAvailable() {
+        return avatarAvailable;
+    }
+
+    public void setAvatarAvailable(boolean avatarAvailable) {
+        this.avatarAvailable = avatarAvailable;
+    }
+
+    public LocalDateTime getAvatarUpdatedAt() {
+        return avatarUpdatedAt;
+    }
+
+    public void setAvatarUpdatedAt(LocalDateTime avatarUpdatedAt) {
+        this.avatarUpdatedAt = avatarUpdatedAt;
     }
 }

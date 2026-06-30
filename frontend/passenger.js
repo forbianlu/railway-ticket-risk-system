@@ -17,6 +17,8 @@ const passengerState = {
   refreshingFlow: false,
   authExpiredNotified: false,
   profile: null,
+  avatarObjectUrl: null,
+  avatarRequestId: 0,
   summary: null,
   navObserver: null,
   scrollTicking: false,
@@ -54,12 +56,14 @@ const elements = {
   apiStatusText: document.querySelector("#passenger-api-status-text"),
   authRole: document.querySelector("#passenger-auth-role"),
   authUser: document.querySelector("#passenger-auth-user"),
+  topAvatar: document.querySelector(".passenger-avatar"),
   logoutButton: document.querySelector("#passenger-logout-button"),
   refreshPassenger: document.querySelector("#refresh-passenger"),
   onboardingNav: document.querySelector('.passenger-nav a[href="#passenger-onboarding"]'),
   onboardingSection: document.querySelector("#passenger-onboarding"),
   onboardingSteps: document.querySelector("#passenger-onboarding-steps"),
   onboardingAction: document.querySelector("#passenger-onboarding-action"),
+  profileAvatar: document.querySelector("#passenger-profile-avatar"),
   profileRole: document.querySelector("#passenger-profile-role"),
   profileDisplay: document.querySelector("#passenger-profile-display"),
   profileUsername: document.querySelector("#passenger-profile-username"),
@@ -69,6 +73,10 @@ const elements = {
   profileForm: document.querySelector("#passenger-profile-form"),
   profileDisplayName: document.querySelector("#passenger-profile-display-name"),
   profileError: document.querySelector("#passenger-profile-error"),
+  avatarFile: document.querySelector("#passenger-avatar-file"),
+  avatarUploadButton: document.querySelector("#passenger-avatar-upload-button"),
+  avatarRemoveButton: document.querySelector("#passenger-avatar-remove-button"),
+  avatarStatus: document.querySelector("#passenger-avatar-status"),
   passwordForm: document.querySelector("#passenger-password-form"),
   oldPassword: document.querySelector("#passenger-old-password"),
   newPassword: document.querySelector("#passenger-new-password"),
@@ -213,6 +221,14 @@ elements.profileForm.addEventListener("submit", event => {
   event.preventDefault();
   savePassengerProfile();
 });
+elements.avatarUploadButton?.addEventListener("click", () => {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  elements.avatarFile?.click();
+});
+elements.avatarFile?.addEventListener("change", updatePassengerAvatar);
+elements.avatarRemoveButton?.addEventListener("click", deletePassengerAvatar);
 elements.passwordForm.addEventListener("submit", event => {
   event.preventDefault();
   changePassengerPassword();
@@ -343,6 +359,7 @@ async function initPassenger() {
   organizePassengerSections();
   setupPassengerNavigation();
   setupPassengerScrollSpy();
+  syncPassengerOnboardingNav(true);
   renderAuthState();
   elements.travelDate.value = new Date().toISOString().slice(0, 10);
   await checkHealth();
@@ -616,6 +633,158 @@ function renderPassengerProfile(profile) {
   elements.profileOrderCount.textContent = profile.orderCount || 0;
   elements.profileTicketCount.textContent = profile.activeTicketCount || 0;
   elements.profileDisplayName.value = profile.displayName || "";
+  if (profile.avatarAvailable) {
+    loadPassengerAvatar();
+  } else {
+    renderPassengerAvatar(null);
+  }
+}
+
+async function updatePassengerAvatar(event) {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  const file = event.target.files && event.target.files[0];
+  if (!file) {
+    return;
+  }
+  elements.profileError.textContent = "";
+  setPassengerAvatarStatus("");
+  if (!file.type || !file.type.startsWith("image/")) {
+    setPassengerAvatarStatus("请选择图片文件");
+    showToast("请选择图片文件作为头像");
+    event.target.value = "";
+    return;
+  }
+  const formData = new FormData();
+  formData.append("avatar", file);
+  elements.avatarUploadButton.disabled = true;
+  setPassengerAvatarStatus("正在上传头像...");
+  try {
+    const profile = await passengerRequest("/passenger/profile/avatar", {
+      method: "POST",
+      body: formData,
+    });
+    passengerState.profile = profile;
+    renderPassengerProfile(profile);
+    setPassengerAvatarStatus("头像已更新");
+    showToast("头像已更新");
+  } catch (error) {
+    setPassengerAvatarStatus(error.message || "头像上传失败");
+    showToast(error.message || "头像上传失败");
+  } finally {
+    elements.avatarUploadButton.disabled = false;
+    event.target.value = "";
+  }
+}
+
+async function deletePassengerAvatar() {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  elements.avatarRemoveButton.disabled = true;
+  setPassengerAvatarStatus("");
+  try {
+    await passengerRequest("/passenger/profile/avatar", { method: "DELETE" });
+    if (passengerState.profile) {
+      passengerState.profile.avatarAvailable = false;
+      passengerState.profile.avatarUpdatedAt = null;
+    }
+    renderPassengerAvatar(null);
+    setPassengerAvatarStatus("头像已移除");
+    showToast("头像已移除");
+  } catch (error) {
+    setPassengerAvatarStatus(error.message || "头像移除失败");
+    showToast(error.message || "头像移除失败");
+  } finally {
+    elements.avatarRemoveButton.disabled = false;
+  }
+}
+
+async function loadPassengerAvatar() {
+  if (!passengerState.auth || !passengerState.auth.token) {
+    renderPassengerAvatar(null);
+    return;
+  }
+  const requestId = passengerState.avatarRequestId + 1;
+  passengerState.avatarRequestId = requestId;
+  const version = passengerState.profile && passengerState.profile.avatarUpdatedAt
+    ? `?v=${encodeURIComponent(passengerState.profile.avatarUpdatedAt)}`
+    : "";
+  try {
+    const blob = await passengerBlobRequest(`/passenger/profile/avatar${version}`);
+    if (requestId !== passengerState.avatarRequestId) {
+      return;
+    }
+    renderPassengerAvatar(blob);
+  } catch (error) {
+    if (error.status === 404) {
+      renderPassengerAvatar(null);
+      return;
+    }
+    setPassengerAvatarStatus(error.message || "头像加载失败");
+  }
+}
+
+function renderPassengerAvatar(blob) {
+  if (passengerState.avatarObjectUrl) {
+    URL.revokeObjectURL(passengerState.avatarObjectUrl);
+    passengerState.avatarObjectUrl = null;
+  }
+  if (!blob) {
+    applyPassengerAvatarImage(elements.topAvatar, null);
+    applyPassengerAvatarImage(elements.profileAvatar, null);
+    syncPassengerAvatarControls(false);
+    return;
+  }
+  const objectUrl = URL.createObjectURL(blob);
+  passengerState.avatarObjectUrl = objectUrl;
+  applyPassengerAvatarImage(elements.topAvatar, objectUrl);
+  applyPassengerAvatarImage(elements.profileAvatar, objectUrl);
+  syncPassengerAvatarControls(true);
+}
+
+function applyPassengerAvatarImage(container, objectUrl) {
+  if (!container) {
+    return;
+  }
+  container.classList.toggle("has-image", Boolean(objectUrl));
+  container.innerHTML = "";
+  if (objectUrl) {
+    const img = document.createElement("img");
+    img.src = objectUrl;
+    img.alt = "乘客头像";
+    container.appendChild(img);
+    return;
+  }
+  if (container === elements.topAvatar) {
+    const icon = document.createElement("span");
+    icon.className = "person-avatar-icon";
+    icon.setAttribute("aria-hidden", "true");
+    container.appendChild(icon);
+    return;
+  }
+  container.textContent = passengerAvatarInitials();
+}
+
+function passengerAvatarInitials() {
+  const source = (passengerState.profile && (passengerState.profile.displayName || passengerState.profile.username))
+    || (passengerState.auth && (passengerState.auth.displayName || passengerState.auth.username))
+    || "RT";
+  const text = String(source).trim();
+  return text ? text.slice(0, 2).toUpperCase() : "RT";
+}
+
+function syncPassengerAvatarControls(hasAvatar) {
+  if (elements.avatarRemoveButton) {
+    elements.avatarRemoveButton.hidden = !hasAvatar;
+  }
+}
+
+function setPassengerAvatarStatus(message) {
+  if (elements.avatarStatus) {
+    elements.avatarStatus.textContent = message || "";
+  }
 }
 
 async function savePassengerProfile() {
@@ -1073,6 +1242,21 @@ function renderPassengerOnboarding() {
       target: "passenger-tickets",
     },
   ];
+  const allDone = steps.every(step => step.done);
+  if (allDone) {
+    const wasActive = elements.onboardingSection.classList.contains("is-active");
+    passengerState.showOnboarding = false;
+    setPassengerOnboardingDismissed(true);
+    elements.onboardingSection.hidden = true;
+    elements.onboardingSteps.innerHTML = "";
+    elements.onboardingAction.dataset.target = "passenger-search";
+    elements.onboardingAction.textContent = "开始第一段行程";
+    syncPassengerOnboardingNav(true);
+    if (wasActive) {
+      activateSection("passenger-summary", { silent: true });
+    }
+    return;
+  }
   elements.onboardingSteps.innerHTML = steps.map((step, index) => `
     <button class="onboarding-step ${step.done ? "done" : ""}" type="button" data-onboarding-target="${step.target}">
       <span class="step-index">${step.done ? "✓" : index + 1}</span>
@@ -1083,7 +1267,6 @@ function renderPassengerOnboarding() {
     button.addEventListener("click", () => activateSection(button.dataset.onboardingTarget));
   });
   const next = steps.find(step => !step.done) || steps[steps.length - 1];
-  const allDone = steps.every(step => step.done);
   elements.onboardingAction.dataset.target = allDone ? "dismiss-onboarding" : next.target;
   elements.onboardingAction.textContent = allDone ? "我已知晓" : next.title;
 }
@@ -1092,11 +1275,22 @@ function syncPassengerOnboardingNav(hidden) {
   if (!elements.onboardingNav) {
     return;
   }
-  const shouldHide = Boolean(hidden || !elements.onboardingSection || elements.onboardingSection.hidden);
+  const dismissed = passengerState.auth ? isPassengerOnboardingDismissed() : true;
+  const shouldHide = Boolean(
+    hidden
+    || dismissed
+    || !passengerState.showOnboarding
+    || !elements.onboardingSection
+    || elements.onboardingSection.hidden
+  );
   elements.onboardingNav.hidden = shouldHide;
   elements.onboardingNav.setAttribute("aria-hidden", shouldHide ? "true" : "false");
   elements.onboardingNav.tabIndex = shouldHide ? -1 : 0;
-  elements.onboardingNav.style.display = shouldHide ? "none" : "";
+  if (shouldHide) {
+    elements.onboardingNav.style.setProperty("display", "none", "important");
+  } else {
+    elements.onboardingNav.style.removeProperty("display");
+  }
   elements.onboardingNav.classList.toggle("active", false);
 }
 
@@ -2714,7 +2908,7 @@ function notificationTypeIcon(notification) {
     return "";
   }
   return `
-    <span class="notification-type-icon refund-success-icon" aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;flex:0 0 42px;border-radius:14px;background:#eef5ff;color:#315cf6;">
+    <span class="notification-type-icon refund-success-icon" aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;flex:0 0 42px;border-radius:14px;background:#eff6ff;color:#2563EB;">
       <svg viewBox="0 0 24 24" focusable="false" style="width:22px;height:22px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;">
         <path d="M8 7H5v3"></path>
         <path d="M5.6 10A6.8 6.8 0 0 1 17 5.7a6.3 6.3 0 0 1 1.6 3.1"></path>
@@ -2850,6 +3044,45 @@ function renderPagination(type) {
   target.next.disabled = Boolean(target.state.last);
 }
 
+async function passengerBlobRequest(path, options = {}, withAuth = true) {
+  const requestOptions = { ...options };
+  requestOptions.headers = { ...(options.headers || {}) };
+  requestOptions.cache = "no-store";
+  const hasAuthHeader = Boolean(withAuth && passengerState.auth && passengerState.auth.token);
+  if (hasAuthHeader) {
+    requestOptions.headers.Authorization = `Bearer ${passengerState.auth.token}`;
+  }
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, requestOptions);
+  } catch (error) {
+    const networkError = new Error("无法连接后端服务，请确认 Spring Boot 后端已启动");
+    networkError.status = 0;
+    throw networkError;
+  }
+  if (response.status === 404 || response.status === 204) {
+    return null;
+  }
+  if (!response.ok) {
+    const data = await readBody(response);
+    if (response.status === 401) {
+      if (hasAuthHeader) {
+        handleAuthExpired();
+        const authError = new Error("登录已过期，请重新登录");
+        authError.status = 401;
+        throw authError;
+      }
+      const unauthorizedError = new Error(data.message || "请先登录后再访问该功能");
+      unauthorizedError.status = 401;
+      throw unauthorizedError;
+    }
+    const requestError = new Error(data.message || `请求失败（${response.status}）`);
+    requestError.status = response.status;
+    throw requestError;
+  }
+  return response.blob();
+}
+
 function renderLoggedOutPlaceholders() {
   passengerState.profile = null;
   passengerState.summary = null;
@@ -2878,6 +3111,11 @@ function renderLoggedOutPlaceholders() {
   elements.profileTicketCount.textContent = "0";
   elements.profileDisplayName.value = "";
   elements.profileError.textContent = "";
+  if (elements.avatarFile) {
+    elements.avatarFile.value = "";
+  }
+  setPassengerAvatarStatus("");
+  renderPassengerAvatar(null);
   elements.passwordError.textContent = "";
   passengerState.travelers = [];
   passengerState.travelerById = {};
@@ -3045,7 +3283,8 @@ function updateActiveNav(sectionId) {
 }
 
 function activateSection(sectionId, options = {}) {
-  const rootSectionId = navSectionAlias(sectionId);
+  const requestedRootSectionId = navSectionAlias(sectionId);
+  const rootSectionId = normalizePassengerSectionId(requestedRootSectionId);
   const section = document.querySelector(`#${rootSectionId}`);
   if (!section) {
     return;
@@ -3056,7 +3295,9 @@ function activateSection(sectionId, options = {}) {
   updateActiveNav(rootSectionId);
   const page = document.querySelector(".passenger-site-main");
   if (page) {
-    const target = sectionId !== rootSectionId ? document.querySelector(`#${sectionId}`) : null;
+    const target = sectionId !== rootSectionId && requestedRootSectionId === rootSectionId
+      ? document.querySelector(`#${sectionId}`)
+      : null;
     const top = target && section.contains(target)
       ? Math.max(0, target.offsetTop - section.offsetTop - 18)
       : 0;
@@ -3077,6 +3318,24 @@ function navSectionAlias(sectionId) {
     "passenger-refunds": "passenger-orders",
   };
   return aliases[sectionId] || sectionId;
+}
+
+function normalizePassengerSectionId(sectionId) {
+  if (sectionId !== "passenger-onboarding") {
+    return sectionId;
+  }
+  return isPassengerOnboardingAccessible() ? sectionId : "passenger-summary";
+}
+
+function isPassengerOnboardingAccessible() {
+  if (!passengerState.auth || !elements.onboardingSection) {
+    return false;
+  }
+  return Boolean(
+    passengerState.showOnboarding
+    && !isPassengerOnboardingDismissed()
+    && !elements.onboardingSection.hidden
+  );
 }
 
 function getPassengerHeaderOffset() {

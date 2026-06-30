@@ -5,6 +5,10 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
+import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,7 +17,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.railway.domain.UserRole;
 import com.example.railway.dto.NotificationPageResponse;
@@ -84,6 +90,31 @@ public class PassengerController {
     @PutMapping("/profile")
     public AuthResponse updateProfile(@Valid @RequestBody UpdatePassengerProfileRequest request) {
         return passengerService.updateProfile(request.getDisplayName());
+    }
+
+    @Operation(summary = "Upload my avatar")
+    @PostMapping(value = "/profile/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public PassengerProfileResponse updateAvatar(@RequestPart("avatar") MultipartFile avatar) {
+        return passengerService.updateAvatar(avatar);
+    }
+
+    @Operation(summary = "Read my avatar")
+    @GetMapping("/profile/avatar")
+    public ResponseEntity<Resource> avatar() {
+        PassengerService.PassengerAvatarResource avatar = passengerService.avatar();
+        if (avatar == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .contentType(MediaType.parseMediaType(avatar.getContentType()))
+                .body(avatar.getResource());
+    }
+
+    @Operation(summary = "Delete my avatar")
+    @DeleteMapping("/profile/avatar")
+    public void deleteAvatar() {
+        passengerService.deleteAvatar();
     }
 
     @Operation(summary = "Change my password")
