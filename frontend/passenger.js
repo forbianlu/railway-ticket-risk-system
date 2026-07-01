@@ -394,10 +394,28 @@ async function loginPassenger() {
     passengerState.authExpiredNotified = false;
     passengerState.showOnboarding = false;
     localStorage.setItem(PASSENGER_AUTH_KEY, JSON.stringify(auth));
-    renderAuthState();
+    let revealedTarget = false;
+    let refreshPromise = Promise.resolve();
+    const revealTarget = () => {
+      if (revealedTarget) {
+        return;
+      }
+      revealedTarget = true;
+      renderAuthState();
+      refreshPromise = refreshPassengerData().then(() => loadAvailablePassengerTrains());
+    };
+    const transition = typeof window.playRailwayLoginTransition === "function"
+      ? window.playRailwayLoginTransition({
+          variant: "passenger",
+          label: "\u94c1\u8def\u5ba2\u8fd0\u7968\u52a1",
+          destination: "\u4e58\u5ba2\u7aef",
+          prepareReveal: revealTarget,
+        })
+      : Promise.resolve();
+    await transition;
+    revealTarget();
+    await refreshPromise;
     showToast("登录成功，欢迎使用乘客购票服务");
-    await refreshPassengerData();
-    await loadAvailablePassengerTrains();
   } catch (error) {
     showToast(error.message || "登录失败");
   }

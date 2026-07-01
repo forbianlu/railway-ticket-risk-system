@@ -320,9 +320,28 @@ async function login() {
     state.auth = auth;
     state.authExpiredNotified = false;
     localStorage.setItem("railway-auth", JSON.stringify(auth));
-    renderAuthState();
+    let revealedTarget = false;
+    let refreshPromise = Promise.resolve();
+    const revealTarget = () => {
+      if (revealedTarget) {
+        return;
+      }
+      revealedTarget = true;
+      renderAuthState();
+      refreshPromise = refreshAll();
+    };
+    const transition = typeof window.playRailwayLoginTransition === "function"
+      ? window.playRailwayLoginTransition({
+          variant: "admin",
+          label: "\u94c1\u8def\u5ba2\u8fd0\u7968\u52a1",
+          destination: "\u7ba1\u7406\u7aef",
+          prepareReveal: revealTarget,
+        })
+      : Promise.resolve();
+    await transition;
+    revealTarget();
+    await refreshPromise;
     showToast("登录成功，当前角色：" + roleText(auth.role));
-    await refreshAll();
   } catch (error) {
     showToast(error.message || "登录失败");
   }
