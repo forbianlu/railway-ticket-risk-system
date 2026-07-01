@@ -6,9 +6,11 @@ const passengerState = {
   auth: loadPassengerAuth(),
   stations: [],
   trainByInventory: {},
+  trainGroupByKey: {},
   travelers: [],
   travelerById: {},
   selectedTrain: null,
+  selectedInventory: null,
   selectedChangeOrder: null,
   selectedChangeTrain: null,
   changeCandidates: [],
@@ -23,7 +25,7 @@ const passengerState = {
   navObserver: null,
   scrollTicking: false,
   lastScrollY: 0,
-  trains: { items: [], page: 0, size: 5 },
+  trains: { items: [], page: 0, size: 7 },
   orders: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
   tickets: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
   payments: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
@@ -164,6 +166,7 @@ const elements = {
   buyCancel: document.querySelector("#passenger-buy-cancel"),
   buyForm: document.querySelector("#passenger-buy-form"),
   buySummary: document.querySelector("#passenger-buy-summary"),
+  buySeatType: document.querySelector("#passenger-buy-seat-type"),
   buyTraveler: document.querySelector("#passenger-buy-traveler"),
   buyName: document.querySelector("#passenger-buy-name"),
   buyIdType: document.querySelector("#passenger-buy-id-type"),
@@ -253,6 +256,7 @@ elements.travelerCancel.addEventListener("click", () => {
   showToast("已取消编辑，表单已恢复为新增模式");
 });
 elements.buyTraveler.addEventListener("change", applySelectedTravelerToBuyForm);
+elements.buySeatType?.addEventListener("change", updateSelectedBuySeat);
 elements.loadOrders.addEventListener("click", () => {
   passengerState.orders.page = 0;
   loadPassengerOrders();
@@ -357,6 +361,7 @@ initPassenger();
 
 async function initPassenger() {
   organizePassengerSections();
+  setupPassengerFeatureTabs();
   setupPassengerNavigation();
   setupPassengerScrollSpy();
   syncPassengerOnboardingNav(true);
@@ -399,11 +404,7 @@ async function loginPassenger() {
 }
 
 function organizePassengerSections() {
-  mergePassengerSection("passenger-transactions", "passenger-summary", "merged-journey-reminders");
   mergePassengerSection("passenger-travelers", "passenger-account", "merged-travelers");
-  mergePassengerSection("passenger-changes", "passenger-orders", "merged-order-changes");
-  mergePassengerSection("passenger-refunds", "passenger-payments", "merged-refunds");
-  mergePassengerSection("passenger-payments", "passenger-orders", "merged-order-payments");
   if (elements.loadPayments) {
     const heading = document.querySelector("#passenger-payments .passenger-section-head h2");
     const eyebrow = document.querySelector("#passenger-payments .passenger-section-head .eyebrow");
@@ -424,6 +425,263 @@ function mergePassengerSection(childId, parentId, className) {
   }
   child.classList.add("passenger-section-embedded", className);
   parent.appendChild(child);
+}
+
+function setupPassengerFeatureTabs() {
+  const state = getPassengerFeatureTabState();
+  state.tabById.clear();
+  state.tabBySectionId.clear();
+  state.defaultTabBySectionId.clear();
+  document.body.dataset.passengerFeatureTabsReady = "true";
+
+  setupPassengerTabGroup({
+    sectionId: "passenger-summary",
+    tabsLabel: "行程分页",
+    defaultTabId: "journey-overview",
+    tabs: [
+      { id: "journey-overview", label: "我的行程", panelId: "journey-overview" },
+      { id: "journey-reminders", label: "我的行程提醒", panelId: "journey-reminders", sourceId: "passenger-transactions" },
+    ],
+    panels: [
+      { id: "journey-overview", sourceId: "passenger-summary" },
+      { id: "journey-reminders", sourceId: "passenger-transactions" },
+    ],
+  });
+
+  setupPassengerTabGroup({
+    sectionId: "passenger-orders",
+    tabsLabel: "订单分页",
+    defaultTabId: "order-status",
+    tabs: [
+      { id: "order-status", label: "订单状态", panelId: "order-status" },
+      { id: "order-changes", label: "改签记录", panelId: "order-changes", sourceId: "passenger-changes" },
+      { id: "order-payments", label: "支付记录", panelId: "order-payments", sourceId: "passenger-payments" },
+      { id: "order-refunds", label: "退款记录", panelId: "order-refunds", sourceId: "passenger-refunds" },
+    ],
+    panels: [
+      { id: "order-status", sourceId: "passenger-orders" },
+      { id: "order-changes", sourceId: "passenger-changes" },
+      { id: "order-payments", sourceId: "passenger-payments" },
+      { id: "order-refunds", sourceId: "passenger-refunds" },
+    ],
+  });
+
+  setupPassengerTabGroup({
+    sectionId: "passenger-tickets",
+    tabsLabel: "车票分页",
+    defaultTabId: "ticket-all",
+    tabs: [
+      { id: "ticket-all", label: "全部车票", panelId: "ticket-list", filterTarget: "ticketStatus", filterValue: "" },
+      { id: "ticket-issued", label: "有效票", panelId: "ticket-list", filterTarget: "ticketStatus", filterValue: "ISSUED" },
+      { id: "ticket-refunded", label: "已退票", panelId: "ticket-list", filterTarget: "ticketStatus", filterValue: "REFUNDED" },
+      { id: "ticket-cancelled", label: "已取消", panelId: "ticket-list", filterTarget: "ticketStatus", filterValue: "CANCELLED" },
+    ],
+    panels: [
+      { id: "ticket-list", sourceId: "passenger-tickets" },
+    ],
+  });
+
+  setupPassengerTabGroup({
+    sectionId: "passenger-notifications",
+    tabsLabel: "消息分页",
+    defaultTabId: "notification-all",
+    tabs: [
+      { id: "notification-all", label: "全部消息", panelId: "notification-list", filterTarget: "notificationStatus", filterValue: "" },
+      { id: "notification-read", label: "已读消息", panelId: "notification-list", filterTarget: "notificationStatus", filterValue: "READ" },
+      { id: "notification-unread", label: "未读消息", panelId: "notification-list", filterTarget: "notificationStatus", filterValue: "UNREAD" },
+    ],
+    panels: [
+      { id: "notification-list", sourceId: "passenger-notifications" },
+    ],
+  });
+}
+
+function getPassengerFeatureTabState() {
+  if (!window.passengerFeatureTabState) {
+    window.passengerFeatureTabState = {
+      tabById: new Map(),
+      tabBySectionId: new Map(),
+      defaultTabBySectionId: new Map(),
+    };
+  }
+  return window.passengerFeatureTabState;
+}
+
+function setupPassengerTabGroup(config) {
+  const section = document.getElementById(config.sectionId);
+  if (!section || section.dataset.passengerTabGroupReady === "true") {
+    return;
+  }
+  const state = getPassengerFeatureTabState();
+  const header = section.querySelector(":scope > .passenger-section-head");
+  const tabList = document.createElement("div");
+  const panelWrap = document.createElement("div");
+  const tabMap = new Map();
+  const panelMap = new Map();
+
+  section.dataset.passengerTabGroupReady = "true";
+  section.dataset.passengerDefaultTab = config.defaultTabId;
+  section.classList.add("passenger-feature-tabbed");
+  state.defaultTabBySectionId.set(config.sectionId, config.defaultTabId);
+
+  tabList.className = "passenger-inner-tabs";
+  tabList.setAttribute("role", "tablist");
+  tabList.setAttribute("aria-label", config.tabsLabel || "功能分页");
+  panelWrap.className = "passenger-tab-panels";
+
+  (config.panels || []).forEach(panelConfig => {
+    const panel = document.createElement("div");
+    panel.className = "passenger-tab-panel";
+    panel.dataset.passengerTabPanel = panelConfig.id;
+    panel.setAttribute("role", "tabpanel");
+    panel.hidden = true;
+    panelMap.set(panelConfig.id, panel);
+    panelWrap.appendChild(panel);
+  });
+
+  config.tabs.forEach(tabConfig => {
+    const button = document.createElement("button");
+    const panelId = tabConfig.panelId || tabConfig.id;
+    button.className = "passenger-inner-tab";
+    button.type = "button";
+    button.dataset.passengerTab = tabConfig.id;
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", "false");
+    button.textContent = tabConfig.label;
+    button.addEventListener("click", () => {
+      activatePassengerFeatureTab(tabConfig.id, { userInitiated: true });
+    });
+    tabList.appendChild(button);
+    tabMap.set(tabConfig.id, button);
+    state.tabById.set(tabConfig.id, { ...tabConfig, sectionId: config.sectionId, panelId });
+    if (tabConfig.sourceId) {
+      state.tabBySectionId.set(tabConfig.sourceId, tabConfig.id);
+    }
+  });
+
+  state.tabBySectionId.set(config.sectionId, config.defaultTabId);
+  if (header) {
+    header.insertAdjacentElement("afterend", tabList);
+    tabList.insertAdjacentElement("afterend", panelWrap);
+  } else {
+    section.prepend(panelWrap);
+    section.prepend(tabList);
+  }
+
+  (config.panels || []).forEach(panelConfig => {
+    const panel = panelMap.get(panelConfig.id);
+    const source = document.getElementById(panelConfig.sourceId);
+    if (!panel || !source) {
+      return;
+    }
+    movePassengerSectionBody(source, panel);
+    if (source !== section) {
+      source.hidden = true;
+      source.classList.add("passenger-tab-source");
+    }
+  });
+
+  section._passengerTabMap = tabMap;
+  section._passengerPanelMap = panelMap;
+  activatePassengerFeatureTab(config.defaultTabId, { silent: true, skipLoad: true });
+}
+
+function movePassengerSectionBody(source, panel) {
+  Array.from(source.children).forEach(child => {
+    if (
+      child.classList.contains("passenger-section-head")
+      || child.classList.contains("passenger-inner-tabs")
+      || child.classList.contains("passenger-tab-panels")
+    ) {
+      return;
+    }
+    panel.appendChild(child);
+  });
+}
+
+function activatePassengerFeatureTab(tabId, options = {}) {
+  const state = getPassengerFeatureTabState();
+  const tabConfig = state.tabById.get(tabId);
+  if (!tabConfig) {
+    return;
+  }
+  const section = document.getElementById(tabConfig.sectionId);
+  if (!section) {
+    return;
+  }
+  const activePanelId = tabConfig.panelId || tabId;
+  section.querySelectorAll(".passenger-inner-tab").forEach(tab => {
+    const isActive = tab.dataset.passengerTab === tabId;
+    tab.classList.toggle("active", isActive);
+    tab.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+  section.querySelectorAll(".passenger-tab-panel").forEach(panel => {
+    panel.hidden = panel.dataset.passengerTabPanel !== activePanelId;
+    panel.classList.toggle("active", !panel.hidden);
+  });
+  section.dataset.passengerActiveTab = tabId;
+  applyPassengerFeatureTabFilter(tabConfig, options);
+}
+
+function applyPassengerFeatureTabFilter(tabConfig, options = {}) {
+  if (!tabConfig.filterTarget || !elements[tabConfig.filterTarget]) {
+    return;
+  }
+  const select = elements[tabConfig.filterTarget];
+  if (select.value !== tabConfig.filterValue) {
+    select.value = tabConfig.filterValue;
+  }
+  if (options.skipLoad) {
+    return;
+  }
+  if (tabConfig.filterTarget === "ticketStatus") {
+    passengerState.tickets.page = 0;
+    loadPassengerTickets();
+  }
+  if (tabConfig.filterTarget === "notificationStatus") {
+    passengerState.notifications.page = 0;
+    loadPassengerNotifications();
+  }
+}
+
+function syncPassengerFeatureTabForSection(sectionId) {
+  const state = getPassengerFeatureTabState();
+  const rootSectionId = normalizePassengerSectionId(navSectionAlias(sectionId));
+  if (rootSectionId === "passenger-tickets") {
+    activatePassengerFeatureTab(ticketTabIdForStatus(elements.ticketStatus.value), { silent: true, skipLoad: true });
+    return;
+  }
+  if (rootSectionId === "passenger-notifications") {
+    activatePassengerFeatureTab(notificationTabIdForStatus(elements.notificationStatus.value), { silent: true, skipLoad: true });
+    return;
+  }
+  const tabId = state.tabBySectionId.get(sectionId) || state.defaultTabBySectionId.get(rootSectionId);
+  if (tabId) {
+    activatePassengerFeatureTab(tabId, { silent: true, skipLoad: true });
+  }
+}
+
+function ticketTabIdForStatus(status) {
+  if (status === "ISSUED") {
+    return "ticket-issued";
+  }
+  if (status === "REFUNDED") {
+    return "ticket-refunded";
+  }
+  if (status === "CANCELLED") {
+    return "ticket-cancelled";
+  }
+  return "ticket-all";
+}
+
+function notificationTabIdForStatus(status) {
+  if (status === "READ") {
+    return "notification-read";
+  }
+  if (status === "UNREAD") {
+    return "notification-unread";
+  }
+  return "notification-all";
 }
 
 async function registerPassenger() {
@@ -758,13 +1016,21 @@ function applyPassengerAvatarImage(container, objectUrl) {
     return;
   }
   if (container === elements.topAvatar) {
-    const icon = document.createElement("span");
-    icon.className = "person-avatar-icon";
-    icon.setAttribute("aria-hidden", "true");
-    container.appendChild(icon);
+    container.appendChild(createPassengerAccountIcon());
     return;
   }
   container.textContent = passengerAvatarInitials();
+}
+
+function createPassengerAccountIcon() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "person-avatar-icon");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0");
+  svg.appendChild(path);
+  return svg;
 }
 
 function passengerAvatarInitials() {
@@ -844,6 +1110,9 @@ async function loadPassengerSummary() {
   try {
     const summary = await passengerRequest("/passenger/summary");
     passengerState.summary = summary;
+    const latestOrders = summary.latestOrders || [];
+    const upcomingTrips = summary.upcomingTrips || [];
+    await ensureOrdersRouteCache([...latestOrders, ...upcomingTrips]);
     const totalOrders = Number(summary.pendingPaymentOrderCount || 0)
       + Number(summary.paidOrderCount || 0)
       + Number(summary.closedOrderCount || 0)
@@ -855,8 +1124,8 @@ async function loadPassengerSummary() {
     elements.metricRefunded.textContent = summary.refundedOrderCount || 0;
     elements.metricPayments.textContent = summary.paymentCount || 0;
     elements.metricRefunds.textContent = summary.refundCount || 0;
-    renderMiniOrders(elements.latestOrders, summary.latestOrders || [], "暂无最近订单");
-    renderMiniOrders(elements.upcomingTrips, summary.upcomingTrips || [], "暂无即将出行");
+    renderMiniOrders(elements.latestOrders, latestOrders, "暂无最近订单");
+    renderMiniOrders(elements.upcomingTrips, upcomingTrips, "暂无即将出行");
     renderPassengerOnboarding();
   } catch (error) {
     showToast(error.message || "无法加载乘客概览");
@@ -869,6 +1138,7 @@ async function loadPassengerTransactionSummary() {
   }
   try {
     const summary = await passengerRequest("/passenger/transactions/summary");
+    await ensureOrdersRouteCache(summary.latestOrders || []);
     renderPassengerTransactionSummary(summary);
   } catch (error) {
     elements.transactionStats.innerHTML = recordEmpty(error.message || "无法加载行程提醒");
@@ -1466,7 +1736,7 @@ function cachePassengerTrains(trains) {
 }
 
 async function ensureOrderRouteCache(order) {
-  if (!order || !order.trainNo || findTrainForOrder(order)) {
+  if (!order || !order.trainNo || hasOrderRouteInfo(order)) {
     return;
   }
   try {
@@ -1485,6 +1755,34 @@ async function ensureOrderRouteCache(order) {
   }
 }
 
+async function ensureOrdersRouteCache(orders = []) {
+  if (!Array.isArray(orders) || !orders.length) {
+    return;
+  }
+  const pending = [];
+  const seen = new Set();
+  orders.forEach(order => {
+    if (!order || !order.trainNo || hasOrderRouteInfo(order)) {
+      return;
+    }
+    const key = `${order.trainNo || ""}::${order.travelDate || ""}`;
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    pending.push(order);
+  });
+  if (!pending.length) {
+    return;
+  }
+  await Promise.all(pending.map(order => ensureOrderRouteCache(order)));
+}
+
+function hasOrderRouteInfo(order) {
+  const trip = passengerOrderTripInfo(order || {});
+  return trip.departureStation !== "-" && trip.arrivalStation !== "-";
+}
+
 function findTrainForOrder(order) {
   if (!order || !order.trainNo) {
     return null;
@@ -1497,21 +1795,93 @@ function findTrainForOrder(order) {
     && (!order.travelDate || !train.travelDate || train.travelDate === order.travelDate)) || null;
 }
 
+function buildTrainGroupKey(train) {
+  return [
+    train.trainNo,
+    train.departureStation,
+    train.arrivalStation,
+    train.travelDate,
+    train.departureTime,
+    train.arrivalTime,
+  ].map(value => (value == null ? "" : String(value))).join("::");
+}
+
+function groupPassengerTrainOptions(items) {
+  const groups = new Map();
+  items.forEach(train => {
+    if (!train) {
+      return;
+    }
+    const groupKey = buildTrainGroupKey(train);
+    const price = Number(train.price);
+    const remainingSeats = Number(train.remainingSeats || 0);
+    let group = groups.get(groupKey);
+    if (!group) {
+      group = {
+        ...train,
+        groupKey,
+        inventoryOptions: [],
+        minPrice: Number.isFinite(price) ? price : 0,
+        minPriceInventory: train,
+        remainingSeats: 0,
+        totalRemainingSeats: 0,
+      };
+      groups.set(groupKey, group);
+    }
+    group.inventoryOptions.push(train);
+    group.totalRemainingSeats += Number.isFinite(remainingSeats) ? remainingSeats : 0;
+    const currentMinPrice = Number(group.minPriceInventory && group.minPriceInventory.price);
+    if (Number.isFinite(price) && (!Number.isFinite(currentMinPrice) || price < currentMinPrice)) {
+      group.minPrice = price;
+      group.minPriceInventory = train;
+    }
+  });
+
+  passengerState.trainGroupByKey = {};
+  groups.forEach(group => {
+    group.inventoryOptions.sort((left, right) => {
+      const leftPrice = Number(left.price);
+      const rightPrice = Number(right.price);
+      if (Number.isFinite(leftPrice) && Number.isFinite(rightPrice) && leftPrice !== rightPrice) {
+        return leftPrice - rightPrice;
+      }
+      return seatTypeSortValue(left.seatType) - seatTypeSortValue(right.seatType);
+    });
+    group.defaultInventory = group.minPriceInventory || group.inventoryOptions[0] || group;
+    group.price = Number.isFinite(Number(group.defaultInventory.price)) ? Number(group.defaultInventory.price) : group.minPrice;
+    group.remainingSeats = group.totalRemainingSeats;
+    passengerState.trainGroupByKey[group.groupKey] = group;
+  });
+
+  return Array.from(groups.values());
+}
+
+function seatTypeSortValue(seatType) {
+  const type = String(seatType || "").toUpperCase();
+  if (type === "SECOND_CLASS") {
+    return 1;
+  }
+  if (type === "FIRST_CLASS") {
+    return 2;
+  }
+  return 9;
+}
+
 function renderTrainPage() {
   const { items, page, size } = passengerState.trains;
   if (!items.length) {
     renderTrainEmpty("当前线路暂无可售车次，可查看全部可购车次或选择热门线路。");
     return;
   }
-  const totalPages = Math.max(1, Math.ceil(items.length / size));
+  const displayItems = groupPassengerTrainOptions(items);
+  const totalPages = Math.max(1, Math.ceil(displayItems.length / size));
   const safePage = Math.min(Math.max(page, 0), totalPages - 1);
   passengerState.trains.page = safePage;
   const start = safePage * size;
-  const visibleTrains = items.slice(start, start + size);
+  const visibleTrains = displayItems.slice(start, start + size);
   const controls = `
     <div class="train-list-toolbar">
       <div>
-        <strong>当前展示 ${visibleTrains.length} / ${items.length} 趟</strong>
         <span>第 ${safePage + 1} / ${totalPages} 页</span>
       </div>
       <div class="inline-actions">
@@ -1524,20 +1894,27 @@ function renderTrainPage() {
     <article class="train-ticket-card">
       <div class="ticket-card-route">
         <strong class="train-no">${escapeHtml(train.trainNo)}</strong>
-        <span>${escapeHtml(train.departureStation)} → ${escapeHtml(train.arrivalStation)}</span>
       </div>
-      <div class="ticket-card-time">
-        <strong>${formatTime(train.departureTime)}</strong>
-        <span>${formatDate(train.travelDate)}</span>
-        <strong>${formatTime(train.arrivalTime)}</strong>
+      <div class="ticket-card-time ticket-card-journey">
+        <div class="ticket-station ticket-station-from">
+          <strong>${escapeHtml(train.departureStation)}</strong>
+          <span>${formatTime(train.departureTime)}</span>
+        </div>
+        <div class="ticket-rail-line">
+          <span>${formatDate(train.travelDate)}</span>
+        </div>
+        <div class="ticket-station ticket-station-to">
+          <strong>${escapeHtml(train.arrivalStation)}</strong>
+          <span>${formatTime(train.arrivalTime)}</span>
+        </div>
       </div>
       <div class="ticket-card-meta">
-        <span>${seatTypeText(train.seatType)}</span>
+        <span class="ticket-min-price-label">最低价</span>
         <span class="${Number(train.remainingSeats || 0) <= 5 ? "inventory-low" : "inventory-ok"}">余票 ${train.remainingSeats}</span>
       </div>
       <div class="ticket-card-action">
-        <span class="ticket-price">¥${formatAmount(train.price)}</span>
-        <button class="primary-button compact-button" type="button" data-passenger-buy="${train.inventoryId}">购票</button>
+        <span class="ticket-price">¥${formatAmount(train.price)} 起</span>
+        <button class="primary-button compact-button ticket-buy-button" type="button" data-passenger-buy="${escapeHtml(train.groupKey)}">购票</button>
       </div>
     </article>
   `).join("") + controls;
@@ -1588,21 +1965,55 @@ function renderHotRoutes(expanded) {
   });
 }
 
-async function openBuyModal(inventoryId) {
-  if (!ensureSignedIn()) {
-    return;
-  }
-  try {
-    await loadPassengerTravelers({ silent: true });
-  } catch (error) {
-    showToast(error.message || "无法刷新常用乘车人，请稍后重试");
-  }
-  const train = passengerState.trainByInventory[String(inventoryId)];
+function getBuyInventoryOptions(train) {
   if (!train) {
-    showToast("未找到当前车次库存，请重新查询");
+    return [];
+  }
+  if (Array.isArray(train.inventoryOptions) && train.inventoryOptions.length) {
+    return train.inventoryOptions;
+  }
+  return [train];
+}
+
+function getSelectedBuyInventory() {
+  const train = passengerState.selectedTrain;
+  const options = getBuyInventoryOptions(train);
+  if (!options.length) {
+    return null;
+  }
+  const selectedId = elements.buySeatType ? elements.buySeatType.value : "";
+  return options.find(option => String(option.inventoryId) === String(selectedId))
+    || passengerState.selectedInventory
+    || train.defaultInventory
+    || train.minPriceInventory
+    || options[0];
+}
+
+function renderBuySeatOptions(train) {
+  if (!elements.buySeatType) {
     return;
   }
-  passengerState.selectedTrain = train;
+  const options = getBuyInventoryOptions(train);
+  const availableOptions = options.filter(option => Number(option.remainingSeats || 0) > 0);
+  const defaultInventory = availableOptions[0] || train.defaultInventory || train.minPriceInventory || options[0] || null;
+  elements.buySeatType.innerHTML = options.map(option => {
+    const remainingSeats = Number(option.remainingSeats || 0);
+    return `
+      <option value="${option.inventoryId}" ${remainingSeats <= 0 ? "disabled" : ""}>
+        ${seatTypeText(option.seatType)} / ¥${formatAmount(option.price)} / 余票 ${remainingSeats}
+      </option>
+    `;
+  }).join("");
+  if (defaultInventory) {
+    elements.buySeatType.value = String(defaultInventory.inventoryId);
+  }
+  elements.buySeatType.disabled = options.length <= 1;
+  passengerState.selectedInventory = defaultInventory;
+}
+
+function renderBuySummary(train, inventory) {
+  const activeInventory = inventory || getSelectedBuyInventory() || train;
+  const remainingSeats = Number(activeInventory && activeInventory.remainingSeats || 0);
   elements.buySummary.innerHTML = `
     <div class="buy-route">
       <strong>${escapeHtml(train.trainNo)}</strong>
@@ -1612,11 +2023,38 @@ async function openBuyModal(inventoryId) {
       <div><span>乘车日期</span><strong>${formatDate(train.travelDate)}</strong></div>
       <div><span>发车时间</span><strong>${formatTime(train.departureTime)}</strong></div>
       <div><span>到达时间</span><strong>${formatTime(train.arrivalTime)}</strong></div>
-      <div><span>席别</span><strong>${seatTypeText(train.seatType)}</strong></div>
-      <div><span>票价</span><strong class="money">¥${formatAmount(train.price)}</strong></div>
-      <div><span>剩余票数</span><strong>${train.remainingSeats}</strong></div>
+      <div><span>席别</span><strong>${seatTypeText(activeInventory.seatType)}</strong></div>
+      <div><span>票价</span><strong class="money">¥${formatAmount(activeInventory.price)}</strong></div>
+      <div><span>剩余票数</span><strong>${remainingSeats}</strong></div>
     </div>
   `;
+}
+
+function updateSelectedBuySeat() {
+  if (!passengerState.selectedTrain) {
+    return;
+  }
+  passengerState.selectedInventory = getSelectedBuyInventory();
+  renderBuySummary(passengerState.selectedTrain, passengerState.selectedInventory);
+}
+
+async function openBuyModal(inventoryId) {
+  if (!ensureSignedIn()) {
+    return;
+  }
+  try {
+    await loadPassengerTravelers({ silent: true });
+  } catch (error) {
+    showToast(error.message || "无法刷新常用乘车人，请稍后重试");
+  }
+  const train = passengerState.trainGroupByKey[String(inventoryId)] || passengerState.trainByInventory[String(inventoryId)];
+  if (!train) {
+    showToast("未找到当前车次库存，请重新查询");
+    return;
+  }
+  passengerState.selectedTrain = train;
+  renderBuySeatOptions(train);
+  renderBuySummary(train, passengerState.selectedInventory);
   renderBuyTravelerOptions();
   applySelectedTravelerToBuyForm();
   if (!elements.buyTraveler.value) {
@@ -1662,11 +2100,21 @@ function closeBuyModal() {
   elements.buyModal.setAttribute("aria-hidden", "true");
   document.body.classList.remove("modal-open");
   passengerState.selectedTrain = null;
+  passengerState.selectedInventory = null;
 }
 
 async function submitPassengerOrder() {
   const train = passengerState.selectedTrain;
+  const inventory = getSelectedBuyInventory();
   if (!train) {
+    return;
+  }
+  if (!inventory) {
+    elements.buyError.textContent = "请选择可购席别";
+    return;
+  }
+  if (Number(inventory.remainingSeats || 0) <= 0) {
+    elements.buyError.textContent = "当前席别暂无余票，请选择其他席别";
     return;
   }
   const selectedTravelerId = elements.buyTraveler.value;
@@ -1682,8 +2130,8 @@ async function submitPassengerOrder() {
   try {
     const body = {
       requestId: generateRequestId("PAX-ORDER"),
-      trainId: Number(train.trainId),
-      inventoryId: Number(train.inventoryId),
+      trainId: Number(inventory.trainId || train.trainId),
+      inventoryId: Number(inventory.inventoryId),
     };
     if (selectedTravelerId) {
       body.travelerId = Number(selectedTravelerId);
@@ -1722,7 +2170,9 @@ async function loadPassengerOrders() {
     params.set("size", String(passengerState.orders.size));
     const page = await passengerRequest(`/passenger/orders?${params.toString()}`);
     passengerState.orders = { ...passengerState.orders, ...page };
-    renderPassengerOrders(page.content || []);
+    const orders = page.content || [];
+    await ensureOrdersRouteCache(orders);
+    renderPassengerOrders(orders);
     renderPagination("orders");
   } catch (error) {
     elements.orderCards.innerHTML = emptyItem(error.message || "无法加载我的订单");
@@ -3293,6 +3743,7 @@ function activateSection(sectionId, options = {}) {
     item.classList.toggle("is-active", item.id === rootSectionId);
   });
   updateActiveNav(rootSectionId);
+  syncPassengerFeatureTabForSection(sectionId);
   const page = document.querySelector(".passenger-site-main");
   if (page) {
     const target = sectionId !== rootSectionId && requestedRootSectionId === rootSectionId
@@ -3744,4 +4195,530 @@ function showToast(message) {
   window.setTimeout(() => {
     elements.toast.classList.remove("show");
   }, 2800);
+}
+
+function renderMiniOrders(container, orders, emptyText) {
+  if (container === elements.upcomingTrips) {
+    renderUpcomingJourneyTrips(container, orders, emptyText);
+    return;
+  }
+  if (container !== elements.latestOrders) {
+    renderCompactOrderEvents(container, orders, emptyText);
+    return;
+  }
+  if (!orders.length) {
+    container.innerHTML = journeyEmptyState(emptyText, "最近创建的订单会显示在这里。");
+    return;
+  }
+  container.classList.add("journey-order-list");
+  container.innerHTML = orders.slice(0, 6).map(order => {
+    const info = journeyOrderDisplayInfo(order);
+    return `
+      <button class="journey-order-row" type="button" data-order-status-jump="${escapeHtml(order.status || "")}">
+        <span class="journey-order-train">${escapeHtml(info.trainNo)}</span>
+        <span class="journey-order-route">
+          <strong>${escapeHtml(info.routeText)}</strong>
+          <small>${escapeHtml(info.date)} · ${escapeHtml(info.seat)} · ${escapeHtml(info.passenger)}</small>
+        </span>
+        <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
+        <span class="journey-order-amount">¥${escapeHtml(info.amount)}</span>
+      </button>
+    `;
+  }).join("");
+  container.querySelectorAll("[data-order-status-jump]").forEach(item => {
+    item.addEventListener("click", () => {
+      elements.orderStatus.value = item.dataset.orderStatusJump || "";
+      activateSection("passenger-orders");
+      loadPassengerOrders();
+    });
+  });
+}
+
+function renderCompactOrderEvents(container, orders, emptyText) {
+  if (!orders.length) {
+    container.innerHTML = emptyItem(emptyText);
+    return;
+  }
+  container.innerHTML = orders.slice(0, 5).map(order => {
+    const info = journeyOrderDisplayInfo(order);
+    return `
+      <article class="mini-order">
+        <div>
+          <strong>${escapeHtml(info.trainNo)} · ${escapeHtml(info.routeText)}</strong>
+          <span>${escapeHtml(info.date)} · ${escapeHtml(info.seat)} · ${escapeHtml(info.passenger)}</span>
+        </div>
+        <small>¥${escapeHtml(info.amount)}</small>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderUpcomingJourneyTrips(container, orders, emptyText) {
+  container.classList.add("journey-trip-list");
+  if (!orders.length) {
+    container.innerHTML = journeyEmptyState(emptyText, "已支付且未出行的车票会显示在这里。");
+    return;
+  }
+  container.innerHTML = orders.slice(0, 4).map(order => {
+    const info = journeyOrderDisplayInfo(order);
+    const trip = passengerOrderTripInfo(order);
+    const duration = journeyDurationText(trip.departureTime, trip.arrivalTime);
+    const canOperate = order.status === "PAID";
+    return `
+      <article class="journey-trip-card journey-trip-card-redesign">
+        <div class="journey-trip-top">
+          <span class="journey-train-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M7 5.5h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"></path>
+              <path d="M8 9h8M8 13h8M8 18l-2 2M16 18l2 2"></path>
+            </svg>
+          </span>
+          <span class="journey-trip-title">
+            <strong>${escapeHtml(info.trainNo)}</strong>
+            <small>${escapeHtml(info.dateLabel)} · ${escapeHtml(info.seat)} · ${escapeHtml(info.passenger)}</small>
+          </span>
+          <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
+        </div>
+        <div class="journey-trip-route">
+          <span class="journey-trip-stop">
+            <strong>${escapeHtml(trip.departureStation)}</strong>
+            <small>${escapeHtml(trip.departureTime)} 出发</small>
+          </span>
+          <span class="journey-trip-duration">
+            <span class="journey-trip-track" aria-hidden="true"></span>
+            <strong>${escapeHtml(duration)}</strong>
+          </span>
+          <span class="journey-trip-stop is-arrival">
+            <strong>${escapeHtml(trip.arrivalStation)}</strong>
+            <small>${escapeHtml(trip.arrivalTime)} 到达</small>
+          </span>
+        </div>
+        <div class="journey-trip-footer">
+          <span>订单 ${escapeHtml(order.orderNo || order.id || "-")}</span>
+          <div class="journey-trip-actions">
+            ${canOperate ? `<button class="secondary-button compact-button" type="button" data-journey-change="${order.id}">改签</button>` : ""}
+            ${canOperate ? `<button class="secondary-button compact-button" type="button" data-journey-refund="${order.id}">退票</button>` : ""}
+            <button class="primary-button compact-button" type="button" data-journey-detail="${order.id}">详情</button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+  container.querySelectorAll("[data-journey-detail]").forEach(button => {
+    button.addEventListener("click", () => openPassengerOrderDetail(button.dataset.journeyDetail));
+  });
+  container.querySelectorAll("[data-journey-change]").forEach(button => {
+    button.addEventListener("click", () => openChangeFromOrderId(button.dataset.journeyChange));
+  });
+  container.querySelectorAll("[data-journey-refund]").forEach(button => {
+    button.addEventListener("click", () => refundPassengerOrder(button.dataset.journeyRefund));
+  });
+}
+
+function journeyOrderDisplayInfo(order) {
+  const trip = passengerOrderTripInfo(order);
+  const routeText = trip.departureStation !== "-" && trip.arrivalStation !== "-"
+    ? `${trip.departureStation} → ${trip.arrivalStation}`
+    : passengerOrderRouteText(order);
+  return {
+    trainNo: trip.trainNo,
+    routeText,
+    date: formatDate(order.travelDate),
+    dateLabel: formatJourneyDateLabel(order.travelDate),
+    seat: seatTypeText(order.seatType) || "-",
+    passenger: order.passengerName || order.travelerName || "-",
+    amount: formatAmount(order.amount),
+  };
+}
+
+function passengerOrderTripInfo(order) {
+  const train = findTrainForOrder(order) || {};
+  const routeParts = splitJourneyRouteText(passengerOrderRouteText(order));
+  const departureStation = firstJourneyValue(
+    order.departureStation,
+    order.fromStation,
+    order.departureStationName,
+    order.fromStationName,
+    order.fromName,
+    order.startStation,
+    order.startStationName,
+    order.originStation,
+    train.departureStation,
+    routeParts[0],
+  );
+  const arrivalStation = firstJourneyValue(
+    order.arrivalStation,
+    order.toStation,
+    order.arrivalStationName,
+    order.toStationName,
+    order.toName,
+    order.endStation,
+    order.endStationName,
+    order.destinationStation,
+    train.arrivalStation,
+    routeParts[1],
+  );
+  return {
+    trainNo: firstJourneyValue(order.trainNo, train.trainNo),
+    departureStation,
+    arrivalStation,
+    departureTime: formatTime(firstJourneyValue(
+      order.departureTime,
+      order.departTime,
+      order.startTime,
+      order.scheduledDepartureTime,
+      train.departureTime,
+    )),
+    arrivalTime: formatTime(firstJourneyValue(
+      order.arrivalTime,
+      order.arriveTime,
+      order.endTime,
+      order.scheduledArrivalTime,
+      train.arrivalTime,
+    )),
+  };
+}
+
+function firstJourneyValue(...values) {
+  const value = values.find(item => {
+    if (item == null) {
+      return false;
+    }
+    const text = String(item).trim();
+    return text && text !== "-";
+  });
+  return value == null ? "-" : String(value).trim();
+}
+
+function firstJourneyStation(...values) {
+  const station = values.map(normalizeJourneyStation).find(value => value && value !== "-");
+  return station || "-";
+}
+
+function normalizeJourneyStation(value) {
+  if (value == null) {
+    return "";
+  }
+  if (typeof value === "object") {
+    return firstJourneyStation(
+      value.name,
+      value.stationName,
+      value.displayName,
+      value.label,
+      value.code,
+      value.stationCode,
+    );
+  }
+  const text = String(value).trim();
+  if (!text || text === "-") {
+    return "";
+  }
+  const station = passengerState.stations.find(item => item
+    && (String(item.code || "").trim() === text || String(item.name || "").trim() === text));
+  return station && station.name ? station.name : text;
+}
+
+function splitJourneyRouteText(value) {
+  const text = value ? String(value) : "";
+  if (!text || text.includes(" / ") || text.includes(" · ")) {
+    return [];
+  }
+  const separator = text.includes("→") ? "→" : (text.includes("->") ? "->" : "");
+  if (!separator) {
+    return [];
+  }
+  return text.split(separator).map(part => part.trim()).filter(Boolean);
+}
+
+function journeyDurationText(start, end) {
+  const startMinutes = timeToMinutes(start);
+  const endMinutes = timeToMinutes(end);
+  if (startMinutes === null || endMinutes === null) {
+    return "行程";
+  }
+  let diff = endMinutes - startMinutes;
+  if (diff < 0) {
+    diff += 24 * 60;
+  }
+  const hours = Math.floor(diff / 60);
+  const minutes = diff % 60;
+  if (!hours) {
+    return `${minutes}分钟`;
+  }
+  return minutes ? `${hours}时${minutes}分` : `${hours}小时`;
+}
+
+function formatJourneyDateLabel(value) {
+  const dateText = formatDate(value);
+  if (!dateText || dateText === "-") {
+    return "-";
+  }
+  const date = new Date(`${dateText}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return dateText;
+  }
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  return `${month}月${day}日 ${weekdays[date.getDay()]}`;
+}
+
+function journeyEmptyState(title, message) {
+  return `
+    <div class="journey-empty-state">
+      <strong>${escapeHtml(title)}</strong>
+      <span>${escapeHtml(message)}</span>
+    </div>
+  `;
+}
+
+function renderPassengerOrders(orders) {
+  if (!orders.length) {
+    elements.orderCards.innerHTML = emptyItem("暂无订单，可先查询车次并下单。");
+    return;
+  }
+  elements.orderCards.innerHTML = orders.map(order => {
+    const info = journeyOrderDisplayInfo(order);
+    return `
+      <article class="passenger-order-card passenger-order-card-compact">
+        <div class="passenger-order-display-grid">
+          <span class="passenger-order-train">${escapeHtml(info.trainNo)}</span>
+          <span class="passenger-order-station">
+            <small>出发点</small>
+            <strong>${escapeHtml(info.departureStation)}</strong>
+          </span>
+          <span class="passenger-order-station">
+            <small>到达点</small>
+            <strong>${escapeHtml(info.arrivalStation)}</strong>
+          </span>
+          <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
+          <span class="passenger-order-amount">¥${escapeHtml(info.amount)}</span>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function renderMiniOrders(container, orders, emptyText) {
+  if (container === elements.upcomingTrips) {
+    renderUpcomingJourneyTrips(container, orders, emptyText);
+    return;
+  }
+  if (container !== elements.latestOrders) {
+    renderCompactOrderEvents(container, orders, emptyText);
+    return;
+  }
+  if (!orders.length) {
+    container.innerHTML = journeyEmptyState(emptyText, "最近创建的订单会显示在这里。");
+    return;
+  }
+  container.classList.add("journey-order-list");
+  container.innerHTML = orders.slice(0, 6).map(order => {
+    const info = journeyOrderDisplayInfo(order);
+    return `
+      <button class="journey-order-row" type="button" data-order-status-jump="${escapeHtml(order.status || "")}">
+        <span class="journey-order-train">${escapeHtml(info.trainNo)}</span>
+        <span class="journey-order-station">
+          <small>出发点</small>
+          <strong>${escapeHtml(info.departureStation)}</strong>
+        </span>
+        <span class="journey-order-station">
+          <small>到达点</small>
+          <strong>${escapeHtml(info.arrivalStation)}</strong>
+        </span>
+        <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
+        <span class="journey-order-amount">¥${escapeHtml(info.amount)}</span>
+      </button>
+    `;
+  }).join("");
+  container.querySelectorAll("[data-order-status-jump]").forEach(item => {
+    item.addEventListener("click", () => {
+      elements.orderStatus.value = item.dataset.orderStatusJump || "";
+      activateSection("passenger-orders");
+      loadPassengerOrders();
+    });
+  });
+}
+
+function renderCompactOrderEvents(container, orders, emptyText) {
+  if (!orders.length) {
+    container.innerHTML = emptyItem(emptyText);
+    return;
+  }
+  container.innerHTML = orders.slice(0, 5).map(order => {
+    const info = journeyOrderDisplayInfo(order);
+    return `
+      <article class="mini-order">
+        <div>
+          <strong>${escapeHtml(info.trainNo)} · ${escapeHtml(info.departureStation)} → ${escapeHtml(info.arrivalStation)}</strong>
+          <span>${statusText(order.status)}</span>
+        </div>
+        <small>¥${escapeHtml(info.amount)}</small>
+      </article>
+    `;
+  }).join("");
+}
+
+function journeyOrderDisplayInfo(order) {
+  const trip = passengerOrderTripInfo(order);
+  const departureStation = firstJourneyValue(trip.departureStation);
+  const arrivalStation = firstJourneyValue(trip.arrivalStation);
+  return {
+    trainNo: firstJourneyValue(trip.trainNo, order.trainNo),
+    departureStation,
+    arrivalStation,
+    routeText: departureStation !== "-" && arrivalStation !== "-"
+      ? `${departureStation} → ${arrivalStation}`
+      : passengerOrderRouteText(order),
+    date: formatDate(order.travelDate),
+    dateLabel: formatJourneyDateLabel(order.travelDate),
+    seat: seatTypeText(order.seatType) || "-",
+    passenger: order.passengerName || order.travelerName || "-",
+    amount: formatAmount(order.amount),
+  };
+}
+
+function passengerOrderRouteText(order) {
+  const trip = passengerOrderTripInfo(order);
+  return trip.departureStation !== "-" && trip.arrivalStation !== "-"
+    ? `${trip.departureStation} → ${trip.arrivalStation}`
+    : `${trip.trainNo || order.trainNo || "-"} · ${formatDate(order.travelDate) || "-"}`;
+}
+
+function passengerOrderTripInfo(order) {
+  const train = findTrainForOrder(order) || {};
+  const nestedTrain = order.train || order.trainInfo || order.trainResponse || {};
+  const nestedTicket = order.ticket || order.ticketRecord || order.eTicket || {};
+  const nestedInventoryTrain = order.inventory && order.inventory.train ? order.inventory.train : {};
+  const routeParts = splitJourneyRouteText(
+    firstJourneyValue(order.routeText, order.route, order.stationPair, ""),
+  );
+  const departureStation = firstJourneyStation(
+    order.departureStation,
+    order.fromStation,
+    order.departureStationName,
+    order.fromStationName,
+    order.fromName,
+    order.departureName,
+    order.originName,
+    order.startStation,
+    order.startStationName,
+    order.startName,
+    order.originStation,
+    order.originStationName,
+    order.departureStationCode,
+    order.fromStationCode,
+    order.startStationCode,
+    nestedTicket.departureStation,
+    nestedTicket.fromStation,
+    nestedTicket.departureStationName,
+    nestedTicket.fromStationName,
+    nestedTrain.departureStation,
+    nestedTrain.fromStation,
+    nestedTrain.departureStationName,
+    nestedTrain.fromStationName,
+    nestedInventoryTrain.departureStation,
+    nestedInventoryTrain.fromStation,
+    train.departureStation,
+    train.fromStation,
+    train.departureStationName,
+    train.fromStationName,
+    routeParts[0],
+  );
+  const arrivalStation = firstJourneyStation(
+    order.arrivalStation,
+    order.toStation,
+    order.arrivalStationName,
+    order.toStationName,
+    order.toName,
+    order.arrivalName,
+    order.destinationName,
+    order.endStation,
+    order.endStationName,
+    order.endName,
+    order.destinationStation,
+    order.destinationStationName,
+    order.arrivalStationCode,
+    order.toStationCode,
+    order.endStationCode,
+    nestedTicket.arrivalStation,
+    nestedTicket.toStation,
+    nestedTicket.arrivalStationName,
+    nestedTicket.toStationName,
+    nestedTrain.arrivalStation,
+    nestedTrain.toStation,
+    nestedTrain.arrivalStationName,
+    nestedTrain.toStationName,
+    nestedInventoryTrain.arrivalStation,
+    nestedInventoryTrain.toStation,
+    train.arrivalStation,
+    train.toStation,
+    train.arrivalStationName,
+    train.toStationName,
+    routeParts[1],
+  );
+  return {
+    trainNo: firstJourneyValue(order.trainNo, train.trainNo),
+    departureStation,
+    arrivalStation,
+    departureTime: formatTime(firstJourneyValue(
+      order.departureTime,
+      order.departTime,
+      order.startTime,
+      order.scheduledDepartureTime,
+      train.departureTime,
+    )),
+    arrivalTime: formatTime(firstJourneyValue(
+      order.arrivalTime,
+      order.arriveTime,
+      order.endTime,
+      order.scheduledArrivalTime,
+      train.arrivalTime,
+    )),
+  };
+}
+
+function splitJourneyRouteText(value) {
+  const text = value ? String(value).trim() : "";
+  if (!text) {
+    return [];
+  }
+  const separator = text.includes("→") ? "→" : (text.includes("->") ? "->" : "");
+  if (!separator) {
+    return [];
+  }
+  return text.split(separator).map(part => part.trim()).filter(Boolean);
+}
+
+function journeyDurationText(start, end) {
+  const startMinutes = timeToMinutes(start);
+  const endMinutes = timeToMinutes(end);
+  if (startMinutes === null || endMinutes === null) {
+    return "行程";
+  }
+  let diff = endMinutes - startMinutes;
+  if (diff < 0) {
+    diff += 24 * 60;
+  }
+  const hours = Math.floor(diff / 60);
+  const minutes = diff % 60;
+  if (!hours) {
+    return `${minutes}分钟`;
+  }
+  return minutes ? `${hours}时${minutes}分` : `${hours}小时`;
+}
+
+function formatJourneyDateLabel(value) {
+  const dateText = formatDate(value);
+  if (!dateText || dateText === "-") {
+    return "-";
+  }
+  const date = new Date(`${dateText}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return dateText;
+  }
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+  return `${month}月${day}日 ${weekdays[date.getDay()]}`;
 }

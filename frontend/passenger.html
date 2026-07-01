@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>乘客购票服务 - 铁路客运票务与风控运营平台</title>
-    <link rel="stylesheet" href="./styles.css?v=20260630-passenger-onboarding-guard">
+    <link rel="stylesheet" href="./styles.css?v=20260701-journey-row-fit">
 </head>
 <body class="passenger-page passenger-consumer-page">
   <section class="passenger-login passenger-gateway" aria-label="乘客登录">
@@ -147,7 +147,9 @@
           <div class="passenger-userbar passenger-account">
             <span id="passenger-auth-role" class="visually-hidden">未登录</span>
             <strong id="passenger-auth-user">访客模式</strong>
-            <div class="passenger-avatar" aria-label="乘客头像"><span class="person-avatar-icon" aria-hidden="true"></span></div>
+            <div class="passenger-avatar" aria-label="乘客头像">
+              <svg class="person-avatar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 20a7 7 0 0 1 14 0"></path></svg>
+            </div>
             <button id="passenger-logout-button" class="ghost-button" type="button">退出</button>
           </div>
         </div>
@@ -196,7 +198,7 @@
       </section>
 
       <section id="passenger-summary" class="passenger-section passenger-home-section">
-        <div class="passenger-section-head">
+        <div class="passenger-section-head journey-page-head">
           <div>
             <p class="eyebrow">我的行程</p>
             <h2>我的行程</h2>
@@ -232,7 +234,7 @@
           </button>
         </div>
         <div class="journey-board">
-          <article class="journey-panel">
+          <article class="journey-panel journey-orders-panel">
             <div class="panel-head">
               <div>
                 <h3>最近订单</h3>
@@ -241,7 +243,7 @@
             </div>
             <div id="passenger-latest-orders" class="event-list compact-list"></div>
           </article>
-          <article class="journey-panel accent-panel">
+          <article class="journey-panel accent-panel journey-upcoming-panel">
             <div class="panel-head">
               <div>
                 <h3>即将出行</h3>
@@ -254,7 +256,7 @@
       </section>
 
       <section id="passenger-account" class="passenger-section passenger-account-section">
-        <div class="passenger-section-head">
+        <div class="passenger-section-head account-page-head">
           <div>
             <p class="eyebrow">账号设置</p>
             <h2>账号与安全</h2>
@@ -262,7 +264,7 @@
           </div>
         </div>
         <div class="passenger-account-layout">
-          <article class="profile-card">
+          <article class="profile-card account-overview-card">
             <div class="profile-header">
               <div id="passenger-profile-avatar" class="profile-avatar" aria-label="乘客头像">RT</div>
               <div class="profile-identity">
@@ -275,6 +277,11 @@
                   <button id="passenger-avatar-remove-button" class="ghost-button compact-button" type="button" hidden>移除头像</button>
                 </div>
                 <p id="passenger-avatar-status" class="avatar-status" aria-live="polite"></p>
+                <div class="account-overview-tags" aria-label="账号资料用途">
+                  <span>实名购票优先使用</span>
+                  <span>头像同步顶部入口</span>
+                  <span>默认乘车人自动带入</span>
+                </div>
               </div>
             </div>
             <div class="profile-facts">
@@ -282,11 +289,19 @@
               <div><span>订单数</span><strong id="passenger-profile-order-count">0</strong></div>
               <div><span>有效电子票</span><strong id="passenger-profile-ticket-count">0</strong></div>
             </div>
+            <div class="account-overview-hint">
+              <strong>购票资料同步</strong>
+              <span>昵称、头像和默认乘车人会在查票、下单、订单和电子票信息中保持一致。</span>
+            </div>
           </article>
-          <form id="passenger-profile-form" class="account-form-card">
+          <form id="passenger-profile-form" class="account-form-card account-profile-card">
             <div>
               <h3>个人资料</h3>
               <p>修改昵称后会立即刷新当前登录信息。</p>
+              <ul class="account-card-points">
+                <li>用于顶部账号展示</li>
+                <li>不会改变证件实名信息</li>
+              </ul>
             </div>
             <label>
               昵称
@@ -295,10 +310,15 @@
             <div id="passenger-profile-error" class="form-error" aria-live="polite"></div>
             <button class="secondary-button" type="submit">保存资料</button>
           </form>
-          <form id="passenger-password-form" class="account-form-card">
+          <form id="passenger-password-form" class="account-form-card account-security-card">
             <div>
               <h3>安全设置</h3>
               <p>修改密码后，新密码立即生效，旧密码无法继续登录。</p>
+              <ul class="account-card-points">
+                <li>提交后立即更新登录密码</li>
+                <li>建议使用 6 位以上组合密码</li>
+                <li>当前登录状态会保留</li>
+              </ul>
             </div>
             <label>
               旧密码
@@ -381,7 +401,7 @@
         </div>
       </section>
 
-      <section id="passenger-travelers" class="passenger-section passenger-traveler-section">
+      <section id="passenger-travelers" class="passenger-section passenger-traveler-section account-traveler-module">
         <div class="passenger-section-head">
           <div>
             <p class="eyebrow">常用乘车人</p>
@@ -637,6 +657,10 @@
       </div>
       <div id="passenger-buy-summary" class="buy-summary"></div>
       <form id="passenger-buy-form" class="buy-form">
+        <label class="buy-seat-field">
+          选择席别
+          <select id="passenger-buy-seat-type"></select>
+        </label>
         <label>
           选择常用乘车人
           <select id="passenger-buy-traveler">
@@ -723,6 +747,6 @@
   </div>
 
   <div id="passenger-toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./passenger.js?v=20260630-passenger-onboarding-guard"></script>
+  <script src="./passenger.js?v=20260701-journey-row-fit"></script>
 </body>
 </html>

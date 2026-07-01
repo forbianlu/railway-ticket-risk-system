@@ -8150,10 +8150,15 @@ body:not(.passenger-consumer-page) .topbar {
   width: 24px;
   height: 24px;
   display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .person-avatar-icon::before {
-  content: "";
+  content: none;
   position: absolute;
   top: 3px;
   left: 7px;
@@ -8165,7 +8170,7 @@ body:not(.passenger-consumer-page) .topbar {
 }
 
 .person-avatar-icon::after {
-  content: "";
+  content: none;
   position: absolute;
   left: 4px;
   bottom: 2px;
@@ -9108,6 +9113,563 @@ body.passenger-consumer-page .passenger-site-nav a.active {
   }
 }
 
+/* Passenger search card refinement: left-align panels and rebuild train result rows. */
+body.passenger-consumer-page .passenger-site-main > #passenger-search.booking-landing {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+body.passenger-consumer-page .train-ticket-card {
+  flex-basis: 62px !important;
+  min-height: 62px !important;
+  max-height: none !important;
+  width: min(calc(100% - 8px), 1100px) !important;
+  align-self: center !important;
+  box-sizing: border-box !important;
+  padding: 7px 12px !important;
+  grid-template-columns: minmax(64px, 0.2fr) minmax(268px, 1fr) minmax(116px, 0.28fr) 100px 82px !important;
+  gap: 8px !important;
+  align-items: center !important;
+  overflow: hidden !important;
+}
+
+body.passenger-consumer-page .train-ticket-list {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  gap: 4px !important;
+}
+
+body.passenger-consumer-page .ticket-card-route {
+  display: grid !important;
+  justify-items: center !important;
+  gap: 0 !important;
+  text-align: center !important;
+}
+
+body.passenger-consumer-page .ticket-card-route > span {
+  display: none !important;
+}
+
+body.passenger-consumer-page .ticket-card-route .train-no {
+  justify-self: center !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--passenger-ink, #111827) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-align: center !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  line-height: 1.35 !important;
+}
+
+body.passenger-consumer-page .ticket-card-journey {
+  display: grid !important;
+  grid-template-columns: minmax(76px, auto) minmax(72px, 1fr) minmax(76px, auto) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+body.passenger-consumer-page .ticket-card-journey::before,
+body.passenger-consumer-page .ticket-card-journey::after {
+  content: none !important;
+  display: none !important;
+}
+
+body.passenger-consumer-page .ticket-station {
+  display: grid !important;
+  justify-items: center !important;
+  gap: 2px !important;
+  min-width: 76px !important;
+  transform: translateY(2px) !important;
+}
+
+body.passenger-consumer-page .ticket-station strong {
+  color: var(--passenger-ink, #111827) !important;
+  font-size: 14px !important;
+  font-weight: 850 !important;
+  line-height: 1.18 !important;
+}
+
+body.passenger-consumer-page .ticket-station span {
+  color: #5f6b6b !important;
+  font-size: 11px !important;
+  font-weight: 780 !important;
+  line-height: 1.2 !important;
+}
+
+body.passenger-consumer-page .ticket-rail-line {
+  display: grid !important;
+  grid-template-rows: 14px auto !important;
+  align-items: start !important;
+  min-width: 72px !important;
+  margin-top: 0 !important;
+  transform: translateY(2px) !important;
+}
+
+body.passenger-consumer-page .ticket-rail-line::before {
+  content: "" !important;
+  align-self: center !important;
+  display: block !important;
+  width: 100% !important;
+  height: 1px !important;
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.66), rgba(37, 99, 235, 0.12)) !important;
+}
+
+body.passenger-consumer-page .ticket-rail-line span {
+  display: block !important;
+  margin-top: 2px !important;
+  color: #63716d !important;
+  font-size: 11px !important;
+  font-weight: 760 !important;
+  line-height: 1.2 !important;
+}
+
+body.passenger-consumer-page .ticket-card-meta {
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 6px !important;
+  text-align: center !important;
+}
+
+body.passenger-consumer-page .ticket-card-action {
+  display: contents !important;
+}
+
+body.passenger-consumer-page .ticket-price {
+  grid-column: 4 !important;
+  justify-self: end !important;
+  text-align: center !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+body.passenger-consumer-page .ticket-buy-button {
+  grid-column: 5 !important;
+  justify-self: center !important;
+  box-sizing: border-box !important;
+  width: 72px !important;
+  min-width: 72px !important;
+  min-height: 36px !important;
+  padding: 0 10px !important;
+}
+
+body.passenger-consumer-page .train-list-toolbar > div:first-child strong {
+  display: none !important;
+}
+
+body.passenger-consumer-page .train-list-toolbar {
+  align-self: flex-end !important;
+  margin: 8px 12px 0 auto !important;
+  padding: 2px 2px 0 8px !important;
+  min-width: 0 !important;
+}
+
+@media (max-width: 1360px) {
+  body.passenger-consumer-page .train-ticket-card {
+    width: min(calc(100% - 8px), 1060px) !important;
+    grid-template-columns: minmax(58px, 0.18fr) minmax(224px, 1fr) minmax(104px, 0.26fr) 94px 78px !important;
+    gap: 8px !important;
+  }
+
+  body.passenger-consumer-page .ticket-card-journey {
+    grid-template-columns: minmax(70px, auto) minmax(66px, 1fr) minmax(70px, auto) !important;
+    gap: 7px !important;
+  }
+}
+
+@media (max-width: 1120px) {
+  body.passenger-consumer-page .passenger-site-main > #passenger-search.booking-landing {
+    margin-left: auto !important;
+  }
+}
+
+@media (max-width: 720px) {
+  body.passenger-consumer-page .train-ticket-card {
+    flex-basis: auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  body.passenger-consumer-page .ticket-price,
+  body.passenger-consumer-page .ticket-buy-button {
+    grid-column: auto !important;
+    justify-self: start !important;
+  }
+
+  body.passenger-consumer-page .ticket-card-action {
+    display: grid !important;
+    grid-template-columns: max-content max-content !important;
+    justify-content: start !important;
+  }
+}
+
+/* Passenger account workspace redesign: grouped, calmer, and easier to scan. */
+body.passenger-consumer-page #passenger-account.passenger-account-section {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.passenger-consumer-page #passenger-account > .account-page-head {
+  margin-bottom: 18px !important;
+  padding: 0 2px !important;
+  align-items: flex-end !important;
+}
+
+body.passenger-consumer-page #passenger-account > .account-page-head h2 {
+  margin-top: 4px !important;
+  color: var(--passenger-ink, #111827) !important;
+  font-size: clamp(34px, 3vw, 46px) !important;
+  line-height: 1.04 !important;
+  font-weight: 760 !important;
+  letter-spacing: 0 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .account-page-head h2::after {
+  content: none !important;
+  display: none !important;
+}
+
+body.passenger-consumer-page #passenger-account > .account-page-head p:not(.eyebrow) {
+  max-width: 760px !important;
+  margin-top: 8px !important;
+  color: #6b7280 !important;
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+}
+
+body.passenger-consumer-page .passenger-account-layout {
+  display: grid !important;
+  grid-template-columns: minmax(320px, 0.78fr) minmax(0, 1.42fr) !important;
+  grid-auto-rows: minmax(0, auto) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+}
+
+body.passenger-consumer-page .account-overview-card,
+body.passenger-consumer-page .account-form-card,
+body.passenger-consumer-page .merged-travelers .traveler-form-card,
+body.passenger-consumer-page .merged-travelers .traveler-card {
+  border: 1px solid #dfe5ef !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06) !important;
+}
+
+body.passenger-consumer-page .account-overview-card {
+  grid-row: span 2 !important;
+  min-height: 372px !important;
+  padding: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 22px !important;
+}
+
+body.passenger-consumer-page .account-overview-card .profile-header {
+  align-items: flex-start !important;
+  gap: 18px !important;
+}
+
+body.passenger-consumer-page .account-overview-card .profile-avatar {
+  width: 84px !important;
+  height: 84px !important;
+  border-radius: 24px !important;
+  font-size: 24px !important;
+  background: linear-gradient(135deg, var(--passenger-primary), #1d4ed8) !important;
+  box-shadow: 0 18px 36px rgba(37, 99, 235, 0.18) !important;
+}
+
+body.passenger-consumer-page .account-overview-card .profile-identity {
+  gap: 6px !important;
+}
+
+body.passenger-consumer-page .account-overview-card .profile-header h3 {
+  margin: 4px 0 0 !important;
+  color: var(--passenger-ink, #111827) !important;
+  font-size: 26px !important;
+  line-height: 1.15 !important;
+  font-weight: 760 !important;
+}
+
+body.passenger-consumer-page .account-overview-card .profile-header p {
+  color: #6b7280 !important;
+  font-size: 15px !important;
+}
+
+body.passenger-consumer-page .account-overview-card .soft-pill {
+  width: fit-content !important;
+  min-height: 28px !important;
+  padding: 5px 12px !important;
+  background: #eff6ff !important;
+}
+
+body.passenger-consumer-page .account-overview-card .avatar-upload-actions {
+  margin-top: 12px !important;
+  gap: 10px !important;
+}
+
+body.passenger-consumer-page .account-overview-card .avatar-status {
+  min-height: 18px !important;
+  color: #64748b !important;
+}
+
+body.passenger-consumer-page .account-overview-card .profile-facts {
+  margin-top: auto !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+body.passenger-consumer-page .account-overview-card .profile-facts div {
+  min-height: 58px !important;
+  padding: 12px 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  border-color: #e6ebf3 !important;
+  border-radius: 14px !important;
+  background: #f8fafc !important;
+}
+
+body.passenger-consumer-page .account-overview-card .profile-facts span {
+  color: #64748b !important;
+  font-size: 13px !important;
+}
+
+body.passenger-consumer-page .account-overview-card .profile-facts strong {
+  margin-top: 0 !important;
+  color: var(--passenger-ink, #111827) !important;
+  font-size: 20px !important;
+  font-weight: 760 !important;
+  text-align: right !important;
+}
+
+body.passenger-consumer-page .account-form-card {
+  min-height: 178px !important;
+  padding: 22px !important;
+  display: grid !important;
+  grid-template-columns: minmax(150px, 0.42fr) minmax(0, 1fr) !important;
+  gap: 14px 20px !important;
+  align-content: start !important;
+}
+
+body.passenger-consumer-page .account-form-card > div:first-child {
+  grid-column: 1 !important;
+  align-self: start !important;
+}
+
+body.passenger-consumer-page .account-form-card h3 {
+  color: var(--passenger-ink, #111827) !important;
+  font-size: 20px !important;
+  line-height: 1.2 !important;
+  font-weight: 760 !important;
+}
+
+body.passenger-consumer-page .account-form-card p {
+  margin-top: 6px !important;
+  color: #64748b !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+body.passenger-consumer-page .account-form-card > label,
+body.passenger-consumer-page .account-form-card > .form-grid,
+body.passenger-consumer-page .account-form-card > .form-error,
+body.passenger-consumer-page .account-form-card > button {
+  grid-column: 2 !important;
+}
+
+body.passenger-consumer-page .account-form-card label {
+  color: #475569 !important;
+  font-size: 13px !important;
+  font-weight: 720 !important;
+}
+
+body.passenger-consumer-page .account-form-card input {
+  min-height: 46px !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+}
+
+body.passenger-consumer-page .account-form-card .form-grid {
+  gap: 12px !important;
+}
+
+body.passenger-consumer-page .account-form-card > button {
+  width: fit-content !important;
+  min-width: 150px !important;
+  justify-self: start !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers {
+  margin-top: 22px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .passenger-section-head {
+  margin-bottom: 14px !important;
+  padding: 0 2px !important;
+  align-items: flex-end !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .passenger-section-head h2 {
+  color: var(--passenger-ink, #111827) !important;
+  font-size: clamp(28px, 2.4vw, 38px) !important;
+  line-height: 1.08 !important;
+  font-weight: 760 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .passenger-section-head p:not(.eyebrow) {
+  max-width: 720px !important;
+  color: #6b7280 !important;
+  font-size: 14px !important;
+  line-height: 1.55 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-layout {
+  display: grid !important;
+  grid-template-columns: minmax(330px, 0.52fr) minmax(0, 1fr) !important;
+  gap: 16px !important;
+  align-items: start !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-card {
+  padding: 22px !important;
+  gap: 14px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-card label {
+  color: #475569 !important;
+  font-size: 13px !important;
+  font-weight: 720 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-card input,
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-card select {
+  min-height: 46px !important;
+  border-radius: 10px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .inline-check {
+  min-height: 46px !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  background: #f8fafc !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-list {
+  gap: 10px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card {
+  min-height: 96px !important;
+  padding: 16px 18px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 18px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card > div:first-child {
+  min-width: 0 !important;
+  gap: 6px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card .event-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card .event-header strong {
+  color: var(--passenger-ink, #111827) !important;
+  font-size: 16px !important;
+  font-weight: 760 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card span {
+  color: #64748b !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card .inline-actions {
+  flex-wrap: nowrap !important;
+  justify-content: flex-end !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card .compact-button {
+  min-height: 36px !important;
+  padding: 0 12px !important;
+}
+
+@media (max-width: 1280px) {
+  body.passenger-consumer-page .passenger-account-layout,
+  body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.passenger-consumer-page .account-overview-card {
+    grid-row: auto !important;
+    min-height: 0 !important;
+  }
+
+  body.passenger-consumer-page .account-overview-card .profile-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  body.passenger-consumer-page .account-form-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.passenger-consumer-page .account-form-card > div:first-child,
+  body.passenger-consumer-page .account-form-card > label,
+  body.passenger-consumer-page .account-form-card > .form-grid,
+  body.passenger-consumer-page .account-form-card > .form-error,
+  body.passenger-consumer-page .account-form-card > button {
+    grid-column: 1 !important;
+  }
+
+  body.passenger-consumer-page .account-overview-card .profile-header {
+    flex-direction: column !important;
+  }
+
+  body.passenger-consumer-page .account-overview-card .profile-facts,
+  body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card .inline-actions {
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+}
+
 /* Main portal: single-screen layout matched to the provided reference. */
 body.main-portal-page {
   min-height: 100vh;
@@ -9145,7 +9707,7 @@ body.main-portal-page * {
   transform: translateX(-50%);
   opacity: 0;
   filter: blur(10px);
-  animation: mainPortalNavReveal 0.76s cubic-bezier(0.16, 1, 0.3, 1) 4.02s both;
+  animation: mainPortalNavReveal 0.76s cubic-bezier(0.16, 1, 0.3, 1) 2.56s both;
 }
 
 .main-portal-brand,
@@ -9255,7 +9817,7 @@ body.main-portal-page * {
   font-weight: 850;
   transform: translateY(-24px);
   animation-name: mainPortalTopFloatIn;
-  animation-delay: 4.02s;
+  animation-delay: 2.56s;
 }
 
 .main-portal-kicker span {
@@ -9281,6 +9843,7 @@ body.main-portal-page * {
 .main-portal-title-line {
   display: flex;
   justify-content: center;
+  column-gap: 0;
   overflow: visible;
 }
 
@@ -9292,7 +9855,7 @@ body.main-portal-page * {
 
 .main-portal-title-script {
   display: block;
-  margin-top: 18px;
+  margin-top: 12px;
   font-family: Georgia, "Times New Roman", "Noto Serif SC", serif;
   font-size: 72px;
   line-height: 0.9;
@@ -9303,22 +9866,26 @@ body.main-portal-page * {
 .main-portal-title-char {
   display: inline-block;
   opacity: 0;
-  transform: translate3d(0, 0.9em, 0) scale(0.98);
+  transform: translate3d(0, 0.48em, 0) scale(0.99);
   transform-origin: 50% 100%;
-  filter: blur(22px);
+  filter: blur(10px);
   backface-visibility: hidden;
   will-change: opacity, transform, filter;
-  animation: mainPortalTitleCharIn 0.68s cubic-bezier(0.42, 0, 0.58, 1) var(--char-delay) both;
+  animation: mainPortalTitleCharIn 0.34s linear var(--char-delay) both;
+}
+
+.main-portal-title-char + .main-portal-title-char {
+  margin-left: -0.2em;
 }
 
 .main-portal-copy {
   max-width: 760px;
   margin: 40px 0 0;
   color: rgba(255, 255, 255, 0.92);
-  font-size: 24px;
+  font-size: 20px;
   line-height: 1.42;
   font-weight: 400;
-  animation-delay: 2.22s;
+  animation-delay: 1.18s;
 }
 
 .main-portal-primary {
@@ -9334,7 +9901,7 @@ body.main-portal-page * {
   font-weight: 900;
   background: #050505;
   box-shadow: 0 18px 34px rgba(0, 0, 0, 0.18);
-  animation-delay: 3.12s;
+  animation-delay: 1.96s;
 }
 
 .main-portal-primary:hover,
@@ -9375,8 +9942,8 @@ body.main-portal-page * {
 @keyframes mainPortalTitleCharIn {
   from {
     opacity: 0;
-    transform: translate3d(0, 0.9em, 0) scale(0.98);
-    filter: blur(22px);
+    transform: translate3d(0, 0.48em, 0) scale(0.99);
+    filter: blur(10px);
   }
 
   to {
@@ -9460,7 +10027,7 @@ body.main-portal-page * {
   }
 
   .main-portal-copy {
-    font-size: 20px;
+    font-size: 18px;
   }
 
 }
@@ -9508,7 +10075,7 @@ body.main-portal-page * {
 
   .main-portal-copy {
     margin-top: 30px;
-    font-size: 17px;
+    font-size: 15px;
   }
 
   .main-portal-primary {
@@ -9518,4 +10085,1820 @@ body.main-portal-page * {
     font-size: 18px;
   }
 
+}
+
+/* Main portal: scroll-driven introduction and feature sections. */
+body.main-portal-page {
+  min-height: 100vh;
+  color: #171717;
+  background: #ffffff;
+}
+
+.main-portal-scroll-stage {
+  --portal-cover-scale: 1;
+  --portal-cover-x: 0px;
+  --portal-cover-y: 0px;
+  --portal-cover-radius: 0px;
+  --portal-intro-opacity: 0;
+  --portal-intro-y: 56px;
+  position: relative;
+  min-height: 238vh;
+  background: #ffffff;
+}
+
+.main-portal-stage-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  min-height: 680px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.main-portal-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  color: #ffffff;
+  border-radius: var(--portal-cover-radius);
+  background:
+    linear-gradient(90deg, rgba(8, 33, 92, 0.24) 0%, rgba(8, 33, 92, 0) 15%, rgba(8, 33, 92, 0) 85%, rgba(8, 33, 92, 0.24) 100%),
+    linear-gradient(180deg, #1d4ed8 0%, #2563eb 29%, #4aa3ff 57%, #a7ddff 100%);
+  box-shadow: 0 32px 80px rgba(15, 23, 42, 0.18);
+  transform: translate3d(var(--portal-cover-x), var(--portal-cover-y), 0) scale(var(--portal-cover-scale));
+  transform-origin: center center;
+  will-change: transform, border-radius;
+}
+
+.main-portal-cover .main-portal-nav {
+  position: absolute;
+}
+
+.main-portal-cover .main-portal-hero {
+  width: min(850px, calc(100% - 40px));
+  min-height: 0;
+  align-content: start;
+  align-items: start;
+}
+
+.main-portal-cover .main-portal-primary {
+  width: auto;
+  height: auto;
+  min-height: 64px;
+  align-self: start;
+}
+
+.main-portal-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: clamp(108px, 15vh, 150px) clamp(34px, 7vw, 132px) clamp(72px, 10vh, 112px);
+  display: grid;
+  align-content: center;
+  color: #171717;
+  background: #ffffff;
+  opacity: var(--portal-intro-opacity);
+  transform: translate3d(0, var(--portal-intro-y), 0);
+  will-change: opacity, transform;
+}
+
+.main-portal-intro h2 {
+  max-width: 1160px;
+  margin: 0 auto clamp(36px, 6vh, 64px);
+  color: #171717;
+  font-size: clamp(42px, 5.4vw, 82px);
+  line-height: 1.06;
+  font-weight: 430;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.main-portal-intro-grid {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(360px, 0.95fr) minmax(320px, 0.8fr);
+  align-items: center;
+  gap: clamp(42px, 5vw, 78px);
+}
+
+.main-portal-intro-space {
+  min-height: min(42vh, 420px);
+}
+
+.main-portal-intro-copy-block {
+  max-width: 470px;
+  color: rgba(23, 23, 23, 0.68);
+  font-size: clamp(18px, 1.35vw, 23px);
+  line-height: 1.36;
+  font-weight: 400;
+}
+
+.main-portal-intro-copy-block p {
+  margin: 0;
+}
+
+.main-portal-intro-copy-block p + p {
+  margin-top: 22px;
+}
+
+.main-portal-stats {
+  width: min(1320px, calc(100% - 72px));
+  margin: 120px auto 170px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid rgba(23, 23, 23, 0.12);
+  border-bottom: 1px solid rgba(23, 23, 23, 0.12);
+}
+
+.main-portal-stats div {
+  min-height: 180px;
+  padding: 34px 32px 28px;
+  border-left: 1px solid rgba(23, 23, 23, 0.12);
+}
+
+.main-portal-stats div:first-child {
+  border-left: 0;
+}
+
+.main-portal-stats span,
+.main-portal-stats p {
+  color: rgba(23, 23, 23, 0.58);
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 400;
+}
+
+.main-portal-stats strong {
+  display: block;
+  margin-top: 20px;
+  color: #111111;
+  font-size: clamp(58px, 6vw, 96px);
+  line-height: 0.95;
+  font-weight: 430;
+  letter-spacing: 0;
+}
+
+.main-portal-stats p {
+  margin: 12px 0 0;
+}
+
+.main-portal-capability-section {
+  width: min(1420px, calc(100% - 72px));
+  margin: 0 auto 190px;
+}
+
+.main-portal-capability-section h2 {
+  margin: 0 0 58px;
+  color: #171717;
+  font-size: clamp(48px, 5vw, 76px);
+  line-height: 1;
+  font-weight: 430;
+  text-align: center;
+}
+
+.main-portal-capability-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.55fr) minmax(440px, 0.9fr);
+  align-items: start;
+  gap: clamp(42px, 5.8vw, 94px);
+}
+
+.main-portal-capability-list {
+  padding-top: 34px;
+}
+
+.main-portal-capability-list article {
+  padding: 0 0 42px;
+  color: rgba(23, 23, 23, 0.2);
+}
+
+.main-portal-capability-list article + article {
+  padding-top: 42px;
+  border-top: 1px solid rgba(23, 23, 23, 0.1);
+}
+
+.main-portal-capability-list article.is-active {
+  color: #171717;
+}
+
+.main-portal-capability-list h3 {
+  margin: 0;
+  color: currentColor;
+  font-size: clamp(32px, 3vw, 48px);
+  line-height: 1;
+  font-weight: 430;
+}
+
+.main-portal-capability-list p {
+  max-width: 420px;
+  margin: 26px 0 0;
+  color: rgba(23, 23, 23, 0.62);
+  font-size: 20px;
+  line-height: 1.38;
+}
+
+.main-portal-capability-list article:not(.is-active) p {
+  display: none;
+}
+
+.main-portal-image-slot,
+.main-portal-side-slot,
+.main-portal-case-slot {
+  overflow: hidden;
+  border-radius: 30px;
+  background:
+    linear-gradient(135deg, rgba(226, 232, 240, 0.66), rgba(248, 250, 252, 0.96)),
+    #f2f5f8;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
+}
+
+.main-portal-image-slot {
+  min-height: min(70vh, 720px);
+}
+
+.main-portal-brand-section {
+  width: min(100%, 1700px);
+  margin: 0 auto 190px;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.7fr) minmax(360px, 0.9fr) minmax(260px, 0.7fr);
+  align-items: center;
+  gap: clamp(42px, 6vw, 98px);
+}
+
+.main-portal-side-slot {
+  min-height: min(82vh, 760px);
+}
+
+.main-portal-side-slot:first-child {
+  border-radius: 0 30px 30px 0;
+}
+
+.main-portal-side-slot:last-child {
+  border-radius: 30px 0 0 30px;
+}
+
+.main-portal-brand-copy {
+  max-width: 620px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.main-portal-brand-copy h2 {
+  margin: 0;
+  color: #171717;
+  font-size: clamp(40px, 4vw, 64px);
+  line-height: 1.08;
+  font-weight: 430;
+}
+
+.main-portal-brand-copy p {
+  margin: 34px auto 0;
+  color: rgba(23, 23, 23, 0.62);
+  font-size: clamp(18px, 1.35vw, 22px);
+  line-height: 1.38;
+}
+
+.main-portal-case-section {
+  width: min(1460px, calc(100% - 72px));
+  margin: 0 auto 150px;
+  padding-top: 44px;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.38fr) minmax(520px, 1fr);
+  gap: clamp(48px, 6vw, 96px);
+  border-top: 1px solid rgba(23, 23, 23, 0.12);
+}
+
+.main-portal-case-copy h2 {
+  margin: 0 0 130px;
+  color: #171717;
+  font-size: clamp(44px, 4.8vw, 72px);
+  line-height: 1;
+  font-weight: 430;
+}
+
+.main-portal-case-copy h3 {
+  max-width: 320px;
+  margin: 0;
+  color: #171717;
+  font-size: clamp(28px, 2.6vw, 42px);
+  line-height: 1.05;
+  font-weight: 430;
+}
+
+.main-portal-case-copy p {
+  max-width: 360px;
+  margin: 34px 0 0;
+  color: rgba(23, 23, 23, 0.62);
+  font-size: 20px;
+  line-height: 1.38;
+}
+
+.main-portal-case-copy a {
+  min-height: 48px;
+  margin-top: 34px;
+  padding: 0 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  background: #111111;
+}
+
+.main-portal-case-slot {
+  min-height: min(64vh, 620px);
+  border-radius: 30px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-portal-scroll-stage {
+    min-height: auto;
+  }
+
+  .main-portal-stage-sticky {
+    position: relative;
+    min-height: 100vh;
+  }
+
+  .main-portal-cover {
+    position: relative;
+    min-height: 100vh;
+    transform: none;
+  }
+
+  .main-portal-intro {
+    position: relative;
+    min-height: 100vh;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .main-portal-intro-grid,
+  .main-portal-capability-grid,
+  .main-portal-brand-section,
+  .main-portal-case-section {
+    grid-template-columns: 1fr;
+  }
+
+  .main-portal-intro-space {
+    min-height: 42vh;
+  }
+
+  .main-portal-intro-copy-block,
+  .main-portal-brand-copy {
+    max-width: 720px;
+  }
+
+  .main-portal-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .main-portal-stats div:nth-child(3) {
+    border-left: 0;
+  }
+
+  .main-portal-brand-section {
+    width: min(100% - 72px, 880px);
+  }
+
+  .main-portal-side-slot:first-child,
+  .main-portal-side-slot:last-child {
+    min-height: 360px;
+    border-radius: 30px;
+  }
+
+  .main-portal-case-copy h2 {
+    margin-bottom: 52px;
+  }
+}
+
+@media (max-width: 760px) {
+  .main-portal-scroll-stage {
+    min-height: 220vh;
+  }
+
+  .main-portal-stage-sticky {
+    min-height: 620px;
+  }
+
+  .main-portal-intro {
+    padding: 118px 22px 56px;
+  }
+
+  .main-portal-intro h2 {
+    font-size: 34px;
+    text-align: left;
+  }
+
+  .main-portal-intro-grid {
+    gap: 32px;
+  }
+
+  .main-portal-intro-space {
+    min-height: 44vh;
+  }
+
+  .main-portal-stats,
+  .main-portal-capability-section,
+  .main-portal-brand-section,
+  .main-portal-case-section {
+    width: min(100% - 34px, 720px);
+    margin-bottom: 110px;
+  }
+
+  .main-portal-stats {
+    margin-top: 86px;
+    grid-template-columns: 1fr;
+  }
+
+  .main-portal-stats div,
+  .main-portal-stats div:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid rgba(23, 23, 23, 0.12);
+  }
+
+  .main-portal-stats div:first-child {
+    border-top: 0;
+  }
+
+  .main-portal-capability-section h2 {
+    margin-bottom: 42px;
+    font-size: 42px;
+  }
+
+  .main-portal-image-slot,
+  .main-portal-side-slot,
+  .main-portal-case-slot {
+    min-height: 360px;
+    border-radius: 22px;
+  }
+
+  .main-portal-brand-copy {
+    text-align: left;
+  }
+
+  .main-portal-case-section {
+    padding-top: 34px;
+  }
+
+  .main-portal-case-copy h2 {
+    font-size: 40px;
+  }
+}
+
+/* Passenger purchase flow: aggregate list rows and use a right-side drawer for checkout. */
+body.passenger-consumer-page .ticket-card-meta .ticket-min-price-label {
+  color: #667085 !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  font-weight: 500 !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal.modal-backdrop {
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: flex-end !important;
+  place-items: initial !important;
+  padding: 0 !important;
+  background: rgba(15, 23, 42, 0.38) !important;
+  backdrop-filter: blur(4px);
+}
+
+body.passenger-consumer-page #passenger-buy-modal .passenger-purchase-modal {
+  width: min(560px, calc(100vw - 24px)) !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  margin-left: auto !important;
+  padding: 30px 32px 24px !important;
+  border: 0 !important;
+  border-left: 1px solid rgba(203, 213, 225, 0.9) !important;
+  border-radius: 28px 0 0 28px !important;
+  background:
+    linear-gradient(145deg, rgba(248, 251, 255, 0.98), rgba(255, 255, 255, 0.98)),
+    #ffffff !important;
+  box-shadow: -24px 0 70px rgba(15, 23, 42, 0.18) !important;
+  transform: translateX(100%) !important;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal.show .passenger-purchase-modal {
+  transform: translateX(0) !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .modal-close {
+  top: 26px !important;
+  right: 26px !important;
+  width: 42px !important;
+  height: 42px !important;
+  border-color: #d8e2f0 !important;
+  background: #f8fbff !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .modal-head {
+  max-width: none !important;
+  padding-right: 58px !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .modal-head h2 {
+  margin-top: 6px !important;
+  font-size: 34px !important;
+  line-height: 1.08 !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .modal-head p:last-child {
+  font-size: 14px !important;
+  line-height: 1.7 !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .buy-summary {
+  margin: 18px 0 18px !important;
+  border-color: #d9e3f2 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 18px 44px rgba(37, 99, 235, 0.08) !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .buy-route {
+  padding: 18px 20px !important;
+  background: var(--passenger-primary, #2563eb) !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .buy-route strong {
+  font-size: 28px !important;
+  line-height: 1 !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .buy-route span {
+  font-size: 15px !important;
+  text-align: right !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .buy-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .buy-detail-grid > div {
+  min-height: 70px !important;
+  padding: 13px 16px !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .buy-form {
+  gap: 14px !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .buy-seat-field {
+  display: grid !important;
+  gap: 7px !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .buy-form input,
+body.passenger-consumer-page #passenger-buy-modal .buy-form select {
+  min-height: 48px !important;
+  border-color: #d6e0ee !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .buy-form input:disabled,
+body.passenger-consumer-page #passenger-buy-modal .buy-form select:disabled {
+  color: #68737d !important;
+  background: #f7fafc !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .modal-actions {
+  position: sticky !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  margin: 6px -2px 0 !important;
+  padding-top: 12px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff 28%) !important;
+}
+
+body.passenger-consumer-page #passenger-buy-modal .modal-actions .ghost-button,
+body.passenger-consumer-page #passenger-buy-modal .modal-actions .primary-button {
+  min-height: 48px !important;
+  padding: 0 22px !important;
+  border-radius: 12px !important;
+}
+
+@media (max-width: 720px) {
+  body.passenger-consumer-page #passenger-buy-modal .passenger-purchase-modal {
+    width: 100vw !important;
+    border-radius: 0 !important;
+  }
+
+  body.passenger-consumer-page #passenger-buy-modal .form-grid,
+  body.passenger-consumer-page #passenger-buy-modal .buy-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Passenger journey page redesign. */
+body.passenger-consumer-page #passenger-summary.passenger-home-section {
+  width: min(100% - 72px, 1460px);
+  max-width: 1460px;
+  margin-inline: auto;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-page-head {
+  align-items: flex-start;
+  margin-bottom: 22px;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-page-head h2 {
+  margin-top: 4px;
+  letter-spacing: 0;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-page-head p:last-child {
+  max-width: 560px;
+  line-height: 1.7;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 18px;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-stat {
+  min-height: 92px;
+  padding: 16px 18px;
+  border: 1px solid rgba(215, 224, 238, 0.95);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.98)),
+    #ffffff;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.05);
+}
+
+body.passenger-consumer-page #passenger-summary .journey-stat span {
+  color: #667085;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-stat strong {
+  margin-top: 8px;
+  color: #111827;
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 720;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-board {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 18px;
+  align-items: start;
+  margin-top: 0;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-panel {
+  min-width: 0;
+  min-height: 0;
+  padding: 22px 24px 24px;
+  border: 1px solid rgba(215, 224, 238, 0.95);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.06);
+}
+
+body.passenger-consumer-page #passenger-summary .journey-panel .panel-head {
+  margin-bottom: 16px;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-panel .panel-head h3 {
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-panel .panel-head p {
+  margin-top: 6px;
+  color: #667085;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-list {
+  display: grid;
+  gap: 10px;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-row {
+  width: 100%;
+  min-height: 78px;
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) 86px 112px;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(220, 227, 238, 0.95);
+  border-radius: 14px;
+  color: #111827;
+  background: #ffffff;
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-row:hover {
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.09);
+  transform: translateY(-1px);
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-train {
+  color: #111827;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-route {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-route strong,
+body.passenger-consumer-page #passenger-summary .journey-order-route small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-route strong {
+  color: #111827;
+  font-size: 17px;
+  line-height: 1.2;
+  font-weight: 650;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-route small {
+  color: #667085;
+  font-size: 13px;
+  font-weight: 560;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-row .status {
+  justify-self: start;
+  white-space: nowrap;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-amount {
+  justify-self: end;
+  color: #111827;
+  font-size: 17px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-list {
+  display: grid;
+  gap: 12px;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-card {
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid rgba(215, 224, 238, 0.95);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(249, 252, 255, 0.99)),
+    #ffffff;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.05);
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-top {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-train-badge {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+  color: var(--passenger-primary, #2563eb);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+body.passenger-consumer-page #passenger-summary .journey-train-badge svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-title {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-title strong {
+  color: #111827;
+  font-size: 20px;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-title small {
+  overflow: hidden;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 560;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-route {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) minmax(120px, 0.9fr) minmax(110px, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0 2px;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-stop {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-stop.is-arrival {
+  text-align: right;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-stop strong {
+  overflow: hidden;
+  color: #111827;
+  font-size: 24px;
+  line-height: 1.1;
+  font-weight: 720;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-stop small {
+  color: #667085;
+  font-size: 13px;
+  font-weight: 640;
+  white-space: nowrap;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-duration {
+  display: grid;
+  gap: 7px;
+  align-items: center;
+  color: #667085;
+  text-align: center;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-duration strong {
+  color: #475569;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-track {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.38), transparent);
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 560;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 0;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-trip-actions .compact-button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-empty-state {
+  display: grid;
+  gap: 6px;
+  min-height: 128px;
+  align-content: center;
+  padding: 22px;
+  border: 1px dashed rgba(203, 213, 225, 0.95);
+  border-radius: 16px;
+  background: #f8fbff;
+  color: #667085;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-empty-state strong {
+  color: #111827;
+  font-size: 17px;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-empty-state span {
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+@media (max-width: 1280px) {
+  body.passenger-consumer-page #passenger-summary .journey-stat-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.passenger-consumer-page #passenger-summary .journey-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  body.passenger-consumer-page #passenger-summary.passenger-home-section {
+    width: min(100% - 28px, 720px);
+  }
+
+  body.passenger-consumer-page #passenger-summary .journey-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.passenger-consumer-page #passenger-summary .journey-order-row {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  body.passenger-consumer-page #passenger-summary .journey-order-row .status,
+  body.passenger-consumer-page #passenger-summary .journey-order-amount {
+    justify-self: start;
+  }
+
+  body.passenger-consumer-page #passenger-summary .journey-trip-top,
+  body.passenger-consumer-page #passenger-summary .journey-trip-route {
+    grid-template-columns: 1fr;
+  }
+
+  body.passenger-consumer-page #passenger-summary .journey-trip-stop.is-arrival {
+    text-align: left;
+  }
+
+  body.passenger-consumer-page #passenger-summary .journey-trip-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+/* Passenger order cards: concise train / stations / status / price layout. */
+body.passenger-consumer-page #passenger-summary .journey-order-row {
+  grid-template-columns: 78px minmax(88px, 0.9fr) minmax(88px, 0.9fr) 86px 112px;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-station,
+body.passenger-consumer-page #passenger-orders .passenger-order-station {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-station small,
+body.passenger-consumer-page #passenger-orders .passenger-order-station small {
+  color: #667085;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 560;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-station strong,
+body.passenger-consumer-page #passenger-orders .passenger-order-station strong {
+  overflow: hidden;
+  color: #111827;
+  font-size: 18px;
+  line-height: 1.15;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.passenger-consumer-page #passenger-orders .passenger-order-card-compact {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(215, 224, 238, 0.95);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.06);
+}
+
+body.passenger-consumer-page #passenger-orders .passenger-order-display-grid {
+  min-height: 86px;
+  display: grid;
+  grid-template-columns: 92px minmax(120px, 1fr) minmax(120px, 1fr) 92px 128px;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 22px;
+}
+
+body.passenger-consumer-page #passenger-orders .passenger-order-train {
+  color: #111827;
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+body.passenger-consumer-page #passenger-orders .passenger-order-display-grid .status {
+  justify-self: start;
+  white-space: nowrap;
+}
+
+body.passenger-consumer-page #passenger-orders .passenger-order-amount {
+  justify-self: end;
+  color: #111827;
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  body.passenger-consumer-page #passenger-summary .journey-order-row {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  body.passenger-consumer-page #passenger-orders .passenger-order-display-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  body.passenger-consumer-page #passenger-orders .passenger-order-train,
+  body.passenger-consumer-page #passenger-orders .passenger-order-amount {
+    justify-self: start;
+  }
+}
+
+/* Passenger feature-level tabs */
+body.passenger-consumer-page .passenger-tab-source {
+  display: none !important;
+}
+
+body.passenger-consumer-page .passenger-feature-tabbed > .passenger-section-head {
+  margin-bottom: 0;
+}
+
+body.passenger-consumer-page .passenger-inner-tabs {
+  margin: 14px 0 20px;
+  display: flex;
+  align-items: center;
+  gap: 34px;
+  border-bottom: 1px solid #e6ebf3;
+}
+
+body.passenger-consumer-page .passenger-inner-tab {
+  position: relative;
+  min-width: 0;
+  padding: 0 0 13px;
+  border: 0;
+  border-radius: 0;
+  color: #596275;
+  background: transparent;
+  box-shadow: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 720;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+body.passenger-consumer-page .passenger-inner-tab::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: var(--passenger-primary);
+  opacity: 0;
+  transform: scaleX(0.42);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+body.passenger-consumer-page .passenger-inner-tab.active {
+  color: #111827;
+}
+
+body.passenger-consumer-page .passenger-inner-tab.active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+body.passenger-consumer-page .passenger-tab-panels {
+  display: grid;
+  gap: 18px;
+}
+
+body.passenger-consumer-page .passenger-tab-panel {
+  min-width: 0;
+}
+
+body.passenger-consumer-page .passenger-tab-panel[hidden] {
+  display: none !important;
+}
+
+body.passenger-consumer-page #passenger-summary .passenger-tab-panel > .journey-stat-strip,
+body.passenger-consumer-page #passenger-notifications .passenger-tab-panel > .journey-stat-strip {
+  margin-top: 0;
+}
+
+body.passenger-consumer-page #passenger-tickets .passenger-filter-bar,
+body.passenger-consumer-page #passenger-notifications .passenger-filter-bar,
+body.passenger-consumer-page #passenger-notifications .notification-stat-strip,
+body.passenger-consumer-page #passenger-notifications .notification-guide-panel {
+  display: none !important;
+}
+
+body.passenger-consumer-page #passenger-orders .passenger-tab-panel > .passenger-filter-bar,
+body.passenger-consumer-page #passenger-orders .passenger-tab-panel > .pagination,
+body.passenger-consumer-page #passenger-tickets .passenger-tab-panel > .pagination,
+body.passenger-consumer-page #passenger-notifications .passenger-tab-panel > .pagination {
+  margin-top: 14px;
+}
+
+body.passenger-consumer-page #passenger-orders .passenger-tab-panel > .passenger-card-list,
+body.passenger-consumer-page #passenger-orders .passenger-tab-panel > .passenger-record-list,
+body.passenger-consumer-page #passenger-tickets .passenger-ticket-wallet,
+body.passenger-consumer-page #passenger-notifications .passenger-notification-list {
+  margin-top: 18px;
+}
+
+body.passenger-consumer-page #passenger-notifications .passenger-notification-list,
+body.passenger-consumer-page #passenger-orders .passenger-record-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #e6ebf3;
+  border-radius: 20px;
+  background: #ffffff;
+}
+
+body.passenger-consumer-page #passenger-notifications .notification-record-card,
+body.passenger-consumer-page #passenger-orders .money-record-card,
+body.passenger-consumer-page #passenger-orders .ticket-change-card,
+body.passenger-consumer-page #passenger-orders .change-record-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid #edf1f6 !important;
+}
+
+body.passenger-consumer-page #passenger-notifications .notification-record-card:nth-child(odd),
+body.passenger-consumer-page #passenger-orders .money-record-card:nth-child(odd),
+body.passenger-consumer-page #passenger-orders .ticket-change-card:nth-child(odd),
+body.passenger-consumer-page #passenger-orders .change-record-card:nth-child(odd) {
+  border-right: 1px solid #edf1f6 !important;
+}
+
+body.passenger-consumer-page #passenger-notifications .notification-record-card:nth-last-child(-n + 2),
+body.passenger-consumer-page #passenger-orders .money-record-card:nth-last-child(-n + 2),
+body.passenger-consumer-page #passenger-orders .ticket-change-card:nth-last-child(-n + 2),
+body.passenger-consumer-page #passenger-orders .change-record-card:nth-last-child(-n + 2) {
+  border-bottom: 0 !important;
+}
+
+body.passenger-consumer-page #passenger-tickets .passenger-ticket-wallet {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #e6ebf3;
+  border-radius: 20px;
+  background: #ffffff;
+}
+
+body.passenger-consumer-page #passenger-tickets .passenger-ticket-card {
+  min-height: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border-bottom: 1px solid #edf1f6 !important;
+}
+
+body.passenger-consumer-page #passenger-tickets .passenger-ticket-card:nth-child(odd) {
+  border-right: 1px solid #edf1f6 !important;
+}
+
+body.passenger-consumer-page #passenger-tickets .passenger-ticket-card:nth-last-child(-n + 2) {
+  border-bottom: 0 !important;
+}
+
+@media (max-width: 900px) {
+  body.passenger-consumer-page .passenger-inner-tabs {
+    gap: 22px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body.passenger-consumer-page .passenger-inner-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.passenger-consumer-page .passenger-inner-tab {
+    flex: 0 0 auto;
+  }
+
+  body.passenger-consumer-page #passenger-notifications .passenger-notification-list,
+  body.passenger-consumer-page #passenger-orders .passenger-record-list,
+  body.passenger-consumer-page #passenger-tickets .passenger-ticket-wallet {
+    grid-template-columns: 1fr;
+  }
+
+  body.passenger-consumer-page #passenger-notifications .notification-record-card:nth-child(odd),
+  body.passenger-consumer-page #passenger-orders .money-record-card:nth-child(odd),
+  body.passenger-consumer-page #passenger-orders .ticket-change-card:nth-child(odd),
+  body.passenger-consumer-page #passenger-orders .change-record-card:nth-child(odd),
+  body.passenger-consumer-page #passenger-tickets .passenger-ticket-card:nth-child(odd) {
+    border-right: 0 !important;
+  }
+}
+
+/* Passenger workspace alignment: keep feature pages pinned to the left edge of the content area. */
+body.passenger-consumer-page .passenger-site-main > #passenger-summary,
+body.passenger-consumer-page .passenger-site-main > #passenger-orders,
+body.passenger-consumer-page .passenger-site-main > #passenger-tickets,
+body.passenger-consumer-page .passenger-site-main > #passenger-notifications,
+body.passenger-consumer-page .passenger-site-main > #passenger-account {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+body.passenger-consumer-page #passenger-summary.passenger-home-section {
+  margin-inline: 0 auto !important;
+}
+
+body.passenger-consumer-page #passenger-orders.passenger-order-center,
+body.passenger-consumer-page #passenger-tickets.passenger-ticket-wallet-section,
+body.passenger-consumer-page #passenger-notifications.passenger-notification-section,
+body.passenger-consumer-page #passenger-account.passenger-account-section {
+  width: min(100%, 1360px) !important;
+}
+
+/* Passenger account option 1: compact overview, settings, and traveler management. */
+body.passenger-consumer-page #passenger-account.passenger-account-section {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.passenger-consumer-page #passenger-account > .account-page-head {
+  margin-bottom: 18px !important;
+  padding: 0 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .account-page-head h2 {
+  margin-top: 4px !important;
+  color: #111827 !important;
+  font-size: clamp(32px, 2.2vw, 40px) !important;
+  line-height: 1.08 !important;
+  font-weight: 780 !important;
+  letter-spacing: 0 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .account-page-head h2::after {
+  content: none !important;
+  display: none !important;
+}
+
+body.passenger-consumer-page #passenger-account > .account-page-head p:not(.eyebrow) {
+  max-width: 720px !important;
+  margin-top: 8px !important;
+  color: #667085 !important;
+  font-size: 15px !important;
+  line-height: 1.55 !important;
+}
+
+body.passenger-consumer-page #passenger-account .passenger-account-layout {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card,
+body.passenger-consumer-page #passenger-account .account-form-card,
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-card,
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card {
+  border: 1px solid #dfe5ef !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.06) !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card {
+  grid-column: 1 / -1 !important;
+  grid-row: auto !important;
+  min-height: 0 !important;
+  padding: 20px 22px !important;
+  display: grid !important;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(460px, 1.1fr) !important;
+  gap: 14px 22px !important;
+  align-items: stretch !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .profile-header {
+  grid-column: 1 !important;
+  grid-row: 1 / span 2 !important;
+  display: grid !important;
+  grid-template-columns: 76px minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 16px !important;
+  min-width: 0 !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .profile-avatar {
+  width: 76px !important;
+  height: 76px !important;
+  border-radius: 20px !important;
+  font-size: 22px !important;
+  background: linear-gradient(135deg, var(--passenger-primary), #1d4ed8) !important;
+  box-shadow: 0 18px 34px rgba(37, 99, 235, 0.18) !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .profile-identity {
+  min-width: 0 !important;
+  gap: 6px !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .profile-header h3 {
+  margin: 3px 0 0 !important;
+  color: #111827 !important;
+  font-size: 24px !important;
+  line-height: 1.16 !important;
+  font-weight: 760 !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .profile-header p {
+  color: #667085 !important;
+  font-size: 14px !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .soft-pill {
+  width: fit-content !important;
+  min-height: 26px !important;
+  padding: 4px 11px !important;
+  border-radius: 999px !important;
+  background: #eff6ff !important;
+  color: var(--passenger-primary) !important;
+  font-size: 13px !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .avatar-upload-actions {
+  margin-top: 10px !important;
+  gap: 8px !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .avatar-upload-actions .compact-button {
+  min-height: 38px !important;
+  padding: 0 14px !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .avatar-status {
+  min-height: 16px !important;
+  margin: 0 !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-tags {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  margin-top: 10px !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-tags span {
+  min-height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 0 10px !important;
+  border: 1px solid #e1e8f3 !important;
+  border-radius: 999px !important;
+  background: #f8fbff !important;
+  color: #526071 !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .profile-facts {
+  grid-column: 2 !important;
+  margin-top: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .profile-facts div {
+  min-height: 72px !important;
+  padding: 13px 14px !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: 6px !important;
+  border: 1px solid #e7edf6 !important;
+  border-radius: 14px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .profile-facts span {
+  color: #667085 !important;
+  font-size: 13px !important;
+  line-height: 1.15 !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-card .profile-facts strong {
+  margin: 0 !important;
+  color: #111827 !important;
+  font-size: 20px !important;
+  line-height: 1.1 !important;
+  font-weight: 760 !important;
+  text-align: left !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-hint {
+  grid-column: 2 !important;
+  min-height: 56px !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: 4px !important;
+  padding: 12px 14px !important;
+  border: 1px solid #e6ebf3 !important;
+  border-radius: 14px !important;
+  background: #f8fafc !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-hint strong {
+  color: #111827 !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+  font-weight: 760 !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-overview-hint span {
+  color: #667085 !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-form-card {
+  min-height: 276px !important;
+  padding: 22px !important;
+  display: grid !important;
+  grid-template-columns: minmax(210px, 0.42fr) minmax(0, 1fr) !important;
+  gap: 14px 20px !important;
+  align-content: start !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-form-card > div:first-child {
+  grid-column: 1 !important;
+  align-self: start !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-form-card h3 {
+  color: #111827 !important;
+  font-size: 21px !important;
+  line-height: 1.2 !important;
+  font-weight: 760 !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-form-card p {
+  margin-top: 7px !important;
+  color: #667085 !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-card-points {
+  display: grid !important;
+  gap: 7px !important;
+  margin: 14px 0 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-card-points li {
+  position: relative !important;
+  padding-left: 14px !important;
+  color: #526071 !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-card-points li::before {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0.58em !important;
+  width: 5px !important;
+  height: 5px !important;
+  border-radius: 999px !important;
+  background: var(--passenger-primary) !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-form-card > label,
+body.passenger-consumer-page #passenger-account .account-form-card > .form-grid,
+body.passenger-consumer-page #passenger-account .account-form-card > .form-error,
+body.passenger-consumer-page #passenger-account .account-form-card > button {
+  grid-column: 2 !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-form-card label {
+  color: #475569 !important;
+  font-size: 13px !important;
+  font-weight: 720 !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-form-card input {
+  min-height: 44px !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-form-card .form-grid {
+  gap: 12px !important;
+}
+
+body.passenger-consumer-page #passenger-account .account-form-card > button {
+  width: fit-content !important;
+  min-width: 144px !important;
+  justify-self: start !important;
+  align-self: end !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers {
+  margin-top: 20px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .passenger-section-head {
+  margin-bottom: 14px !important;
+  padding: 0 !important;
+  align-items: flex-end !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .passenger-section-head h2 {
+  color: #111827 !important;
+  font-size: clamp(28px, 2vw, 34px) !important;
+  line-height: 1.08 !important;
+  font-weight: 760 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .passenger-section-head p:not(.eyebrow) {
+  max-width: 760px !important;
+  color: #667085 !important;
+  font-size: 14px !important;
+  line-height: 1.55 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-layout {
+  display: grid !important;
+  grid-template-columns: minmax(360px, 0.42fr) minmax(0, 0.58fr) !important;
+  gap: 16px !important;
+  align-items: start !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-card {
+  padding: 20px !important;
+  gap: 14px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-card label {
+  color: #475569 !important;
+  font-size: 13px !important;
+  font-weight: 720 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-card input,
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-card select {
+  min-height: 44px !important;
+  border-radius: 10px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .inline-check {
+  min-height: 44px !important;
+  padding: 0 14px !important;
+  border-radius: 14px !important;
+  background: #f8fbff !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-list {
+  gap: 10px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card {
+  min-height: 92px !important;
+  padding: 15px 18px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 18px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card > div:first-child {
+  min-width: 0 !important;
+  gap: 6px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card .event-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card .event-header strong {
+  color: #111827 !important;
+  font-size: 16px !important;
+  font-weight: 740 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card span {
+  color: #667085 !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card .inline-actions {
+  flex-wrap: nowrap !important;
+  justify-content: flex-end !important;
+}
+
+body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card .compact-button {
+  min-height: 36px !important;
+  padding: 0 12px !important;
+}
+
+@media (max-width: 1280px) {
+  body.passenger-consumer-page #passenger-account .account-overview-card,
+  body.passenger-consumer-page #passenger-account .account-form-card,
+  body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.passenger-consumer-page #passenger-account .account-overview-card .profile-header,
+  body.passenger-consumer-page #passenger-account .account-overview-card .profile-facts,
+  body.passenger-consumer-page #passenger-account .account-overview-hint,
+  body.passenger-consumer-page #passenger-account .account-form-card > div:first-child,
+  body.passenger-consumer-page #passenger-account .account-form-card > label,
+  body.passenger-consumer-page #passenger-account .account-form-card > .form-grid,
+  body.passenger-consumer-page #passenger-account .account-form-card > .form-error,
+  body.passenger-consumer-page #passenger-account .account-form-card > button {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+  }
+
+  body.passenger-consumer-page #passenger-account .account-overview-card .profile-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  body.passenger-consumer-page #passenger-account .passenger-account-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.passenger-consumer-page #passenger-account .account-overview-card .profile-facts,
+  body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 760px) {
+  body.passenger-consumer-page #passenger-account .account-overview-card .profile-header,
+  body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  body.passenger-consumer-page #passenger-account > .merged-travelers .traveler-card .inline-actions {
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
+}
+
+/* Journey recent orders: keep each row inside the summary card. */
+body.passenger-consumer-page #passenger-summary .journey-board,
+body.passenger-consumer-page #passenger-summary .journey-panel,
+body.passenger-consumer-page #passenger-summary .journey-order-list {
+  min-width: 0 !important;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-orders-panel {
+  overflow: hidden !important;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-list {
+  width: 100% !important;
+  max-width: 100% !important;
+  gap: 10px !important;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-row {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 72px !important;
+  grid-template-columns:
+    minmax(54px, 0.58fr)
+    minmax(74px, 1fr)
+    minmax(74px, 1fr)
+    minmax(62px, 0.72fr)
+    minmax(76px, 0.88fr) !important;
+  column-gap: 10px !important;
+  padding: 12px 14px !important;
+  overflow: hidden !important;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-row > * {
+  min-width: 0 !important;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-train {
+  font-size: 18px !important;
+  line-height: 1.1 !important;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-station {
+  gap: 3px !important;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-station strong {
+  max-width: 100% !important;
+  font-size: 16px !important;
+  line-height: 1.15 !important;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-row .status {
+  justify-self: center !important;
+  max-width: 100% !important;
+}
+
+body.passenger-consumer-page #passenger-summary .journey-order-amount {
+  justify-self: end !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  font-size: 16px !important;
+  line-height: 1.1 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 760px) {
+  body.passenger-consumer-page #passenger-summary .journey-order-row {
+    grid-template-columns: minmax(54px, 0.45fr) minmax(0, 1fr) !important;
+    row-gap: 8px !important;
+  }
+
+  body.passenger-consumer-page #passenger-summary .journey-order-row .status,
+  body.passenger-consumer-page #passenger-summary .journey-order-amount {
+    justify-self: start !important;
+  }
 }

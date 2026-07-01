@@ -3,6 +3,7 @@ package com.example.railway.dto;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import com.example.railway.domain.TicketOrder;
 
@@ -13,6 +14,10 @@ public class OrderResponse {
     private Long userId;
     private String requestId;
     private String trainNo;
+    private String departureStation;
+    private String arrivalStation;
+    private LocalTime departureTime;
+    private LocalTime arrivalTime;
     private String passengerName;
     private String passengerIdType;
     private String passengerIdNoMasked;
@@ -34,6 +39,10 @@ public class OrderResponse {
         response.setUserId(order.getUserId());
         response.setRequestId(order.getRequestId());
         response.setTrainNo(order.getTrain().getTrainNo());
+        response.setDepartureStation(order.getTrain().getDepartureStation().getName());
+        response.setArrivalStation(order.getTrain().getArrivalStation().getName());
+        response.setDepartureTime(order.getTrain().getDepartureTime());
+        response.setArrivalTime(order.getTrain().getArrivalTime());
         response.setPassengerName(order.getPassengerName());
         response.setPassengerIdType(order.getPassengerIdType() == null ? null : order.getPassengerIdType().name());
         response.setPassengerIdNoMasked(order.getPassengerIdNoMasked());
@@ -88,6 +97,38 @@ public class OrderResponse {
 
     public void setTrainNo(String trainNo) {
         this.trainNo = trainNo;
+    }
+
+    public String getDepartureStation() {
+        return departureStation;
+    }
+
+    public void setDepartureStation(String departureStation) {
+        this.departureStation = departureStation;
+    }
+
+    public String getArrivalStation() {
+        return arrivalStation;
+    }
+
+    public void setArrivalStation(String arrivalStation) {
+        this.arrivalStation = arrivalStation;
+    }
+
+    public LocalTime getDepartureTime() {
+        return departureTime;
+    }
+
+    public void setDepartureTime(LocalTime departureTime) {
+        this.departureTime = departureTime;
+    }
+
+    public LocalTime getArrivalTime() {
+        return arrivalTime;
+    }
+
+    public void setArrivalTime(LocalTime arrivalTime) {
+        this.arrivalTime = arrivalTime;
     }
 
     public String getPassengerName() {
