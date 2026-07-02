@@ -208,28 +208,29 @@
 
       function addParticle(x, y, speed, angle, order) {
         const speedUnit = Math.min(1, speed / (210 * dpr));
-        const jitter = (6 + order * 0.8) * dpr;
-        const reverse = Math.min(4.8 * dpr, speed * 0.018);
+        const jitter = (8 + order * 1.1) * dpr;
+        const forward = Math.min(8.6 * dpr, speed * 0.032);
+        const dragBack = Math.min(2.4 * dpr, speed * 0.007);
         const side = (Math.random() - 0.5) * jitter;
-        const radius = (54 + speedUnit * 72 + Math.random() * 18) * dpr;
-        const life = 34 + Math.round(speedUnit * 30) + Math.round(Math.random() * 10);
+        const radius = (76 + speedUnit * 102 + Math.random() * 22) * dpr;
+        const life = 58 + Math.round(speedUnit * 42) + Math.round(Math.random() * 16);
 
         particles.push({
           x: x + Math.sin(angle) * side,
           y: y - Math.cos(angle) * side,
-          vx: -Math.cos(angle) * reverse + (Math.random() - 0.5) * 1.2 * dpr,
-          vy: -Math.sin(angle) * reverse + (Math.random() - 0.5) * 1.2 * dpr,
+          vx: Math.cos(angle) * (forward - dragBack) + (Math.random() - 0.5) * 1.1 * dpr,
+          vy: Math.sin(angle) * (forward - dragBack) + (Math.random() - 0.5) * 1.1 * dpr,
           radius,
           age: 0,
           life,
           maxLife: life,
           angle,
-          stretch: 0.45 + speedUnit * 1.35,
+          stretch: 0.72 + speedUnit * 1.65,
           swirl: (Math.random() - 0.5) * 0.04,
         });
 
-        if (particles.length > 90) {
-          particles.splice(0, particles.length - 90);
+        if (particles.length > 110) {
+          particles.splice(0, particles.length - 110);
         }
       }
 
@@ -246,14 +247,14 @@
           flowAngle = rawAngle;
           hasFlowAngle = true;
         } else {
-          flowAngle += shortestAngleDelta(flowAngle, rawAngle) * 0.11;
+          flowAngle += shortestAngleDelta(flowAngle, rawAngle) * 0.065;
         }
 
-        momentum.x += (dx - momentum.x) * 0.16;
-        momentum.y += (dy - momentum.y) * 0.16;
+        momentum.x += (dx - momentum.x) * 0.11;
+        momentum.y += (dy - momentum.y) * 0.11;
         const speed = Math.hypot(momentum.x, momentum.y);
-        const step = Math.max(11 * dpr, Math.min(24 * dpr, 28 * dpr - speed * 0.025));
-        const count = Math.max(1, Math.min(12, Math.floor(distance / step) + 1));
+        const step = Math.max(13 * dpr, Math.min(28 * dpr, 32 * dpr - speed * 0.018));
+        const count = Math.max(1, Math.min(14, Math.floor(distance / step) + 1));
 
         for (let index = 0; index < count; index += 1) {
           const t = (index + 1) / count;
@@ -328,17 +329,17 @@
           setInitialPosition();
         }
 
-        const moving = active && time - lastMoveAt < 90;
+        const moving = active && time - lastMoveAt < 130;
         if (!moving) {
           active = false;
         }
 
         smooth.px = smooth.x;
         smooth.py = smooth.y;
-        smooth.x += (pointer.x - smooth.x) * 0.14;
-        smooth.y += (pointer.y - smooth.y) * 0.14;
-        momentum.x *= moving ? 0.93 : 0.86;
-        momentum.y *= moving ? 0.93 : 0.86;
+        smooth.x += (pointer.x - smooth.x) * 0.105;
+        smooth.y += (pointer.y - smooth.y) * 0.105;
+        momentum.x *= moving ? 0.955 : 0.91;
+        momentum.y *= moving ? 0.955 : 0.91;
 
         trailCtx.clearRect(0, 0, width, height);
 
@@ -355,13 +356,15 @@
           }
           const previousLife = Math.max(0, previous.life / previous.maxLife);
           const currentLife = Math.max(0, current.life / current.maxLife);
-          const alpha = Math.min(previousLife, currentLife) * 0.34;
+          const bridgeLife = Math.min(previousLife, currentLife);
+          const bridgeShrink = moving ? 1 : Math.max(0.08, Math.pow(bridgeLife, 0.76));
+          const alpha = bridgeLife * (moving ? 0.34 : 0.25);
           if (alpha <= 0.01) {
             continue;
           }
           trailCtx.globalAlpha = alpha;
           trailCtx.strokeStyle = "#ffffff";
-          trailCtx.lineWidth = Math.max(8 * dpr, Math.min(previous.radius, current.radius) * 0.42);
+          trailCtx.lineWidth = Math.max(6 * dpr, Math.min(previous.radius, current.radius) * 0.56 * bridgeShrink);
           trailCtx.beginPath();
           trailCtx.moveTo(previous.x, previous.y);
           trailCtx.quadraticCurveTo(
@@ -387,15 +390,16 @@
           const calm = 1 - lifeRatio;
           particle.x += particle.vx + Math.sin(time * 0.002 + index) * particle.swirl * particle.radius;
           particle.y += particle.vy + Math.cos(time * 0.0017 + index * 0.7) * particle.swirl * particle.radius;
-          particle.vx *= 0.94;
-          particle.vy *= 0.94;
-          particle.stretch *= 0.955;
+          particle.vx *= 0.962;
+          particle.vy *= 0.962;
+          particle.stretch *= 0.965;
           particle.angle += particle.swirl * 0.55;
 
-          const alpha = Math.pow(lifeRatio, 1.18) * 0.95;
-          const radius = particle.radius * (0.82 + calm * 0.22);
-          const stretchX = radius * (1 + particle.stretch * lifeRatio);
-          const stretchY = radius * (0.64 + calm * 0.22);
+          const stillnessShrink = moving ? 1 : Math.max(0.08, Math.pow(lifeRatio, 0.76));
+          const alpha = Math.pow(lifeRatio, moving ? 1.1 : 1.42) * 0.95;
+          const radius = particle.radius * (0.92 + calm * 0.08) * stillnessShrink;
+          const stretchX = radius * (1.18 + particle.stretch * lifeRatio);
+          const stretchY = radius * (0.72 + calm * 0.16);
 
           trailCtx.save();
           trailCtx.translate(particle.x, particle.y);
@@ -415,11 +419,11 @@
 
         if (moving) {
           const headSpeed = Math.min(1, Math.hypot(momentum.x, momentum.y) / (160 * dpr));
-          const headRadius = (76 + headSpeed * 76) * dpr;
+          const headRadius = (96 + headSpeed * 108) * dpr;
           trailCtx.save();
           trailCtx.translate(smooth.x, smooth.y);
           trailCtx.rotate(flowAngle);
-          trailCtx.scale(headRadius * (1.18 + headSpeed * 0.55), headRadius * 0.78);
+          trailCtx.scale(headRadius * (1.42 + headSpeed * 0.78), headRadius * 0.86);
           const headGradient = trailCtx.createRadialGradient(0, 0, 0, 0, 0, 1);
           headGradient.addColorStop(0, "rgba(255, 255, 255, 0.94)");
           headGradient.addColorStop(0.52, "rgba(255, 255, 255, 0.66)");
