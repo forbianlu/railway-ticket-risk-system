@@ -74,51 +74,69 @@
     </div>
   </section>
 
-  <section class="main-portal-stats" aria-label="系统数据">
-    <div>
-      <span>乘客入口</span>
-      <strong>2</strong>
-      <p>查票与行程管理</p>
-    </div>
-    <div>
-      <span>订单状态</span>
-      <strong>6</strong>
-      <p>覆盖支付到退款</p>
-    </div>
-    <div>
-      <span>电子票据</span>
-      <strong>100%</strong>
-      <p>关键节点可追踪</p>
-    </div>
-    <div>
-      <span>风控处置</span>
-      <strong>闭环</strong>
-      <p>退款与风险联动</p>
-    </div>
-  </section>
-
   <section class="main-portal-capability-section" id="portal-capabilities" aria-label="能力介绍">
-    <h2>Capabilities</h2>
+    <h2>功能介绍</h2>
     <div class="main-portal-capability-grid">
-      <div class="main-portal-capability-list">
-        <article class="is-active">
+      <div class="main-portal-capability-list" role="tablist" aria-label="功能切换">
+        <article class="is-active" role="tab" tabindex="0" aria-selected="true" data-capability-card="ticket">
           <h3>车票查询</h3>
           <p>按出发站、到达站和日期快速定位可购车次。</p>
         </article>
-        <article>
+        <article role="tab" tabindex="0" aria-selected="false" data-capability-card="order">
           <h3>订单支付</h3>
-          <p>串联待支付、已支付、关闭和退款状态。</p>
+          <p>串联待支付、已支付和关闭状态，快速完成支付确认。</p>
         </article>
-        <article>
+        <article role="tab" tabindex="0" aria-selected="false" data-capability-card="eticket">
           <h3>电子票</h3>
-          <p>保留票据、乘车人与订单之间的清晰关系。</p>
+          <p>保留票据、乘车人和订单之间的清晰关系。</p>
         </article>
-        <article>
+        <article role="tab" tabindex="0" aria-selected="false" data-capability-card="risk">
           <h3>风控运营</h3>
-          <p>把退款、异常交易和处置动作集中到管理端。</p>
+          <p>把退款申请、异常交易和处置动作集中到管理端。</p>
         </article>
       </div>
-      <div class="main-portal-image-slot" aria-hidden="true"></div>
+      <div class="main-portal-image-slot main-portal-card-stack" data-active-card="ticket" aria-label="功能卡片预览">
+        <article class="main-portal-feature-card is-active" data-card="ticket">
+          <span>车票查询</span>
+          <h3>北京南 → 上海虹桥</h3>
+          <p>出发站、到达站、日期一次确认。</p>
+          <div class="main-portal-card-meta">
+            <div>车次<strong>G101</strong></div>
+            <div>出发<strong>07:00</strong></div>
+            <div>到达<strong>12:38</strong></div>
+          </div>
+        </article>
+        <article class="main-portal-feature-card" data-card="order">
+          <span>订单支付</span>
+          <h3>待支付订单</h3>
+          <p>支付状态、金额和截止时间同步展示。</p>
+          <div class="main-portal-card-meta">
+            <div>金额<strong>￥645.00</strong></div>
+            <div>状态<strong>待支付</strong></div>
+            <div>时限<strong>15 分钟</strong></div>
+          </div>
+        </article>
+        <article class="main-portal-feature-card" data-card="eticket">
+          <span>电子票</span>
+          <h3>有效票据</h3>
+          <p>车次、乘车人、证件信息集中核对。</p>
+          <div class="main-portal-card-meta">
+            <div>票号<strong>ETD20260701</strong></div>
+            <div>状态<strong>已出票</strong></div>
+            <div>核验<strong>进站可用</strong></div>
+          </div>
+        </article>
+        <article class="main-portal-feature-card" data-card="risk">
+          <span>风控运营</span>
+          <h3>退款风险处置</h3>
+          <p>异常退款、未读提醒和操作轨迹可追踪。</p>
+          <div class="main-portal-card-meta">
+            <div>任务<strong>待复核</strong></div>
+            <div>风险<strong>4 个节点</strong></div>
+            <div>闭环<strong>处置留痕</strong></div>
+          </div>
+        </article>
+      </div>
     </div>
   </section>
 
@@ -133,6 +151,18 @@
     <div class="main-portal-side-slot" aria-hidden="true"></div>
   </section>
 
+  <section class="main-portal-case-section" aria-label="乘客场景">
+    <div class="main-portal-case-copy">
+      <h2>乘客场景</h2>
+      <h3>从查票到出行管理</h3>
+      <p>
+        面向车票查询、在线购票、订单支付、电子票和行程提醒，系统把乘客购票到出行的关键操作整合为连续入口，帮助乘客更快完成下一段行程。
+      </p>
+      <a href="./passenger.html">进入乘客端</a>
+    </div>
+    <div class="main-portal-case-slot" aria-hidden="true"></div>
+  </section>
+
   <section class="main-portal-case-section" aria-label="运营场景">
     <div class="main-portal-case-copy">
       <h2>运营场景</h2>
@@ -144,5 +174,38 @@
     </div>
     <div class="main-portal-case-slot" aria-hidden="true"></div>
   </section>
+  <script>
+    (() => {
+      const capabilityItems = Array.from(document.querySelectorAll('[data-capability-card]'));
+      const cardStack = document.querySelector('.main-portal-card-stack');
+      const cards = Array.from(document.querySelectorAll('.main-portal-feature-card'));
+
+      if (!capabilityItems.length || !cardStack || !cards.length) return;
+
+      const activateCapability = (key) => {
+        cardStack.dataset.activeCard = key;
+
+        capabilityItems.forEach((item) => {
+          const isActive = item.dataset.capabilityCard === key;
+          item.classList.toggle('is-active', isActive);
+          item.setAttribute('aria-selected', String(isActive));
+        });
+
+        cards.forEach((card) => {
+          card.classList.toggle('is-active', card.dataset.card === key);
+        });
+      };
+
+      capabilityItems.forEach((item) => {
+        item.addEventListener('click', () => activateCapability(item.dataset.capabilityCard));
+        item.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            activateCapability(item.dataset.capabilityCard);
+          }
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

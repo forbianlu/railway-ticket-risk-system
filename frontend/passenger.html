@@ -7,10 +7,10 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>乘客购票服务 - 铁路客运票务与风控运营平台</title>
-  <link rel="stylesheet" href="./styles.css?v=20260702-login-transition-v10">
+  <link rel="stylesheet" href="./styles.css?v=20260702-login-blue-template-v3">
 </head>
 <body class="passenger-page passenger-consumer-page">
-  <section class="passenger-login passenger-gateway" aria-label="乘客登录">
+  <section class="login-screen passenger-login passenger-gateway" aria-label="乘客登录">
     <a class="back-link login-back-link" href="./index.html">返回入口</a>
     <div class="passenger-gateway-copy">
       <a class="portal-brand" href="./index.html" aria-label="返回铁路客运票务与风控运营平台">
@@ -21,13 +21,8 @@
         </span>
       </a>
       <p class="eyebrow">Search. Book. Travel.</p>
-      <h1 class="reveal-title">查询车票<br>管理每一段行程</h1>
+      <h1 class="reveal-title" data-login-title>查询车票<br>管理每一段行程</h1>
       <p class="hero-copy">登录后可以查看可购车次、创建待支付订单、完成模拟支付、申请退票，并只查看属于当前乘客的订单与资金记录。</p>
-      <div class="passenger-login-points" aria-label="乘客端能力摘要">
-        <span>余票查询</span>
-        <span>在线购票</span>
-        <span>订单退改</span>
-      </div>
     </div>
 
     <div class="login-card passenger-login-card">
@@ -50,6 +45,9 @@
           <input id="passenger-login-password" type="password" value="123456" autocomplete="current-password">
         </label>
         <button class="primary-button wide-button" type="submit">登录乘客端</button>
+        <div class="forgot-password-row">
+          <button class="forgot-password-link" type="button" data-forgot-password-trigger>忘记密码？</button>
+        </div>
       </form>
       <form id="passenger-register-form" class="login-form passenger-register-form" hidden>
         <label>
@@ -71,16 +69,6 @@
         <div id="passenger-register-error" class="form-error" aria-live="polite"></div>
         <button class="primary-button wide-button" type="submit">注册并进入</button>
       </form>
-      <div class="demo-accounts">
-        <span>乘客演示账号</span>
-        <div><strong>passenger1</strong><small>123456 / 常用乘客</small></div>
-        <div><strong>passenger2</strong><small>123456 / 商务出行</small></div>
-        <div><strong>passenger3</strong><small>123456 / 退改记录</small></div>
-      </div>
-      <div class="connection login-connection">
-        <span id="passenger-api-status" class="status-dot"></span>
-        <span id="passenger-api-status-text">连接检测中</span>
-      </div>
     </div>
   </section>
 
@@ -747,7 +735,7 @@
   </div>
 
   <div id="passenger-toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./login-transition.js?v=20260702-login-transition-v10"></script>
+  <script src="./login-transition.js?v=20260702-forgot-password-v2"></script>
   <script src="./passenger.js?v=20260701-login-transition-v6"></script>
 </body>
 </html>

@@ -813,11 +813,15 @@ function renderAuthState() {
 async function checkHealth() {
   try {
     const health = await passengerRequest("/health", {}, false);
-    elements.apiStatus.className = "status-dot ok";
-    elements.apiStatusText.textContent = `${health.service || "后端服务"} 已连接`;
+    if (elements.apiStatus && elements.apiStatusText) {
+      elements.apiStatus.className = "status-dot ok";
+      elements.apiStatusText.textContent = `${health.service || "后端服务"} 已连接`;
+    }
   } catch (error) {
-    elements.apiStatus.className = "status-dot fail";
-    elements.apiStatusText.textContent = "后端未连接";
+    if (elements.apiStatus && elements.apiStatusText) {
+      elements.apiStatus.className = "status-dot fail";
+      elements.apiStatusText.textContent = "后端未连接";
+    }
     showToast(error.message || "无法连接后端服务，请确认 Spring Boot 后端已启动");
   }
 }

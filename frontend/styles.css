@@ -3,24 +3,24 @@
   --bg-strong: #e8edf2;
   --surface: #ffffff;
   --surface-soft: #f8fafc;
-  --surface-tint: #eef7f3;
+  --surface-tint: #f8fbff;
   --ink: #172033;
   --ink-strong: #0f172a;
   --muted: #667085;
   --muted-strong: #475467;
   --line: #d9e2ea;
   --line-strong: #c8d3df;
-  --primary: #0f6b57;
-  --primary-strong: #0a4f41;
-  --primary-soft: #dff5ee;
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+  --primary-soft: #eff6ff;
   --blue: #2563eb;
   --blue-soft: #dbeafe;
   --amber: #b7791f;
   --amber-soft: #fff4d6;
   --danger: #b42318;
   --danger-soft: #ffe4e0;
-  --success: #147d52;
-  --success-soft: #dff7eb;
+  --success: #2563eb;
+  --success-soft: #eff6ff;
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 16px 40px rgba(15, 23, 42, 0.10);
   --shadow-hover: 0 18px 42px rgba(15, 23, 42, 0.13);
@@ -43,7 +43,7 @@ body {
   min-width: 0;
   color: var(--ink);
   background:
-    linear-gradient(180deg, rgba(15, 107, 87, 0.06), transparent 360px),
+    linear-gradient(180deg, rgba(37, 99, 235, 0.06), transparent 360px),
     var(--bg);
   font-family: "Inter", "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
   font-size: 14px;
@@ -124,7 +124,7 @@ h3 {
   align-items: center;
   padding: clamp(22px, 4vw, 56px);
   background:
-    linear-gradient(135deg, rgba(15, 107, 87, 0.12), transparent 34%),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.12), transparent 34%),
     linear-gradient(315deg, rgba(37, 99, 235, 0.10), transparent 32%),
     #f7fafc;
 }
@@ -227,9 +227,9 @@ body:not([data-authenticated="true"]) .app-shell {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  border: 1px solid rgba(15, 107, 87, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.14);
   border-radius: 14px;
-  background: rgba(236, 253, 245, 0.78);
+  background: rgba(239, 246, 255, 0.78);
 }
 
 .auth-mode-button {
@@ -251,7 +251,7 @@ body:not([data-authenticated="true"]) .app-shell {
 .auth-mode-button.active {
   color: var(--primary);
   background: #ffffff;
-  box-shadow: 0 10px 24px rgba(15, 107, 87, 0.12);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.12);
 }
 
 .auth-mode-button:active {
@@ -329,8 +329,8 @@ body:not([data-authenticated="true"]) .app-shell {
   border-radius: var(--radius);
   display: grid;
   place-items: center;
-  color: #092a23;
-  background: linear-gradient(135deg, #f3c969, #dff5ee);
+  color: #0f172a;
+  background: linear-gradient(135deg, #f3c969, #eff6ff);
   font-weight: 850;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.42);
   flex: 0 0 auto;
@@ -571,13 +571,13 @@ body:not([data-authenticated="true"]) .app-shell {
 
 @keyframes sectionPulse {
   0% {
-    filter: drop-shadow(0 0 0 rgba(15, 107, 87, 0));
+    filter: drop-shadow(0 0 0 rgba(37, 99, 235, 0));
   }
   35% {
-    filter: drop-shadow(0 0 18px rgba(15, 107, 87, 0.18));
+    filter: drop-shadow(0 0 18px rgba(37, 99, 235, 0.18));
   }
   100% {
-    filter: drop-shadow(0 0 0 rgba(15, 107, 87, 0));
+    filter: drop-shadow(0 0 0 rgba(37, 99, 235, 0));
   }
 }
 
@@ -639,7 +639,7 @@ body:not([data-authenticated="true"]) .app-shell {
   right: -34px;
   top: -34px;
   border-radius: 50%;
-  background: rgba(15, 107, 87, 0.08);
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .metric strong {
@@ -699,7 +699,7 @@ body:not([data-authenticated="true"]) .app-shell {
   border-radius: 18px;
   background:
     linear-gradient(135deg, rgba(239, 68, 68, 0.06), transparent 34%),
-    linear-gradient(145deg, rgba(15, 107, 87, 0.06), transparent 58%),
+    linear-gradient(145deg, rgba(37, 99, 235, 0.06), transparent 58%),
     rgba(255, 255, 255, 0.94);
   box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
 }
@@ -744,7 +744,7 @@ body:not([data-authenticated="true"]) .app-shell {
 
 .ops-workbench-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(15, 107, 87, 0.22);
+  border-color: rgba(37, 99, 235, 0.22);
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.10);
 }
 
@@ -829,8 +829,8 @@ body:not([data-authenticated="true"]) .app-shell {
   flex: 0 0 auto;
   padding: 3px 7px;
   border-radius: 999px;
-  background: rgba(15, 107, 87, 0.10);
-  color: #0f6b57;
+  background: rgba(37, 99, 235, 0.10);
+  color: #2563eb;
   font-size: 11px;
   font-weight: 800;
 }
@@ -960,7 +960,7 @@ body:not([data-authenticated="true"]) .app-shell {
 
 .route-chip:hover {
   color: var(--primary-strong);
-  border-color: #b8e5d8;
+  border-color: #bfdbfe;
   background: var(--primary-soft);
   transform: translateY(-1px);
 }
@@ -1018,7 +1018,7 @@ input:focus {
 .primary-button {
   color: #ffffff;
   background: var(--primary);
-  box-shadow: 0 8px 18px rgba(15, 107, 87, 0.18);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.18);
 }
 
 .primary-button:hover {
@@ -1029,11 +1029,11 @@ input:focus {
 .secondary-button {
   color: var(--primary-strong);
   background: var(--primary-soft);
-  border-color: #b8e5d8;
+  border-color: #bfdbfe;
 }
 
 .secondary-button:hover {
-  background: #ccefe4;
+  background: #dbeafe;
 }
 
 .ghost-button {
@@ -1192,7 +1192,7 @@ td {
 
 tbody tr:hover {
   background: #f1f7fb;
-  box-shadow: inset 3px 0 0 rgba(15, 107, 87, 0.32);
+  box-shadow: inset 3px 0 0 rgba(37, 99, 235, 0.32);
 }
 
 tr:last-child td {
@@ -1286,9 +1286,9 @@ tr:last-child td {
 }
 
 .status.issued {
-  color: #0f6b57;
-  background: #ddf8ee;
-  border-color: #a8e6d1;
+  color: #2563eb;
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
 .status.closed,
@@ -1725,7 +1725,7 @@ body.modal-open {
   border-radius: var(--radius);
   padding: 16px;
   background:
-    linear-gradient(135deg, rgba(15, 107, 87, 0.08), transparent 44%),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.08), transparent 44%),
     #ffffff;
 }
 
@@ -1765,8 +1765,8 @@ body.modal-open {
 
 .detail-status-grid article.issued,
 .detail-status-grid article.success {
-  border-color: rgba(15, 107, 87, 0.24);
-  background: rgba(236, 253, 245, 0.72);
+  border-color: rgba(37, 99, 235, 0.24);
+  background: rgba(239, 246, 255, 0.72);
 }
 
 .detail-status-grid article.refunded,
@@ -1781,10 +1781,10 @@ body.modal-open {
   display: grid;
   gap: 10px;
   padding: 14px 16px;
-  border: 1px solid rgba(15, 107, 87, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.14);
   border-radius: 18px;
   background:
-    linear-gradient(135deg, rgba(236, 253, 245, 0.72), rgba(255, 255, 255, 0.96)),
+    linear-gradient(135deg, rgba(239, 246, 255, 0.72), rgba(255, 255, 255, 0.96)),
     #ffffff;
 }
 
@@ -1807,9 +1807,9 @@ body.modal-open {
   min-height: 32px;
   padding: 7px 10px;
   border-radius: 999px;
-  color: #245e53;
+  color: #334155;
   background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(15, 107, 87, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.12);
   font-size: 12px;
   font-weight: 700;
 }
@@ -1822,9 +1822,9 @@ body.modal-open {
 }
 
 .admin-issue-strip.clear {
-  border-color: rgba(15, 107, 87, 0.14);
+  border-color: rgba(37, 99, 235, 0.14);
   background:
-    linear-gradient(135deg, rgba(236, 253, 245, 0.72), rgba(255, 255, 255, 0.96)),
+    linear-gradient(135deg, rgba(239, 246, 255, 0.72), rgba(255, 255, 255, 0.96)),
     #ffffff;
 }
 
@@ -1888,10 +1888,10 @@ body.modal-open {
   justify-content: space-between;
   gap: 14px;
   padding: 14px 16px;
-  border: 1px solid rgba(15, 107, 87, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.14);
   border-radius: 18px;
   background:
-    linear-gradient(135deg, rgba(236, 253, 245, 0.70), rgba(255, 255, 255, 0.94)),
+    linear-gradient(135deg, rgba(239, 246, 255, 0.70), rgba(255, 255, 255, 0.94)),
     #ffffff;
 }
 
@@ -2019,12 +2019,12 @@ body.modal-open {
   width: max-content;
   max-width: calc(100% - 32px);
   margin: 0 auto 10px;
-  border: 1px solid rgba(15, 107, 87, 0.16);
+  border: 1px solid rgba(37, 99, 235, 0.16);
   border-radius: 999px;
   padding: 7px 12px;
-  color: #0f6b57;
-  background: rgba(236, 253, 245, 0.96);
-  box-shadow: 0 10px 24px rgba(15, 107, 87, 0.12);
+  color: #2563eb;
+  background: rgba(239, 246, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.12);
   font-size: 12px;
   font-weight: 800;
 }
@@ -2032,7 +2032,7 @@ body.modal-open {
 .entry-page {
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 14% 12%, rgba(15, 107, 87, 0.14), transparent 30%),
+    radial-gradient(circle at 14% 12%, rgba(37, 99, 235, 0.14), transparent 30%),
     radial-gradient(circle at 88% 14%, rgba(37, 99, 235, 0.12), transparent 28%),
     linear-gradient(180deg, #f8fafc 0%, #eef3f7 100%);
 }
@@ -2145,7 +2145,7 @@ body.modal-open {
   width: 220px;
   height: 220px;
   border-radius: 50%;
-  background: rgba(15, 107, 87, 0.10);
+  background: rgba(37, 99, 235, 0.10);
 }
 
 .admin-entry::after {
@@ -2154,7 +2154,7 @@ body.modal-open {
 
 .entry-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(15, 107, 87, 0.34);
+  border-color: rgba(37, 99, 235, 0.34);
   box-shadow: var(--shadow-hover);
 }
 
@@ -2236,7 +2236,7 @@ body.modal-open {
   color: #ffffff;
   border-radius: var(--radius);
   background: var(--primary);
-  box-shadow: 0 10px 22px rgba(15, 107, 87, 0.20);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.20);
 }
 
 .admin-entry .entry-action {
@@ -2280,7 +2280,7 @@ body.modal-open {
 
 .passenger-page {
   background:
-    linear-gradient(180deg, rgba(15, 107, 87, 0.08), transparent 420px),
+    linear-gradient(180deg, rgba(37, 99, 235, 0.08), transparent 420px),
     var(--bg);
 }
 
@@ -2300,7 +2300,7 @@ body:not([data-passenger-authenticated="true"]) .passenger-shell {
   align-items: center;
   padding: clamp(22px, 4vw, 56px);
   background:
-    linear-gradient(135deg, rgba(15, 107, 87, 0.14), transparent 34%),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.14), transparent 34%),
     linear-gradient(315deg, rgba(37, 99, 235, 0.08), transparent 32%),
     #f7fafc;
 }
@@ -2325,7 +2325,7 @@ body:not([data-passenger-authenticated="true"]) .passenger-shell {
 }
 
 .back-link:hover {
-  border-color: rgba(15, 107, 87, 0.30);
+  border-color: rgba(37, 99, 235, 0.30);
   background: var(--primary-soft);
 }
 
@@ -2343,7 +2343,7 @@ body:not([data-passenger-authenticated="true"]) .passenger-shell {
   flex-direction: column;
   gap: 24px;
   color: #ffffff;
-  background: linear-gradient(180deg, #0f4f42, #123c57 68%, #172033);
+  background: linear-gradient(180deg, #1e3a8a, #123c57 68%, #172033);
 }
 
 .passenger-main {
@@ -2352,7 +2352,7 @@ body:not([data-passenger-authenticated="true"]) .passenger-shell {
 
 .passenger-product-shell {
   background:
-    linear-gradient(180deg, rgba(15, 107, 87, 0.09), transparent 360px),
+    linear-gradient(180deg, rgba(37, 99, 235, 0.09), transparent 360px),
     var(--bg);
 }
 
@@ -2437,7 +2437,7 @@ body:not([data-passenger-authenticated="true"]) .passenger-shell {
   border: 1px solid var(--line);
   border-radius: 14px;
   background:
-    linear-gradient(135deg, rgba(15, 107, 87, 0.10), transparent 44%),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.10), transparent 44%),
     rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow-md);
 }
@@ -2488,7 +2488,7 @@ body:not([data-passenger-authenticated="true"]) .passenger-shell {
 
 .clickable-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(15, 107, 87, 0.32);
+  border-color: rgba(37, 99, 235, 0.32);
   box-shadow: var(--shadow-hover);
 }
 
@@ -2521,7 +2521,7 @@ body:not([data-passenger-authenticated="true"]) .passenger-shell {
 
 .passenger-order-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(15, 107, 87, 0.24);
+  border-color: rgba(37, 99, 235, 0.24);
   box-shadow: var(--shadow-hover);
 }
 
@@ -2814,7 +2814,7 @@ body.passenger-consumer-page {
 
 .portal-page {
   background:
-    radial-gradient(circle at 10% 10%, rgba(20, 184, 166, 0.10), transparent 24%),
+    radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.10), transparent 24%),
     radial-gradient(circle at 6% 86%, rgba(59, 130, 246, 0.09), transparent 26%),
     #ffffff !important;
 }
@@ -2823,7 +2823,7 @@ body.passenger-consumer-page {
 .passenger-consumer-page,
 .passenger-consumer-shell {
   background:
-    radial-gradient(circle at 9% 8%, rgba(20, 184, 166, 0.09), transparent 24%),
+    radial-gradient(circle at 9% 8%, rgba(37, 99, 235, 0.09), transparent 24%),
     radial-gradient(circle at 8% 88%, rgba(59, 130, 246, 0.08), transparent 24%),
     #ffffff !important;
 }
@@ -3142,8 +3142,8 @@ body.passenger-consumer-page {
   height: 44px;
   border-radius: 16px;
   color: #ffffff;
-  background: linear-gradient(135deg, #0f6b57, #3b82f6);
-  box-shadow: 0 12px 26px rgba(15, 107, 87, 0.16);
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.16);
 }
 
 .booking-landing {
@@ -3203,7 +3203,7 @@ body.passenger-consumer-page {
 }
 
 .nav-badge.is-empty {
-  background: rgba(22, 49, 44, 0.12);
+  background: rgba(15, 23, 42, 0.12);
   color: #64716d;
 }
 
@@ -3229,8 +3229,8 @@ body.passenger-consumer-page {
 
 .chain-record.issued,
 .chain-record.success {
-  border-color: rgba(15, 107, 87, 0.20);
-  background: rgba(236, 253, 245, 0.72);
+  border-color: rgba(37, 99, 235, 0.20);
+  background: rgba(239, 246, 255, 0.72);
 }
 
 .chain-record.closed,
@@ -3256,10 +3256,10 @@ body.passenger-consumer-page {
   gap: 16px;
   margin: 0 0 14px;
   padding: 14px 16px;
-  border: 1px solid rgba(15, 107, 87, 0.16);
+  border: 1px solid rgba(37, 99, 235, 0.16);
   border-radius: 18px;
-  background: linear-gradient(135deg, rgba(236, 253, 245, 0.86), rgba(255, 255, 255, 0.96));
-  box-shadow: 0 12px 28px rgba(15, 107, 87, 0.06);
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.86), rgba(255, 255, 255, 0.96));
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.06);
 }
 
 .notification-guide-panel strong,
@@ -3290,8 +3290,8 @@ body.passenger-consumer-page {
   margin: 0;
   padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(15, 107, 87, 0.10);
-  color: #0f6b57;
+  background: rgba(37, 99, 235, 0.10);
+  color: #2563eb;
   font-size: 12px;
   font-weight: 800;
 }
@@ -3338,7 +3338,7 @@ body.passenger-consumer-page {
 }
 
 .notification-next-step span {
-  color: #0f6b57;
+  color: #2563eb;
   font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
@@ -3375,20 +3375,20 @@ body.passenger-consumer-page {
   display: grid;
   gap: 8px;
   padding: 14px;
-  border: 1px solid rgba(15, 107, 87, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.14);
   border-radius: 18px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(239, 253, 249, 0.78));
   color: var(--ink-strong);
   text-align: left;
-  box-shadow: 0 12px 30px rgba(15, 107, 87, 0.06);
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.06);
   cursor: pointer;
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 .transaction-stat-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(15, 107, 87, 0.28);
-  box-shadow: 0 18px 36px rgba(15, 107, 87, 0.10);
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 18px 36px rgba(37, 99, 235, 0.10);
 }
 
 .transaction-stat-card span {
@@ -3414,7 +3414,7 @@ body.passenger-consumer-page {
   border: 1px solid rgba(100, 116, 139, 0.14);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 16px 36px rgba(22, 49, 44, 0.06);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
 }
 
 .transaction-flow-board > article {
@@ -3422,7 +3422,7 @@ body.passenger-consumer-page {
 }
 
 .change-mini-card {
-  border-color: rgba(15, 107, 87, 0.12);
+  border-color: rgba(37, 99, 235, 0.12);
 }
 
 .passenger-change-list {
@@ -3441,8 +3441,8 @@ body.passenger-consumer-page {
 
 .ticket-change-card.issued,
 .ticket-change-card.success {
-  border-color: rgba(15, 107, 87, 0.24);
-  background: linear-gradient(135deg, rgba(236, 253, 245, 0.74), rgba(255, 255, 255, 0.96));
+  border-color: rgba(37, 99, 235, 0.24);
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.74), rgba(255, 255, 255, 0.96));
 }
 
 .ticket-change-card.closed,
@@ -3512,7 +3512,7 @@ body.passenger-consumer-page {
   color: #143b34;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(22, 49, 44, 0.055);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.055);
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
@@ -3520,8 +3520,8 @@ body.passenger-consumer-page {
 .change-candidate-card.selected {
   transform: translateY(-2px);
   border-color: rgba(15, 143, 117, 0.38);
-  background: linear-gradient(135deg, rgba(236, 253, 245, 0.80), #ffffff);
-  box-shadow: 0 16px 30px rgba(15, 107, 87, 0.10);
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.80), #ffffff);
+  box-shadow: 0 16px 30px rgba(37, 99, 235, 0.10);
 }
 
 .change-route,
@@ -3534,7 +3534,7 @@ body.passenger-consumer-page {
 
 .change-route strong {
   flex: 0 0 auto;
-  color: #0f6b57;
+  color: #2563eb;
   font-size: 16px;
 }
 
@@ -3604,7 +3604,7 @@ body.passenger-consumer-page {
   grid-template-columns: minmax(112px, 0.78fr) minmax(154px, 1fr) minmax(126px, 0.82fr) minmax(92px, auto);
   gap: 10px;
   border-radius: 14px;
-  box-shadow: 0 6px 14px rgba(22, 49, 44, 0.045);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.045);
 }
 
 .ticket-card-route .train-no {
@@ -3815,13 +3815,13 @@ body.passenger-consumer-page {
 .portal-page {
   background:
     linear-gradient(135deg, rgba(14, 91, 112, 0.10), transparent 34%),
-    linear-gradient(315deg, rgba(15, 107, 87, 0.09), transparent 36%),
+    linear-gradient(315deg, rgba(37, 99, 235, 0.09), transparent 36%),
     #f4f8fb;
 }
 
 .portal-page::before {
   inset: 18px;
-  border-color: rgba(22, 49, 44, 0.06);
+  border-color: rgba(15, 23, 42, 0.06);
 }
 
 .portal-shell {
@@ -3857,7 +3857,7 @@ body.passenger-consumer-page {
   min-height: 74px;
   padding: 12px;
   border-radius: 14px;
-  box-shadow: 0 8px 22px rgba(22, 49, 44, 0.05);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
 }
 
 .portal-choice-grid {
@@ -3868,7 +3868,7 @@ body.passenger-consumer-page {
   min-height: 206px;
   padding: clamp(20px, 2.6vw, 28px);
   cursor: default;
-  box-shadow: 0 18px 46px rgba(22, 49, 44, 0.10);
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.10);
 }
 
 .portal-choice:hover {
@@ -3901,14 +3901,14 @@ body.passenger-consumer-page {
 
 .passenger-consumer-page {
   background:
-    linear-gradient(180deg, rgba(12, 93, 112, 0.08), transparent 380px),
+    linear-gradient(180deg, rgba(37, 99, 235, 0.08), transparent 380px),
     #f4f8fb;
 }
 
 .passenger-gateway {
   background:
-    linear-gradient(135deg, rgba(12, 93, 112, 0.11), transparent 36%),
-    linear-gradient(315deg, rgba(15, 107, 87, 0.08), transparent 34%),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.11), transparent 36%),
+    linear-gradient(315deg, rgba(37, 99, 235, 0.08), transparent 34%),
     #f4f8fb;
 }
 
@@ -3931,9 +3931,9 @@ body.passenger-consumer-page {
   padding: 7px 12px;
   display: inline-flex;
   align-items: center;
-  border: 1px solid rgba(15, 107, 87, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.14);
   border-radius: 999px;
-  color: #31524a;
+  color: #1e3a8a;
   background: rgba(255, 255, 255, 0.70);
   font-size: 13px;
   font-weight: 760;
@@ -3941,7 +3941,7 @@ body.passenger-consumer-page {
 
 .passenger-consumer-shell {
   background:
-    linear-gradient(180deg, rgba(12, 93, 112, 0.08), transparent 400px),
+    linear-gradient(180deg, rgba(37, 99, 235, 0.08), transparent 400px),
     #f4f8fb;
 }
 
@@ -3956,7 +3956,7 @@ body.passenger-consumer-page {
   padding-top: 5px;
   padding-bottom: 5px;
   background: rgba(244, 248, 251, 0.72);
-  box-shadow: 0 8px 28px rgba(22, 49, 44, 0.08);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.08);
 }
 
 .passenger-header-compact .passenger-site-header:hover,
@@ -3986,10 +3986,10 @@ body.passenger-consumer-page {
   display: grid;
   place-items: center;
   border-radius: 18px;
-  color: #0f6b57;
+  color: #2563eb;
   background: linear-gradient(135deg, #ffffff, #e7f3f1);
-  border: 1px solid rgba(15, 107, 87, 0.14);
-  box-shadow: 0 10px 24px rgba(15, 107, 87, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.14);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.12);
 }
 
 .passenger-logo svg {
@@ -4017,7 +4017,7 @@ body.passenger-consumer-page {
 .passenger-record-section {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 14px 40px rgba(22, 49, 44, 0.08);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
 }
 
 .booking-hero-panel {
@@ -4037,7 +4037,7 @@ body.passenger-consumer-page {
   padding: 14px;
   grid-template-columns: 1fr;
   border-radius: 16px;
-  box-shadow: 0 10px 26px rgba(22, 49, 44, 0.06);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
 }
 
 .booking-actions {
@@ -4073,7 +4073,7 @@ body.passenger-consumer-page {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(10px);
@@ -4099,7 +4099,7 @@ body.passenger-consumer-page {
   padding: 12px;
   grid-template-columns: minmax(116px, 0.78fr) minmax(160px, 1fr) minmax(120px, 0.72fr) auto;
   border-radius: 16px;
-  box-shadow: 0 8px 18px rgba(22, 49, 44, 0.055);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.055);
 }
 
 .ticket-card-route {
@@ -4190,7 +4190,7 @@ body.passenger-consumer-page {
 .passenger-order-card {
   padding: 13px;
   border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(22, 49, 44, 0.06);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
 .passenger-order-main h3 {
@@ -4221,7 +4221,7 @@ body.passenger-consumer-page {
 .money-record-card {
   padding: 13px;
   border-radius: 16px;
-  box-shadow: 0 8px 20px rgba(22, 49, 44, 0.06);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
 .record-title-row {
@@ -4286,7 +4286,7 @@ body.passenger-consumer-page {
   position: fixed;
   inset: 28px;
   z-index: -1;
-  border: 1px solid rgba(22, 49, 44, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 28px;
   pointer-events: none;
 }
@@ -4360,10 +4360,10 @@ body.passenger-consumer-page {
   display: grid;
   align-content: center;
   gap: 7px;
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.62);
-  box-shadow: 0 12px 32px rgba(22, 49, 44, 0.07);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
 }
 
 .portal-proof span {
@@ -4392,12 +4392,12 @@ body.passenger-consumer-page {
   overflow: hidden;
   color: #17342e;
   text-decoration: none;
-  border: 1px solid rgba(22, 49, 44, 0.12);
+  border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 24px;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.72)),
     #ffffff;
-  box-shadow: 0 26px 70px rgba(22, 49, 44, 0.12);
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.12);
 }
 
 .portal-choice::before {
@@ -4423,8 +4423,8 @@ body.passenger-consumer-page {
 
 .portal-choice:hover {
   transform: translateY(-5px);
-  border-color: rgba(15, 107, 87, 0.28);
-  box-shadow: 0 34px 86px rgba(22, 49, 44, 0.16);
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 34px 86px rgba(15, 23, 42, 0.16);
 }
 
 .portal-choice:active {
@@ -4437,8 +4437,8 @@ body.passenger-consumer-page {
   display: grid;
   place-items: center;
   border-radius: 14px;
-  color: #0f6b57;
-  background: rgba(15, 107, 87, 0.10);
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.10);
   font-weight: 850;
 }
 
@@ -4482,7 +4482,7 @@ body.passenger-consumer-page {
   width: 7px;
   height: 7px;
   border-radius: 999px;
-  background: #0f6b57;
+  background: #2563eb;
 }
 
 .admin-choice .choice-points li::before {
@@ -4497,8 +4497,8 @@ body.passenger-consumer-page {
   align-items: center;
   border-radius: 999px;
   color: #ffffff;
-  background: #0f6b57;
-  box-shadow: 0 14px 30px rgba(15, 107, 87, 0.20);
+  background: #2563eb;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.20);
 }
 
 .choice-action::after {
@@ -4532,7 +4532,7 @@ body.passenger-consumer-page {
   min-height: 100dvh;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
   background:
-    linear-gradient(135deg, rgba(15, 107, 87, 0.13), transparent 36%),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.13), transparent 36%),
     linear-gradient(315deg, rgba(243, 201, 105, 0.18), transparent 34%),
     #f7f3ea;
 }
@@ -4555,10 +4555,10 @@ body.passenger-consumer-page {
   padding: 20px;
   display: grid;
   gap: 16px;
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.76);
-  box-shadow: 0 28px 70px rgba(22, 49, 44, 0.11);
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.11);
 }
 
 .ticket-preview-route {
@@ -4585,8 +4585,8 @@ body.passenger-consumer-page {
   place-items: center;
   border-radius: 50%;
   color: #ffffff;
-  background: linear-gradient(135deg, #0f6b57, #2563eb);
-  box-shadow: 0 16px 34px rgba(15, 107, 87, 0.18);
+  background: linear-gradient(135deg, #2563eb, #2563eb);
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.18);
 }
 
 .ticket-preview-meta {
@@ -4602,8 +4602,8 @@ body.passenger-consumer-page {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  color: #31524a;
-  background: rgba(15, 107, 87, 0.09);
+  color: #1e3a8a;
+  background: rgba(37, 99, 235, 0.09);
   font-size: 12px;
   font-weight: 780;
 }
@@ -4611,7 +4611,7 @@ body.passenger-consumer-page {
 .passenger-consumer-shell {
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(15, 107, 87, 0.08), transparent 480px),
+    linear-gradient(180deg, rgba(37, 99, 235, 0.08), transparent 480px),
     #f7f3ea;
 }
 
@@ -4625,7 +4625,7 @@ body.passenger-consumer-page {
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 22px;
   align-items: center;
-  border-bottom: 1px solid rgba(22, 49, 44, 0.10);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.10);
   background: rgba(247, 243, 234, 0.86);
   backdrop-filter: blur(18px);
 }
@@ -4661,8 +4661,8 @@ body.passenger-consumer-page {
 
 .passenger-site-nav a:hover,
 .passenger-site-nav a.active {
-  color: #0f6b57;
-  background: rgba(15, 107, 87, 0.10);
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.10);
 }
 
 .passenger-account .auth-summary {
@@ -4695,10 +4695,10 @@ body.passenger-consumer-page {
 .passenger-home-section,
 .passenger-order-center,
 .passenger-record-section {
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 26px;
   background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 22px 62px rgba(22, 49, 44, 0.09);
+  box-shadow: 0 22px 62px rgba(15, 23, 42, 0.09);
 }
 
 .booking-hero-panel {
@@ -4707,7 +4707,7 @@ body.passenger-consumer-page {
   align-content: center;
   gap: 22px;
   background:
-    linear-gradient(135deg, rgba(15, 107, 87, 0.12), transparent 54%),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.12), transparent 54%),
     rgba(255, 255, 255, 0.82);
 }
 
@@ -4729,10 +4729,10 @@ body.passenger-consumer-page {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 22px;
   background: #ffffff;
-  box-shadow: 0 16px 36px rgba(22, 49, 44, 0.08);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
 }
 
 .booking-search-card label {
@@ -4788,10 +4788,10 @@ body.passenger-consumer-page {
   grid-template-columns: minmax(150px, 0.8fr) minmax(190px, 1fr) minmax(150px, 0.8fr) auto;
   gap: 14px;
   align-items: center;
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 12px 28px rgba(22, 49, 44, 0.07);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
 }
 
 .train-ticket-card:hover,
@@ -4799,8 +4799,8 @@ body.passenger-consumer-page {
 .passenger-order-card:hover,
 .journey-panel:hover {
   transform: translateY(-2px);
-  border-color: rgba(15, 107, 87, 0.24);
-  box-shadow: 0 18px 42px rgba(22, 49, 44, 0.11);
+  border-color: rgba(37, 99, 235, 0.24);
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.11);
 }
 
 .ticket-card-route {
@@ -4813,7 +4813,7 @@ body.passenger-consumer-page {
   padding: 6px 10px;
   border-radius: 999px;
   color: #ffffff;
-  background: #0f6b57;
+  background: #2563eb;
 }
 
 .ticket-card-route span,
@@ -4880,7 +4880,7 @@ body.passenger-consumer-page {
 
 .passenger-traveler-section {
   padding: clamp(20px, 3vw, 28px);
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 26px;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 18px 46px rgba(21, 66, 58, 0.08);
@@ -4895,7 +4895,7 @@ body.passenger-consumer-page {
 
 .traveler-form-card,
 .traveler-card {
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 20px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fcfb 100%);
   box-shadow: 0 12px 30px rgba(21, 66, 58, 0.06);
@@ -4917,7 +4917,7 @@ body.passenger-consumer-page {
   gap: 10px;
   width: fit-content;
   padding: 8px 12px;
-  border: 1px solid rgba(15, 107, 87, 0.18);
+  border: 1px solid rgba(37, 99, 235, 0.18);
   border-radius: 999px;
   color: #27433d;
   font-size: 13px;
@@ -4932,7 +4932,7 @@ body.passenger-consumer-page {
   height: 18px;
   margin: 0;
   border-radius: 6px;
-  accent-color: #0f6b57;
+  accent-color: #2563eb;
   flex: 0 0 auto;
 }
 
@@ -4959,8 +4959,8 @@ body.passenger-consumer-page {
 }
 
 .traveler-card.default-traveler {
-  border-color: rgba(15, 107, 87, 0.28);
-  background: linear-gradient(135deg, rgba(232, 250, 244, 0.9), #ffffff 72%);
+  border-color: rgba(37, 99, 235, 0.28);
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.9), #ffffff 72%);
 }
 
 .buy-form > label {
@@ -4989,10 +4989,10 @@ body.passenger-consumer-page {
   align-content: center;
   gap: 8px;
   text-align: left;
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 10px 26px rgba(22, 49, 44, 0.06);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
 }
 
 .journey-stat span {
@@ -5021,15 +5021,15 @@ body.passenger-consumer-page {
 
 .journey-panel {
   padding: 18px;
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 12px 30px rgba(22, 49, 44, 0.07);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
 }
 
 .accent-panel {
   background:
-    linear-gradient(135deg, rgba(15, 107, 87, 0.08), transparent 56%),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.08), transparent 56%),
     #ffffff;
 }
 
@@ -5053,7 +5053,7 @@ body.passenger-consumer-page {
 .passenger-order-card {
   border-radius: 22px;
   background:
-    linear-gradient(90deg, rgba(15, 107, 87, 0.06), transparent 30%),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.06), transparent 30%),
     #ffffff;
 }
 
@@ -5069,10 +5069,10 @@ body.passenger-consumer-page {
 
 .money-record-card {
   padding: 16px;
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 12px 28px rgba(22, 49, 44, 0.07);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
 }
 
 .record-title-row {
@@ -5127,7 +5127,7 @@ body.passenger-consumer-page {
   padding: 24px;
   display: grid;
   gap: 6px;
-  border: 1px dashed rgba(22, 49, 44, 0.18);
+  border: 1px dashed rgba(15, 23, 42, 0.18);
   border-radius: 20px;
   color: #64716d;
   background: rgba(255, 255, 255, 0.58);
@@ -5140,7 +5140,7 @@ body.passenger-consumer-page {
 .passenger-empty-action {
   min-height: 200px;
   align-content: center;
-  border: 1px dashed rgba(22, 49, 44, 0.18);
+  border: 1px dashed rgba(15, 23, 42, 0.18);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.58);
 }
@@ -5255,7 +5255,7 @@ body.passenger-consumer-page,
 .passenger-gateway,
 .passenger-consumer-shell {
   background:
-    radial-gradient(circle at 9% 9%, rgba(20, 184, 166, 0.08), transparent 23%),
+    radial-gradient(circle at 9% 9%, rgba(37, 99, 235, 0.08), transparent 23%),
     radial-gradient(circle at 7% 90%, rgba(59, 130, 246, 0.075), transparent 24%),
     #ffffff !important;
 }
@@ -5480,7 +5480,7 @@ body.passenger-consumer-page,
 
 .portal-proof > div:hover {
   transform: translateY(-4px);
-  border-color: rgba(20, 184, 166, 0.26) !important;
+  border-color: rgba(37, 99, 235, 0.26) !important;
   background: rgba(255, 255, 255, 0.9) !important;
   box-shadow: 0 16px 34px rgba(20, 54, 75, 0.09) !important;
 }
@@ -5968,7 +5968,7 @@ body.passenger-consumer-page {
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(15, 118, 110, 0.08);
-  color: #0f766e;
+  color: #1d4ed8;
   font-size: 12px;
 }
 
@@ -5989,10 +5989,9 @@ body.passenger-consumer-page {
 /* Landing page redesign: high-trust railway ticketing and risk operations portal */
 .landing-redesign-page {
   --landing-ink: #ecfdf5;
-  --landing-ink-soft: rgba(236, 253, 245, 0.76);
-  --landing-muted: rgba(204, 251, 241, 0.68);
-  --landing-line: rgba(180, 255, 229, 0.16);
-  --landing-green: #3ddc97;
+  --landing-ink-soft: rgba(239, 246, 255, 0.76);
+  --landing-muted: rgba(219, 234, 254, 0.68);
+  --landing-line: rgba(191, 219, 254, 0.16);
   --landing-blue: #60a5fa;
   --landing-orange: #f8c471;
   min-height: 100dvh;
@@ -6017,7 +6016,7 @@ body.passenger-consumer-page {
 .landing-redesign-page::before {
   background:
     linear-gradient(118deg, transparent 0 42%, rgba(125, 211, 252, 0.12) 42.2%, transparent 43% 100%),
-    linear-gradient(126deg, transparent 0 51%, rgba(52, 211, 153, 0.13) 51.2%, transparent 52% 100%),
+    linear-gradient(126deg, transparent 0 51%, rgba(96, 165, 250, 0.13) 51.2%, transparent 52% 100%),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 92px),
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 88px);
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.88), transparent 78%);
@@ -6066,9 +6065,9 @@ body.passenger-consumer-page {
   font-size: 16px;
   font-weight: 800;
   background:
-    linear-gradient(135deg, rgba(20, 184, 166, 0.92), rgba(37, 99, 235, 0.72)),
-    #0f766e;
-  box-shadow: 0 14px 32px rgba(20, 184, 166, 0.22);
+    linear-gradient(135deg, rgba(37, 99, 235, 0.92), rgba(37, 99, 235, 0.72)),
+    #1d4ed8;
+  box-shadow: 0 14px 32px rgba(37, 99, 235, 0.22);
 }
 
 .landing-brand strong,
@@ -6095,7 +6094,7 @@ body.passenger-consumer-page {
   justify-content: center;
   gap: 6px;
   padding: 6px;
-  border: 1px solid rgba(204, 251, 241, 0.12);
+  border: 1px solid rgba(219, 234, 254, 0.12);
   border-radius: 999px;
   background: rgba(3, 18, 22, 0.38);
 }
@@ -6137,7 +6136,7 @@ body.passenger-consumer-page {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid rgba(204, 251, 241, 0.18);
+  border: 1px solid rgba(219, 234, 254, 0.18);
   border-radius: 999px;
   color: var(--landing-ink);
   text-decoration: none;
@@ -6158,10 +6157,10 @@ body.passenger-consumer-page {
 
 .landing-button.solid,
 .landing-button.primary {
-  border-color: rgba(52, 211, 153, 0.28);
-  color: #05201f;
-  background: linear-gradient(135deg, #a7f3d0, #7dd3fc);
-  box-shadow: 0 16px 34px rgba(20, 184, 166, 0.22);
+  border-color: rgba(96, 165, 250, 0.28);
+  color: #0f172a;
+  background: linear-gradient(135deg, #dbeafe, #7dd3fc);
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.22);
 }
 
 .landing-button.ghost,
@@ -6198,7 +6197,7 @@ body.passenger-consumer-page {
 .landing-eyebrow,
 .gateway-label {
   margin: 0;
-  color: var(--landing-green);
+  color: var(--landing-blue);
   font-size: 12px;
   font-weight: 820;
   letter-spacing: 0;
@@ -6236,7 +6235,7 @@ body.passenger-consumer-page {
   padding: 8px 12px;
   display: inline-flex;
   align-items: center;
-  border: 1px solid rgba(204, 251, 241, 0.15);
+  border: 1px solid rgba(219, 234, 254, 0.15);
   border-radius: 999px;
   color: var(--landing-ink-soft);
   background: rgba(255, 255, 255, 0.07);
@@ -6256,7 +6255,7 @@ body.passenger-consumer-page {
   display: grid;
   align-content: space-between;
   gap: 20px;
-  border: 1px solid rgba(204, 251, 241, 0.17);
+  border: 1px solid rgba(219, 234, 254, 0.17);
   border-radius: 34px;
   background:
     radial-gradient(circle at 80% 10%, rgba(96, 165, 250, 0.22), transparent 34%),
@@ -6270,7 +6269,7 @@ body.passenger-consumer-page {
   content: "";
   position: absolute;
   inset: 16px;
-  border: 1px solid rgba(204, 251, 241, 0.09);
+  border: 1px solid rgba(219, 234, 254, 0.09);
   border-radius: 26px;
   pointer-events: none;
 }
@@ -6316,7 +6315,7 @@ body.passenger-consumer-page {
 }
 
 .rail-grid-line {
-  stroke: rgba(204, 251, 241, 0.2);
+  stroke: rgba(219, 234, 254, 0.2);
   stroke-width: 2;
 }
 
@@ -6334,7 +6333,7 @@ body.passenger-consumer-page {
 
 .rail-map-card circle {
   fill: #ffffff;
-  stroke: rgba(52, 211, 153, 0.9);
+  stroke: rgba(96, 165, 250, 0.9);
   stroke-width: 4;
 }
 
@@ -6350,7 +6349,7 @@ body.passenger-consumer-page {
   display: grid;
   gap: 5px;
   align-content: center;
-  border: 1px solid rgba(204, 251, 241, 0.12);
+  border: 1px solid rgba(219, 234, 254, 0.12);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.07);
 }
@@ -6362,7 +6361,7 @@ body.passenger-consumer-page {
 
 .landing-section {
   padding: clamp(28px, 5vw, 54px);
-  border: 1px solid rgba(204, 251, 241, 0.12);
+  border: 1px solid rgba(219, 234, 254, 0.12);
   border-radius: 34px;
   background: rgba(5, 22, 27, 0.54);
   box-shadow: 0 26px 70px rgba(0, 0, 0, 0.18);
@@ -6396,7 +6395,7 @@ body.passenger-consumer-page {
 
 .landing-capability-grid article,
 .landing-gateway-card {
-  border: 1px solid rgba(204, 251, 241, 0.13);
+  border: 1px solid rgba(219, 234, 254, 0.13);
   border-radius: 24px;
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.045));
   transition: transform 220ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
@@ -6410,7 +6409,7 @@ body.passenger-consumer-page {
 .landing-capability-grid article:hover,
 .landing-gateway-card:hover {
   transform: translateY(-5px);
-  border-color: rgba(52, 211, 153, 0.34);
+  border-color: rgba(96, 165, 250, 0.34);
   box-shadow: 0 22px 48px rgba(0, 0, 0, 0.2);
 }
 
@@ -6420,8 +6419,8 @@ body.passenger-consumer-page {
   display: grid;
   place-items: center;
   border-radius: 14px;
-  color: #05201f;
-  background: linear-gradient(135deg, #a7f3d0, #7dd3fc);
+  color: #0f172a;
+  background: linear-gradient(135deg, #dbeafe, #7dd3fc);
   font-size: 12px;
   font-weight: 820;
 }
@@ -6457,7 +6456,7 @@ body.passenger-consumer-page {
 
 .landing-gateway-card.passenger {
   background:
-    radial-gradient(circle at 86% 16%, rgba(52, 211, 153, 0.18), transparent 36%),
+    radial-gradient(circle at 86% 16%, rgba(96, 165, 250, 0.18), transparent 36%),
     linear-gradient(160deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.045));
 }
 
@@ -6483,7 +6482,7 @@ body.passenger-consumer-page {
   padding: 15px 12px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(204, 251, 241, 0.13);
+  border: 1px solid rgba(219, 234, 254, 0.13);
   border-radius: 20px;
   color: #ffffff;
   background: rgba(255, 255, 255, 0.07);
@@ -6497,7 +6496,7 @@ body.passenger-consumer-page {
   content: "0" counter(flow);
   display: block;
   margin-bottom: 4px;
-  color: var(--landing-green);
+  color: var(--landing-blue);
   font-size: 12px;
 }
 
@@ -6533,7 +6532,7 @@ body.passenger-consumer-page {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid rgba(204, 251, 241, 0.16);
+  border: 1px solid rgba(219, 234, 254, 0.16);
   border-radius: 999px;
   color: var(--landing-ink-soft);
   background: rgba(3, 18, 22, 0.68);
@@ -6546,8 +6545,8 @@ body.passenger-consumer-page {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: var(--landing-green);
-  box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.14);
+  background: var(--landing-blue);
+  box-shadow: 0 0 0 5px rgba(96, 165, 250, 0.14);
 }
 
 @keyframes landingReveal {
@@ -6686,7 +6685,7 @@ body.passenger-consumer-page {
 
 /* Passenger electronic ticket wallet */
 .passenger-ticket-wallet-section {
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 26px;
   padding: clamp(20px, 3vw, 28px);
   background:
@@ -6709,12 +6708,12 @@ body.passenger-consumer-page {
   gap: 14px;
   min-height: 260px;
   padding: 18px;
-  border: 1px solid rgba(15, 107, 87, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.14);
   border-radius: 22px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(247, 252, 251, 0.96)),
-    repeating-linear-gradient(90deg, rgba(15, 107, 87, 0.06) 0 1px, transparent 1px 18px);
-  box-shadow: 0 16px 36px rgba(28, 73, 65, 0.10);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.96)),
+    repeating-linear-gradient(90deg, rgba(37, 99, 235, 0.06) 0 1px, transparent 1px 18px);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.10);
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
@@ -6727,7 +6726,7 @@ body.passenger-consumer-page {
   height: 22px;
   border-radius: 999px;
   background: #f7fbfa;
-  border: 1px solid rgba(15, 107, 87, 0.10);
+  border: 1px solid rgba(37, 99, 235, 0.10);
   transform: translateY(-50%);
   z-index: 1;
 }
@@ -6742,8 +6741,8 @@ body.passenger-consumer-page {
 
 .passenger-ticket-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(15, 107, 87, 0.28);
-  box-shadow: 0 22px 46px rgba(28, 73, 65, 0.14);
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow: 0 22px 46px rgba(15, 23, 42, 0.14);
 }
 
 .passenger-ticket-card.refunded {
@@ -6754,7 +6753,7 @@ body.passenger-consumer-page {
 }
 
 .passenger-ticket-card.issued {
-  border-color: rgba(15, 107, 87, 0.22);
+  border-color: rgba(37, 99, 235, 0.22);
 }
 
 .passenger-ticket-card.closed {
@@ -6794,7 +6793,7 @@ body.passenger-consumer-page {
   position: relative;
   display: block;
   height: 2px;
-  background: linear-gradient(90deg, rgba(15, 107, 87, 0.18), rgba(15, 107, 87, 0.70), rgba(47, 120, 255, 0.20));
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.70), rgba(47, 120, 255, 0.20));
 }
 
 .ticket-wallet-line span::after,
@@ -6805,8 +6804,8 @@ body.passenger-consumer-page {
   top: 50%;
   width: 8px;
   height: 8px;
-  border-top: 2px solid rgba(15, 107, 87, 0.70);
-  border-right: 2px solid rgba(15, 107, 87, 0.70);
+  border-top: 2px solid rgba(37, 99, 235, 0.70);
+  border-right: 2px solid rgba(37, 99, 235, 0.70);
   transform: translateY(-50%) rotate(45deg);
 }
 
@@ -6834,7 +6833,7 @@ body.passenger-consumer-page {
   min-width: 0;
   padding: 10px 12px;
   border-radius: 14px;
-  background: rgba(236, 253, 245, 0.62);
+  background: rgba(239, 246, 255, 0.62);
 }
 
 .ticket-wallet-meta span,
@@ -6875,22 +6874,22 @@ body.passenger-consumer-page {
 .ticket-wallet-footer {
   align-items: center;
   padding-top: 12px;
-  border-top: 1px dashed rgba(15, 107, 87, 0.22);
+  border-top: 1px dashed rgba(37, 99, 235, 0.22);
 }
 
 .ticket-state-note {
   padding: 10px 12px;
-  border: 1px solid rgba(15, 107, 87, 0.16);
+  border: 1px solid rgba(37, 99, 235, 0.16);
   border-radius: 14px;
-  background: rgba(236, 253, 245, 0.62);
-  color: #245e53;
+  background: rgba(239, 246, 255, 0.62);
+  color: #334155;
   font-size: 13px;
   line-height: 1.55;
 }
 
 .ticket-state-note.issued {
-  border-color: rgba(15, 107, 87, 0.18);
-  background: rgba(236, 253, 245, 0.68);
+  border-color: rgba(37, 99, 235, 0.18);
+  background: rgba(239, 246, 255, 0.68);
 }
 
 .ticket-state-note.refunded,
@@ -6903,14 +6902,14 @@ body.passenger-consumer-page {
 .ticket-detail-card {
   padding: 18px;
   border-radius: 22px;
-  border: 1px solid rgba(15, 107, 87, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.14);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(245, 252, 250, 0.96)),
-    repeating-linear-gradient(90deg, rgba(15, 107, 87, 0.06) 0 1px, transparent 1px 20px);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.96)),
+    repeating-linear-gradient(90deg, rgba(37, 99, 235, 0.06) 0 1px, transparent 1px 20px);
 }
 
 .ticket-detail-card.issued {
-  border-color: rgba(15, 107, 87, 0.20);
+  border-color: rgba(37, 99, 235, 0.20);
 }
 
 .ticket-detail-card.refunded,
@@ -6957,8 +6956,8 @@ body.passenger-consumer-page {
 }
 
 .order-progress-timeline li.done {
-  border-color: rgba(15, 107, 87, 0.24);
-  background: rgba(236, 253, 245, 0.72);
+  border-color: rgba(37, 99, 235, 0.24);
+  background: rgba(239, 246, 255, 0.72);
 }
 
 .timeline-dot {
@@ -6970,8 +6969,8 @@ body.passenger-consumer-page {
 }
 
 .order-progress-timeline li.done .timeline-dot {
-  background: #0f6b57;
-  box-shadow: 0 0 0 4px rgba(15, 107, 87, 0.14);
+  background: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
 }
 
 .passenger-todo-list {
@@ -6985,10 +6984,10 @@ body.passenger-consumer-page {
   justify-content: space-between;
   gap: 14px;
   padding: 14px;
-  border: 1px solid rgba(15, 107, 87, 0.16);
+  border: 1px solid rgba(37, 99, 235, 0.16);
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(236, 253, 245, 0.72));
-  box-shadow: 0 10px 26px rgba(15, 107, 87, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.72));
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.08);
 }
 
 .passenger-todo-card.high {
@@ -7004,7 +7003,7 @@ body.passenger-consumer-page {
 
 .passenger-todo-card .todo-type {
   margin-bottom: 4px;
-  color: #0f6b57;
+  color: #2563eb;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0;
@@ -7025,13 +7024,13 @@ body.passenger-consumer-page {
 
 .passenger-account-section {
   padding: clamp(20px, 3vw, 28px);
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 26px;
   background:
-    radial-gradient(circle at 10% 0%, rgba(15, 107, 87, 0.10), transparent 28%),
+    radial-gradient(circle at 10% 0%, rgba(37, 99, 235, 0.10), transparent 28%),
     radial-gradient(circle at 100% 100%, rgba(37, 99, 235, 0.08), transparent 30%),
     rgba(255, 255, 255, 0.94);
-  box-shadow: 0 22px 62px rgba(22, 49, 44, 0.09);
+  box-shadow: 0 22px 62px rgba(15, 23, 42, 0.09);
 }
 
 .passenger-account-layout {
@@ -7047,10 +7046,10 @@ body.passenger-consumer-page {
 .onboarding-card,
 .profile-card,
 .account-form-card {
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 14px 34px rgba(22, 49, 44, 0.06);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
 }
 
 .onboarding-card {
@@ -7074,7 +7073,7 @@ body.passenger-consumer-page {
   grid-template-columns: 36px minmax(0, 1fr);
   gap: 12px;
   align-items: center;
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 18px;
   color: #173731;
   text-align: left;
@@ -7085,13 +7084,13 @@ body.passenger-consumer-page {
 
 .onboarding-step:hover {
   transform: translateY(-2px);
-  border-color: rgba(15, 107, 87, 0.22);
-  box-shadow: 0 14px 28px rgba(15, 107, 87, 0.10);
+  border-color: rgba(37, 99, 235, 0.22);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.10);
 }
 
 .onboarding-step.done {
-  border-color: rgba(15, 107, 87, 0.26);
-  background: linear-gradient(135deg, rgba(232, 250, 244, 0.92), #ffffff 74%);
+  border-color: rgba(37, 99, 235, 0.26);
+  background: linear-gradient(135deg, rgba(239, 246, 255, 0.92), #ffffff 74%);
 }
 
 .onboarding-step strong,
@@ -7113,14 +7112,14 @@ body.passenger-consumer-page {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  color: #0f6b57;
+  color: #2563eb;
   font-weight: 900;
-  background: rgba(15, 107, 87, 0.10);
+  background: rgba(37, 99, 235, 0.10);
 }
 
 .onboarding-step.done .step-index {
   color: #ffffff;
-  background: #0f6b57;
+  background: #2563eb;
 }
 
 .onboarding-choice-modal {
@@ -7183,8 +7182,8 @@ body.passenger-consumer-page {
   border-radius: 18px;
   color: #ffffff;
   font-weight: 900;
-  background: linear-gradient(135deg, #0f6b57, #2563eb);
-  box-shadow: 0 12px 24px rgba(15, 107, 87, 0.18);
+  background: linear-gradient(135deg, #2563eb, #2563eb);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
 }
 
 .profile-avatar.has-image {
@@ -7243,7 +7242,7 @@ body.passenger-consumer-page {
 
 .profile-facts div {
   padding: 10px;
-  border: 1px solid rgba(22, 49, 44, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 16px;
   background: rgba(248, 252, 251, 0.86);
 }
@@ -7296,7 +7295,7 @@ body.passenger-consumer-page {
 .admin-investigation-hero {
   border-radius: 22px;
   background:
-    radial-gradient(circle at 12% 20%, rgba(15, 107, 87, 0.12), transparent 34%),
+    radial-gradient(circle at 12% 20%, rgba(37, 99, 235, 0.12), transparent 34%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94));
 }
 
@@ -7332,7 +7331,7 @@ body.passenger-consumer-page {
 
 .admin-chain-node:hover {
   transform: translateY(-2px);
-  border-color: rgba(15, 107, 87, 0.22);
+  border-color: rgba(37, 99, 235, 0.22);
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
@@ -7342,7 +7341,7 @@ body.passenger-consumer-page {
   inset: 12px auto 12px 0;
   width: 3px;
   border-radius: 999px;
-  background: #0f6b57;
+  background: #2563eb;
 }
 
 .admin-chain-node.payment::before,
@@ -7474,10 +7473,10 @@ body.passenger-consumer-page {
 .passenger-section-embedded {
   margin-top: 22px;
   padding: clamp(16px, 2vw, 22px);
-  border: 1px solid rgba(22, 49, 44, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.10);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 14px 34px rgba(22, 49, 44, 0.06);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
 }
 
 .passenger-section-embedded .passenger-section-head {
@@ -7496,7 +7495,7 @@ body.passenger-consumer-page {
 
 .ticket-detail-priority-section {
   padding: 14px;
-  border: 1px solid rgba(15, 107, 87, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.12);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.82);
 }
@@ -7512,10 +7511,10 @@ body.passenger-consumer-page {
   grid-column: 1 / -1;
   margin-bottom: 0;
   padding: 16px 18px;
-  border: 1px solid rgba(15, 107, 87, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.14);
   border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 10px 22px rgba(22, 49, 44, 0.06);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
 }
 
 .ticket-detail-card .ticket-detail-route strong {
@@ -7537,7 +7536,7 @@ body.passenger-consumer-page {
   gap: 12px;
   min-width: 0;
   padding: 14px;
-  border: 1px dashed rgba(15, 107, 87, 0.18);
+  border: 1px dashed rgba(37, 99, 235, 0.18);
   border-radius: 18px;
   background: rgba(248, 250, 252, 0.72);
   color: #64716d;
@@ -7552,7 +7551,7 @@ body.passenger-consumer-page {
 .ticket-state-inline {
   grid-column: 1 / -1;
   margin: 0;
-  color: #245e53;
+  color: #334155;
   font-size: 13px;
   line-height: 1.6;
 }
@@ -10270,13 +10269,28 @@ body.main-portal-page {
 }
 
 .main-portal-capability-list article {
+  position: relative;
   padding: 0 0 42px;
-  color: rgba(23, 23, 23, 0.2);
+  color: rgba(23, 23, 23, 0.22);
+  cursor: pointer;
+  outline: 0;
+  transition:
+    color 220ms ease,
+    transform 220ms ease;
 }
 
 .main-portal-capability-list article + article {
   padding-top: 42px;
   border-top: 1px solid rgba(23, 23, 23, 0.1);
+}
+
+.main-portal-capability-list article:hover {
+  color: rgba(23, 23, 23, 0.44);
+}
+
+.main-portal-capability-list article:focus-visible {
+  border-radius: 18px;
+  box-shadow: 0 0 0 4px rgba(67, 92, 235, 0.16);
 }
 
 .main-portal-capability-list article.is-active {
@@ -10293,14 +10307,26 @@ body.main-portal-page {
 
 .main-portal-capability-list p {
   max-width: 420px;
-  margin: 26px 0 0;
+  max-height: 0;
+  margin: 0;
+  overflow: hidden;
   color: rgba(23, 23, 23, 0.62);
   font-size: 20px;
   line-height: 1.38;
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    max-height 260ms ease,
+    margin 260ms ease,
+    opacity 220ms ease,
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.main-portal-capability-list article:not(.is-active) p {
-  display: none;
+.main-portal-capability-list article.is-active p {
+  max-height: 120px;
+  margin-top: 26px;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .main-portal-image-slot,
@@ -10316,6 +10342,134 @@ body.main-portal-page {
 
 .main-portal-image-slot {
   min-height: min(70vh, 720px);
+}
+
+.main-portal-card-stack {
+  position: relative;
+  min-height: min(70vh, 720px);
+  padding: 0;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  isolation: isolate;
+  --stack-left: clamp(58px, 8vw, 112px);
+  --stack-top: clamp(42px, 5.4vw, 82px);
+}
+
+.main-portal-feature-card {
+  position: absolute;
+  width: min(58%, 560px);
+  max-width: calc(100% - 132px);
+  aspect-ratio: 1 / 1;
+  min-height: 0;
+  padding: 0;
+  display: block;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 34px;
+  background: #ffffff;
+  box-shadow: 0 28px 78px rgba(15, 23, 42, 0.13);
+  color: #171717;
+  overflow: hidden;
+  transform-origin: center;
+  transition:
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 240ms ease,
+    filter 240ms ease,
+    box-shadow 360ms ease;
+}
+
+.main-portal-feature-card[data-card="ticket"] {
+  inset: var(--stack-top) auto auto var(--stack-left);
+  z-index: 4;
+  transform: translate(0, 0) rotate(-0.6deg) scale(1);
+}
+
+.main-portal-feature-card[data-card="order"] {
+  inset: var(--stack-top) auto auto var(--stack-left);
+  z-index: 3;
+  transform: translate(22px, 14px) rotate(2deg) scale(0.985);
+}
+
+.main-portal-feature-card[data-card="eticket"] {
+  inset: var(--stack-top) auto auto var(--stack-left);
+  z-index: 2;
+  transform: translate(-16px, 20px) rotate(-2.4deg) scale(0.972);
+}
+
+.main-portal-feature-card[data-card="risk"] {
+  inset: var(--stack-top) auto auto var(--stack-left);
+  z-index: 1;
+  transform: translate(12px, -14px) rotate(1.4deg) scale(0.96);
+}
+
+.main-portal-feature-card:not(.is-active) {
+  opacity: 0.78;
+  filter: none;
+}
+
+.main-portal-feature-card.is-active {
+  inset: var(--stack-top) auto auto var(--stack-left);
+  z-index: 9;
+  opacity: 1;
+  filter: none;
+  transform: translate(0, 0) rotate(0deg) scale(1);
+  box-shadow: 0 34px 92px rgba(15, 23, 42, 0.14);
+}
+
+.main-portal-feature-card > * {
+  display: none;
+}
+
+.main-portal-feature-card span {
+  color: #435ceb;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.main-portal-feature-card h3 {
+  margin: 18px 0 0;
+  color: #111827;
+  font-size: clamp(30px, 3vw, 48px);
+  line-height: 1.05;
+  font-weight: 520;
+}
+
+.main-portal-feature-card p {
+  max-width: 440px;
+  margin: 18px 0 0;
+  color: rgba(23, 23, 23, 0.58);
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.main-portal-card-meta {
+  margin-top: 42px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.main-portal-card-meta div {
+  min-height: 88px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 18px;
+  background: rgba(241, 245, 249, 0.82);
+  color: rgba(23, 23, 23, 0.62);
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.main-portal-card-meta strong {
+  margin-top: 8px;
+  color: #111827;
+  font-size: 22px;
+  line-height: 1.1;
+  font-weight: 800;
 }
 
 .main-portal-brand-section {
@@ -10538,6 +10692,55 @@ body.main-portal-page {
   .main-portal-case-slot {
     min-height: 360px;
     border-radius: 22px;
+  }
+
+  .main-portal-card-stack {
+    min-height: min(86vw, 430px);
+    padding: 0;
+    overflow: visible;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    --stack-left: 28px;
+    --stack-top: 22px;
+  }
+
+  .main-portal-feature-card {
+    width: min(74vw, 340px);
+    max-width: none;
+    aspect-ratio: 1 / 1;
+    min-height: 0;
+    padding: 0;
+    border-radius: 24px;
+  }
+
+  .main-portal-feature-card[data-card="ticket"] {
+    inset: var(--stack-top) auto auto var(--stack-left);
+  }
+
+  .main-portal-feature-card[data-card="order"] {
+    inset: var(--stack-top) auto auto var(--stack-left);
+    transform: translate(12px, 8px) rotate(2deg) scale(0.985);
+  }
+
+  .main-portal-feature-card[data-card="eticket"] {
+    inset: var(--stack-top) auto auto var(--stack-left);
+    transform: translate(-10px, 12px) rotate(-2.4deg) scale(0.972);
+  }
+
+  .main-portal-feature-card[data-card="risk"] {
+    inset: var(--stack-top) auto auto var(--stack-left);
+    transform: translate(8px, -8px) rotate(1.4deg) scale(0.96);
+  }
+
+  .main-portal-feature-card.is-active {
+    inset: var(--stack-top) auto auto var(--stack-left);
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+
+  .main-portal-card-meta {
+    grid-template-columns: 1fr;
+    margin-top: 26px;
   }
 
   .main-portal-brand-copy {
@@ -13485,6 +13688,9 @@ body.rt-login-transitioning {
 
 .rt-write-stroke {
   stroke-width: 12.8;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+  stroke-miterlimit: 2;
   animation-duration: 250ms;
 }
 
@@ -13598,7 +13804,7 @@ body.rt-login-transitioning {
   }
 }
 
-/* Login transition v10: denser small RT cutout ramp and heavier balanced RT drawing. */
+/* Login transition v13: narrowed R bowl and aligned squared R leg. */
 .rt-blue-fill {
   animation-duration: 1120ms;
   animation-delay: 120ms;
@@ -13788,5 +13994,388 @@ body.rt-login-transitioning {
     opacity: 0;
     -webkit-mask-size: 100% 100%, 8100px 5156px;
     mask-size: 100% 100%, 8100px 5156px;
+  }
+}
+
+/* Shared login redesign: one blue-white template for admin and passenger entry. */
+.login-screen,
+.passenger-login.login-screen {
+  --login-primary: #2563eb;
+  --login-primary-strong: #1d4ed8;
+  --login-primary-soft: #eff6ff;
+  --login-primary-border: #bfdbfe;
+  --login-ink: #0f172a;
+  --login-muted: #64748b;
+  --login-line: #dbe4f0;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
+  gap: clamp(36px, 8vw, 132px);
+  align-items: center;
+  padding: max(86px, clamp(28px, 5vw, 72px)) clamp(24px, 5vw, 72px) clamp(28px, 5vw, 72px);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.10) 0%, rgba(37, 99, 235, 0.00) 36%),
+    linear-gradient(315deg, rgba(191, 219, 254, 0.30) 0%, rgba(255, 255, 255, 0.00) 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+}
+
+.login-screen:not(.passenger-login) {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.login-screen:not(.passenger-login) > .login-visual,
+.login-screen:not(.passenger-login) > .login-card {
+  position: relative;
+}
+
+.login-screen:not(.passenger-login) > .login-visual {
+  z-index: 2;
+}
+
+.login-screen:not(.passenger-login) > .login-card {
+  z-index: 4;
+}
+
+.login-screen:not(.passenger-login) .login-liquid-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.login-screen:not(.passenger-login)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(37, 99, 235, 0.10), transparent 26%),
+    radial-gradient(circle at 82% 84%, rgba(96, 165, 250, 0.08), transparent 30%),
+    repeating-linear-gradient(
+      115deg,
+      rgba(37, 99, 235, 0.055) 0 1px,
+      transparent 1px 58px
+    );
+  opacity: 0.46;
+  pointer-events: none;
+}
+
+.login-screen .login-back-link,
+.passenger-login.login-screen .login-back-link {
+  min-height: 44px;
+  padding: 9px 14px;
+  color: var(--login-primary);
+  border-color: var(--login-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.login-screen .login-back-link:hover,
+.passenger-login.login-screen .login-back-link:hover {
+  color: var(--login-primary-strong);
+  border-color: var(--login-primary-border);
+  background: var(--login-primary-soft);
+}
+
+.login-screen .login-visual,
+.passenger-login.login-screen .passenger-gateway-copy {
+  width: min(100%, 720px);
+  max-width: 720px;
+  display: grid;
+  gap: 24px;
+}
+
+.passenger-login.login-screen .portal-brand {
+  width: fit-content;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  color: var(--login-ink);
+  text-decoration: none;
+}
+
+.login-screen .brand-card {
+  width: min(100%, 720px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  justify-items: start;
+  color: var(--login-ink);
+}
+
+.login-screen .brand-card > * {
+  grid-column: 1 / -1;
+}
+
+.login-screen .login-brand-row {
+  width: fit-content;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.login-screen .login-brand-row strong,
+.login-screen .login-brand-row small {
+  display: block;
+}
+
+.login-screen .login-brand-row strong {
+  color: var(--login-ink);
+  font-size: 16px;
+  font-weight: 820;
+}
+
+.login-screen .login-brand-row small {
+  margin-top: 2px;
+  color: var(--login-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.login-screen .portal-brand strong,
+.login-screen .brand-card h1,
+.passenger-login.login-screen .portal-brand strong {
+  color: var(--login-ink);
+}
+
+.login-screen .portal-brand small {
+  color: var(--login-muted);
+}
+
+.login-screen .brand-mark.large,
+.passenger-login.login-screen .brand-mark.large {
+  width: 58px;
+  height: 58px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--login-primary), #4f63f6);
+  box-shadow: 0 16px 34px rgba(37, 99, 235, 0.22);
+}
+
+.login-screen .eyebrow,
+.passenger-login.login-screen .eyebrow {
+  color: var(--login-primary);
+}
+
+.login-screen .login-visual h1,
+.passenger-login.login-screen .passenger-gateway-copy h1 {
+  max-width: 680px;
+  color: var(--login-ink);
+  font-size: clamp(42px, 5.6vw, 76px);
+  line-height: 1.04;
+  letter-spacing: 0;
+}
+
+.login-screen .hero-copy,
+.passenger-login.login-screen .hero-copy {
+  max-width: 640px;
+  margin: 10px 0 0;
+  color: #475569;
+  font-size: clamp(16px, 1.4vw, 19px);
+  line-height: 1.75;
+}
+
+.login-screen .login-card,
+.passenger-login.login-screen .login-card,
+body.passenger-consumer-page .login-screen .login-card {
+  width: min(100%, 440px);
+  justify-self: end;
+  padding: 30px;
+  border: 1px solid var(--login-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 24px 58px rgba(15, 23, 42, 0.12);
+}
+
+.login-screen .login-card-head h2,
+.passenger-login.login-screen .login-card-head h2 {
+  margin-bottom: 8px;
+  color: var(--login-ink);
+  font-size: 27px;
+}
+
+.login-screen .login-card-head p:last-child,
+.passenger-login.login-screen .login-card-head p:last-child {
+  color: var(--login-muted);
+  line-height: 1.65;
+}
+
+.login-screen .passenger-auth-switch,
+.passenger-login.login-screen .passenger-auth-switch {
+  margin-top: 22px;
+  padding: 4px;
+  border: 1px solid var(--login-primary-border);
+  border-radius: 8px;
+  background: var(--login-primary-soft);
+}
+
+.login-screen .auth-mode-button,
+.passenger-login.login-screen .auth-mode-button {
+  min-height: 42px;
+  border-radius: 6px;
+  color: #334155;
+}
+
+.login-screen .auth-mode-button:hover,
+.passenger-login.login-screen .auth-mode-button:hover {
+  color: var(--login-primary);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.login-screen .auth-mode-button.active,
+.passenger-login.login-screen .auth-mode-button.active {
+  color: var(--login-primary);
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.14);
+}
+
+.login-screen .login-form,
+.passenger-login.login-screen .login-form {
+  gap: 15px;
+  margin-top: 22px;
+}
+
+.login-screen .login-form label,
+.passenger-login.login-screen .login-form label {
+  color: #334155;
+  font-size: 14px;
+}
+
+.login-screen .login-form input,
+.passenger-login.login-screen .login-form input {
+  min-height: 50px;
+  border-color: #cbd5e1;
+  border-radius: 7px;
+  color: var(--login-ink);
+}
+
+.login-screen .login-form input:focus,
+.passenger-login.login-screen .login-form input:focus {
+  border-color: var(--login-primary);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.login-screen .primary-button,
+.passenger-login.login-screen .primary-button,
+body.passenger-consumer-page .login-screen .primary-button {
+  min-height: 50px;
+  border-radius: 7px;
+  color: #ffffff !important;
+  background: var(--login-primary) !important;
+  border-color: var(--login-primary) !important;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22) !important;
+}
+
+.login-screen .primary-button:hover,
+.passenger-login.login-screen .primary-button:hover,
+body.passenger-consumer-page .login-screen .primary-button:hover {
+  background: var(--login-primary-strong) !important;
+  border-color: var(--login-primary-strong) !important;
+}
+
+.login-screen .forgot-password-row,
+.passenger-login.login-screen .forgot-password-row {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-screen .forgot-password-link,
+.passenger-login.login-screen .forgot-password-link {
+  min-height: 36px;
+  border: 0;
+  padding: 7px 12px;
+  color: var(--login-muted);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.login-screen .forgot-password-link:hover,
+.passenger-login.login-screen .forgot-password-link:hover,
+.login-screen .forgot-password-link:focus-visible,
+.passenger-login.login-screen .forgot-password-link:focus-visible {
+  color: var(--login-primary);
+  text-decoration: underline;
+}
+
+.login-screen [data-login-title],
+.passenger-login.login-screen [data-login-title] {
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.login-screen [data-login-title].login-title-forgotten,
+.passenger-login.login-screen [data-login-title].login-title-forgotten {
+  display: grid;
+  gap: 12px;
+  color: var(--login-ink);
+}
+
+.login-screen [data-login-title].login-title-forgotten span:first-child,
+.passenger-login.login-screen [data-login-title].login-title-forgotten span:first-child {
+  color: var(--login-ink);
+}
+
+.login-screen [data-login-title].login-title-forgotten span:last-child,
+.passenger-login.login-screen [data-login-title].login-title-forgotten span:last-child {
+  max-width: 760px;
+  color: var(--login-ink);
+  font-size: clamp(34px, 3.8vw, 54px);
+  line-height: 1.12;
+}
+
+.login-screen .login-insights,
+.login-screen .demo-accounts,
+.login-screen .login-connection,
+.passenger-login.login-screen .passenger-login-points {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .login-screen,
+  .passenger-login.login-screen {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+
+  .login-screen .login-card,
+  .passenger-login.login-screen .login-card,
+  body.passenger-consumer-page .login-screen .login-card {
+    width: min(100%, 520px);
+    justify-self: start;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-screen,
+  .passenger-login.login-screen {
+    padding: 86px 18px 28px;
+  }
+
+  .login-screen .brand-card,
+  .passenger-login.login-screen .portal-brand {
+    grid-template-columns: 1fr;
+  }
+
+  .login-screen .login-visual h1,
+  .passenger-login.login-screen .passenger-gateway-copy h1 {
+    font-size: clamp(34px, 13vw, 48px);
+  }
+
+  .login-screen .login-card,
+  .passenger-login.login-screen .login-card,
+  body.passenger-consumer-page .login-screen .login-card {
+    padding: 22px;
   }
 }
