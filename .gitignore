@@ -5,6 +5,13 @@ dist/
 .vscode/
 *.iml
 *.log
+.env
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+deployment/*.env
 .DS_Store
 docs/project-context-for-gpt.md
 docs/codex-feedback-*.md

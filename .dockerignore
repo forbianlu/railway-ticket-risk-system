@@ -4,6 +4,12 @@ target
 docs/project-context-for-gpt.md
 docs/codex-feedback-*.md
 *.log
+.env
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
 .idea
 .vscode
 node_modules

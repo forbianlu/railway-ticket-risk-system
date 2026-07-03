@@ -110,12 +110,118 @@
 
   const FORGOTTEN_TITLE_HTML = "<span>\u563f\u563f\u563f</span><span>\u5fd8\u8bb0\u5bc6\u7801\u4e86\u6211\u4eec\u4e5f\u65e0\u80fd\u4e3a\u529b\uff0c<br>\u529f\u80fd\u672a\u6dfb\u52a0</span>";
 
+  function getRevealTextRoots(screen) {
+    return [
+      screen.querySelector(".login-back-link"),
+      screen.querySelector(".login-visual"),
+      screen.querySelector(".passenger-gateway-copy"),
+    ].filter(Boolean);
+  }
+
+  function isHiddenElement(element) {
+    if (!element || element.closest(".login-card")) {
+      return true;
+    }
+    const style = window.getComputedStyle(element);
+    return style.display === "none"
+      || style.visibility === "hidden"
+      || Number(style.opacity) <= 0.01;
+  }
+
+  function getCanvasFont(style, scale) {
+    const fontSize = Math.max(1, Number.parseFloat(style.fontSize) * scale);
+    const fontStyle = style.fontStyle || "normal";
+    const fontVariant = style.fontVariant || "normal";
+    const fontWeight = style.fontWeight || "400";
+    const fontFamily = style.fontFamily || "sans-serif";
+    return `${fontStyle} ${fontVariant} ${fontWeight} ${fontSize}px ${fontFamily}`;
+  }
+
+  function drawTextNode(ctx, node, screenRect, scale) {
+    const value = node.nodeValue || "";
+    if (!value.trim()) {
+      return;
+    }
+
+    const parent = node.parentElement;
+    if (isHiddenElement(parent)) {
+      return;
+    }
+
+    const style = window.getComputedStyle(parent);
+    const range = document.createRange();
+    const fontSize = Math.max(1, Number.parseFloat(style.fontSize) * scale);
+    ctx.font = getCanvasFont(style, scale);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+    if ("fontKerning" in ctx) {
+      ctx.fontKerning = style.fontKerning || "auto";
+    }
+
+    for (let index = 0; index < value.length; index += 1) {
+      const character = value[index];
+      if (!character || !character.trim()) {
+        continue;
+      }
+
+      range.setStart(node, index);
+      range.setEnd(node, index + 1);
+      const rect = range.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        continue;
+      }
+
+      const x = (rect.left - screenRect.left) * scale;
+      const y = (rect.top - screenRect.top) * scale + fontSize * 0.31;
+      ctx.fillText(character, x, y);
+    }
+
+    range.detach();
+  }
+
+  function drawRevealText(ctx, screen, scale) {
+    const roots = getRevealTextRoots(screen);
+    if (!roots.length) {
+      return;
+    }
+
+    const screenRect = screen.getBoundingClientRect();
+    const walkerFilter = {
+      acceptNode(node) {
+        return node.nodeValue && node.nodeValue.trim()
+          ? NodeFilter.FILTER_ACCEPT
+          : NodeFilter.FILTER_REJECT;
+      },
+    };
+
+    ctx.save();
+    ctx.globalCompositeOperation = "source-atop";
+    ctx.shadowColor = "rgba(15, 23, 42, 0.10)";
+    ctx.shadowBlur = 0.4 * scale;
+    ctx.shadowOffsetY = 0.4 * scale;
+
+    roots.forEach((root) => {
+      if (isHiddenElement(root)) {
+        return;
+      }
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, walkerFilter);
+      let node = walker.nextNode();
+      while (node) {
+        drawTextNode(ctx, node, screenRect, scale);
+        node = walker.nextNode();
+      }
+    });
+
+    ctx.restore();
+  }
+
   function setupLiquidReveal() {
     if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;
     }
 
-    document.querySelectorAll(".login-screen:not(.passenger-login)").forEach((screen) => {
+    document.querySelectorAll(".login-screen").forEach((screen) => {
       if (screen.dataset.liquidRevealReady === "true") {
         return;
       }
@@ -213,7 +319,7 @@
         const dragBack = Math.min(2.4 * dpr, speed * 0.007);
         const side = (Math.random() - 0.5) * jitter;
         const radius = (76 + speedUnit * 102 + Math.random() * 22) * dpr;
-        const life = 58 + Math.round(speedUnit * 42) + Math.round(Math.random() * 16);
+        const life = 78 + Math.round(speedUnit * 58) + Math.round(Math.random() * 22);
 
         particles.push({
           x: x + Math.sin(angle) * side,
@@ -225,12 +331,12 @@
           life,
           maxLife: life,
           angle,
-          stretch: 0.72 + speedUnit * 1.65,
+          stretch: 0.18 + speedUnit * 0.42,
           swirl: (Math.random() - 0.5) * 0.04,
         });
 
-        if (particles.length > 110) {
-          particles.splice(0, particles.length - 110);
+        if (particles.length > 128) {
+          particles.splice(0, particles.length - 128);
         }
       }
 
@@ -357,8 +463,8 @@
           const previousLife = Math.max(0, previous.life / previous.maxLife);
           const currentLife = Math.max(0, current.life / current.maxLife);
           const bridgeLife = Math.min(previousLife, currentLife);
-          const bridgeShrink = moving ? 1 : Math.max(0.08, Math.pow(bridgeLife, 0.76));
-          const alpha = bridgeLife * (moving ? 0.34 : 0.25);
+          const bridgeShrink = moving ? 1 : Math.max(0.08, Math.pow(bridgeLife, 0.58));
+          const alpha = bridgeLife * (moving ? 0.34 : 0.29);
           if (alpha <= 0.01) {
             continue;
           }
@@ -395,11 +501,11 @@
           particle.stretch *= 0.965;
           particle.angle += particle.swirl * 0.55;
 
-          const stillnessShrink = moving ? 1 : Math.max(0.08, Math.pow(lifeRatio, 0.76));
-          const alpha = Math.pow(lifeRatio, moving ? 1.1 : 1.42) * 0.95;
+          const stillnessShrink = moving ? 1 : Math.max(0.08, Math.pow(lifeRatio, 0.58));
+          const alpha = Math.pow(lifeRatio, moving ? 1.08 : 1.18) * 0.95;
           const radius = particle.radius * (0.92 + calm * 0.08) * stillnessShrink;
-          const stretchX = radius * (1.18 + particle.stretch * lifeRatio);
-          const stretchY = radius * (0.72 + calm * 0.16);
+          const stretchX = radius * (1.04 + particle.stretch * lifeRatio);
+          const stretchY = radius * (0.94 + calm * 0.08);
 
           trailCtx.save();
           trailCtx.translate(particle.x, particle.y);
@@ -423,7 +529,7 @@
           trailCtx.save();
           trailCtx.translate(smooth.x, smooth.y);
           trailCtx.rotate(flowAngle);
-          trailCtx.scale(headRadius * (1.42 + headSpeed * 0.78), headRadius * 0.86);
+          trailCtx.scale(headRadius * (1.12 + headSpeed * 0.24), headRadius * 0.96);
           const headGradient = trailCtx.createRadialGradient(0, 0, 0, 0, 0, 1);
           headGradient.addColorStop(0, "rgba(255, 255, 255, 0.94)");
           headGradient.addColorStop(0.52, "rgba(255, 255, 255, 0.66)");
@@ -438,13 +544,13 @@
 
         maskCtx.clearRect(0, 0, width, height);
         maskCtx.save();
-        maskCtx.filter = `blur(${Math.max(6, 9 * dpr)}px) contrast(180%)`;
+        maskCtx.filter = `blur(${Math.max(4.8, 7.2 * dpr)}px) contrast(174%)`;
         maskCtx.drawImage(trailCanvas, 0, 0);
         maskCtx.restore();
 
         ctx.clearRect(0, 0, width, height);
         ctx.save();
-        ctx.filter = `blur(${Math.max(0.8, 1.2 * dpr)}px)`;
+        ctx.filter = `blur(${Math.max(0.55, 0.85 * dpr)}px)`;
         ctx.drawImage(maskCanvas, 0, 0);
         ctx.globalCompositeOperation = "source-in";
         const fill = ctx.createLinearGradient(0, 0, width, height);
@@ -471,6 +577,8 @@
         ctx.fillStyle = sheen;
         ctx.fillRect(0, 0, width, height);
         ctx.restore();
+
+        drawRevealText(ctx, screen, dpr);
 
         if (active || particles.length) {
           requestFrame();

@@ -1,4 +1,8 @@
-const API_BASE = "http://localhost:8080/api";
+const API_BASE =
+  window.RAILWAY_API_BASE ||
+  (["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? "http://localhost:8080/api"
+    : "/api");
 
 const state = {
   stations: [],
@@ -73,6 +77,8 @@ const state = {
   activeSectionId: "",
   authExpiredNotified: false,
 };
+
+const numberAnimations = new WeakMap();
 
 const HOT_ROUTES = [
   { from: "BJP", to: "SHH", label: "G101 北京南 → 上海虹桥" },
@@ -159,6 +165,9 @@ const elements = {
   outboxStatusSummary: document.querySelector("#outbox-status-summary"),
   globalSearchKeyword: document.querySelector("#global-search-keyword"),
   globalSearchTypes: document.querySelector("#global-search-types"),
+  globalSearchTypeTrigger: document.querySelector("#global-search-type-trigger"),
+  globalSearchTypeLabel: document.querySelector("[data-multi-select-label]"),
+  globalSearchTypeMenu: document.querySelector("[data-multi-select='global-search-types'] .multi-select-menu"),
   globalSearchLimit: document.querySelector("#global-search-limit"),
   globalSearchTrace: document.querySelector("#global-search-trace"),
   globalSearchInfo: document.querySelector("#global-search-info"),
@@ -177,6 +186,10 @@ const elements = {
   notificationSummaryLatest: document.querySelector("#notification-summary-latest"),
   notificationTypeSummary: document.querySelector("#notification-type-summary"),
   notificationStatusSummary: document.querySelector("#notification-status-summary"),
+  notificationTypeChart: document.querySelector("#notification-type-chart"),
+  notificationStatusChart: document.querySelector("#notification-status-chart"),
+  notificationTypeTable: document.querySelector("#notification-type-table"),
+  notificationStatusTable: document.querySelector("#notification-status-table"),
   riskStatus: document.querySelector("#risk-status"),
   riskScene: document.querySelector("#risk-scene"),
   riskUserId: document.querySelector("#risk-user-id"),
@@ -298,6 +311,7 @@ async function init() {
   setupNavigation();
   setupScrollSpy();
   setupDashboardDrilldowns();
+  setupGlobalSearchTypePicker();
   renderAuthState();
   elements.travelDate.value = new Date().toISOString().slice(0, 10);
   await checkHealth();
@@ -515,14 +529,14 @@ function renderRateLimitRules(rules) {
 async function loadDashboard() {
   try {
     const summary = await request("/dashboard/summary");
-    elements.totalOrders.textContent = summary.totalOrderCount ?? summary.totalOrders;
-    elements.pendingOrders.textContent = summary.pendingPaymentOrderCount ?? 0;
-    elements.paidOrders.textContent = summary.paidOrderCount ?? summary.paidOrders;
-    elements.closedOrders.textContent = summary.closedOrderCount ?? 0;
-    elements.refundedOrders.textContent = summary.refundedOrderCount ?? summary.refundedOrders;
-    elements.refundRate.textContent = formatPercent(summary.refundRate);
-    elements.riskRate.textContent = formatPercent(summary.riskRate);
-    elements.openRisks.textContent = summary.unhandledRiskCount ?? summary.openRiskEvents;
+    animateNumber(elements.totalOrders, summary.totalOrderCount ?? summary.totalOrders);
+    animateNumber(elements.pendingOrders, summary.pendingPaymentOrderCount ?? 0);
+    animateNumber(elements.paidOrders, summary.paidOrderCount ?? summary.paidOrders);
+    animateNumber(elements.closedOrders, summary.closedOrderCount ?? 0);
+    animateNumber(elements.refundedOrders, summary.refundedOrderCount ?? summary.refundedOrders);
+    animateNumber(elements.refundRate, Number(summary.refundRate || 0), { formatter: formatPercent });
+    animateNumber(elements.riskRate, Number(summary.riskRate || 0), { formatter: formatPercent });
+    animateNumber(elements.openRisks, summary.unhandledRiskCount ?? summary.openRiskEvents);
     renderPopularTrains(summary.popularTrains || []);
     await loadAdminWorkbench();
   } catch (error) {
@@ -548,7 +562,7 @@ function renderPopularTrains(items) {
           <span class="status">${item.orderCount} 单</span>
         </div>
         <div class="bar-track" aria-hidden="true">
-          <span style="width: ${Math.max(8, (Number(item.orderCount || 0) / maxCount) * 100)}%"></span>
+          <span style="--target-width: ${Math.max(8, (Number(item.orderCount || 0) / maxCount) * 100)}%"></span>
         </div>
       </div>
     `)
@@ -1578,6 +1592,9 @@ function renderAdminWorkbench(summary) {
       </button>
     `)
     .join("");
+  elements.adminWorkbenchSummary.querySelectorAll(".ops-workbench-card strong").forEach(valueElement => {
+    animateNumber(valueElement, Number(valueElement.textContent || 0));
+  });
   const items = summary.exceptionItems || [];
   if (items.length === 0) {
     elements.adminWorkbenchList.innerHTML = emptyItem("暂无需要处置的异常交易");
@@ -1757,13 +1774,13 @@ function renderOutboxSummary(summary) {
     eventCountByStatus: {},
   };
   const data = summary || empty;
-  elements.outboxSummaryTotal.textContent = data.totalCount || 0;
-  elements.outboxSummaryPending.textContent = data.pendingCount || 0;
-  elements.outboxSummaryProcessing.textContent = data.processingCount || 0;
-  elements.outboxSummaryDone.textContent = data.doneCount || 0;
-  elements.outboxSummaryFailed.textContent = data.failedCount || 0;
-  elements.outboxSummaryFailureRate.textContent = formatPercent(data.failureRate || 0);
-  elements.outboxSummaryBacklog.textContent = data.backlogCount || 0;
+  animateNumber(elements.outboxSummaryTotal, data.totalCount || 0);
+  animateNumber(elements.outboxSummaryPending, data.pendingCount || 0);
+  animateNumber(elements.outboxSummaryProcessing, data.processingCount || 0);
+  animateNumber(elements.outboxSummaryDone, data.doneCount || 0);
+  animateNumber(elements.outboxSummaryFailed, data.failedCount || 0);
+  animateNumber(elements.outboxSummaryFailureRate, Number(data.failureRate || 0), { formatter: formatPercent });
+  animateNumber(elements.outboxSummaryBacklog, data.backlogCount || 0);
   elements.outboxTypeSummary.innerHTML = renderSummaryMap(data.eventCountByType || {}, eventTypeText);
   elements.outboxStatusSummary.innerHTML = renderSummaryMap(data.eventCountByStatus || {}, outboxStatusText);
 }
@@ -1793,6 +1810,70 @@ async function changeOutboxPage(offset) {
   }
   state.outboxPage.page = nextPage;
   await loadOutboxEventsPage();
+}
+
+function setupGlobalSearchTypePicker() {
+  if (!elements.globalSearchTypes || !elements.globalSearchTypeTrigger || !elements.globalSearchTypeMenu) {
+    return;
+  }
+  elements.globalSearchTypeMenu.innerHTML = Array.from(elements.globalSearchTypes.options || [])
+    .map(option => `
+      <button class="multi-select-option" type="button" role="option" aria-selected="${option.selected ? "true" : "false"}" data-global-search-type="${escapeHtml(option.value)}">
+        <span class="option-check" aria-hidden="true"></span>
+        <span>${escapeHtml(option.textContent)}</span>
+      </button>
+    `)
+    .join("");
+  elements.globalSearchTypeTrigger.addEventListener("click", () => {
+    setGlobalSearchTypeMenuOpen(elements.globalSearchTypeMenu.hidden);
+  });
+  elements.globalSearchTypeMenu.querySelectorAll("[data-global-search-type]").forEach(button => {
+    button.addEventListener("click", () => {
+      const option = Array.from(elements.globalSearchTypes.options || [])
+        .find(item => item.value === button.dataset.globalSearchType);
+      if (!option) {
+        return;
+      }
+      option.selected = !option.selected;
+      updateGlobalSearchTypePicker();
+    });
+  });
+  document.addEventListener("click", event => {
+    if (!event.target.closest("[data-multi-select='global-search-types']")) {
+      setGlobalSearchTypeMenuOpen(false);
+    }
+  });
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      setGlobalSearchTypeMenuOpen(false);
+    }
+  });
+  updateGlobalSearchTypePicker();
+}
+
+function setGlobalSearchTypeMenuOpen(open) {
+  if (!elements.globalSearchTypeMenu || !elements.globalSearchTypeTrigger) {
+    return;
+  }
+  elements.globalSearchTypeMenu.hidden = !open;
+  elements.globalSearchTypeTrigger.setAttribute("aria-expanded", String(open));
+}
+
+function updateGlobalSearchTypePicker() {
+  if (!elements.globalSearchTypes || !elements.globalSearchTypeLabel || !elements.globalSearchTypeMenu) {
+    return;
+  }
+  const selected = Array.from(elements.globalSearchTypes.selectedOptions || []);
+  elements.globalSearchTypeLabel.textContent = selected.length === 0
+    ? "全部类型"
+    : selected.length === 1
+      ? selected[0].textContent
+      : `已选 ${selected.length} 类`;
+  elements.globalSearchTypeMenu.querySelectorAll("[data-global-search-type]").forEach(button => {
+    const option = Array.from(elements.globalSearchTypes.options || [])
+      .find(item => item.value === button.dataset.globalSearchType);
+    button.setAttribute("aria-selected", option && option.selected ? "true" : "false");
+  });
 }
 
 async function runGlobalSearch() {
@@ -1896,6 +1977,7 @@ function clearGlobalSearch() {
   Array.from(elements.globalSearchTypes.options || []).forEach(option => {
     option.selected = false;
   });
+  updateGlobalSearchTypePicker();
   elements.globalSearchLimit.value = "5";
   elements.globalSearchTrace.checked = false;
   elements.globalSearchInfo.textContent = "请输入至少 2 个字符进行查询";
@@ -1998,12 +2080,16 @@ function renderNotificationSummary(summary) {
     countByStatus: {},
     latestCreatedAt: null,
   };
-  elements.notificationSummaryTotal.textContent = data.totalCount || 0;
-  elements.notificationSummaryUnread.textContent = data.unreadCount || 0;
-  elements.notificationSummaryRead.textContent = data.readCount || 0;
+  animateNumber(elements.notificationSummaryTotal, data.totalCount || 0);
+  animateNumber(elements.notificationSummaryUnread, data.unreadCount || 0);
+  animateNumber(elements.notificationSummaryRead, data.readCount || 0);
   elements.notificationSummaryLatest.textContent = formatDateTime(data.latestCreatedAt) || "-";
   elements.notificationTypeSummary.innerHTML = renderSummaryMap(data.countByType || {}, notificationTypeText);
   elements.notificationStatusSummary.innerHTML = renderSummaryMap(data.countByStatus || {}, notificationStatusText);
+  renderStatChart(elements.notificationTypeChart, data.countByType || {}, notificationTypeText);
+  renderStatChart(elements.notificationStatusChart, data.countByStatus || {}, notificationStatusText);
+  renderStatTable(elements.notificationTypeTable, data.countByType || {}, notificationTypeText);
+  renderStatTable(elements.notificationStatusTable, data.countByStatus || {}, notificationStatusText);
 }
 
 function renderNotificationPagination() {
@@ -2153,14 +2239,14 @@ async function resetRiskFilters() {
 async function loadRiskSummary() {
   try {
     const summary = await request("/risks/summary");
-    elements.riskSummaryTotal.textContent = summary.totalRiskCount || 0;
-    elements.riskSummaryPending.textContent = summary.pendingRiskCount || 0;
-    elements.riskSummaryConfirmed.textContent = summary.confirmedRiskCount || 0;
-    elements.riskSummaryFalsePositive.textContent = summary.falsePositiveRiskCount || 0;
-    elements.riskSummaryClosed.textContent = summary.closedRiskCount || 0;
-    elements.riskSummaryCompletionRate.textContent = formatPercent(summary.handlingCompletionRate);
-    elements.riskSummaryFalsePositiveRate.textContent = formatPercent(summary.falsePositiveRate);
-    elements.riskSummaryConfirmedRate.textContent = formatPercent(summary.confirmedRate);
+    animateNumber(elements.riskSummaryTotal, summary.totalRiskCount || 0);
+    animateNumber(elements.riskSummaryPending, summary.pendingRiskCount || 0);
+    animateNumber(elements.riskSummaryConfirmed, summary.confirmedRiskCount || 0);
+    animateNumber(elements.riskSummaryFalsePositive, summary.falsePositiveRiskCount || 0);
+    animateNumber(elements.riskSummaryClosed, summary.closedRiskCount || 0);
+    animateNumber(elements.riskSummaryCompletionRate, Number(summary.handlingCompletionRate || 0), { formatter: formatPercent });
+    animateNumber(elements.riskSummaryFalsePositiveRate, Number(summary.falsePositiveRate || 0), { formatter: formatPercent });
+    animateNumber(elements.riskSummaryConfirmedRate, Number(summary.confirmedRate || 0), { formatter: formatPercent });
     renderRiskBreakdown(elements.riskStatusSummary, summary.riskCountByStatus || {}, riskStatusText);
     renderRiskBreakdown(elements.riskSceneSummary, summary.riskCountByScene || {}, riskSceneText);
   } catch (error) {
@@ -2490,6 +2576,90 @@ function formatSignedAmount(value) {
 function formatPercent(value) {
   const number = Number(value || 0);
   return `${(number * 100).toFixed(1)}%`;
+}
+
+function animateNumber(element, value, options = {}) {
+  if (!element) {
+    return;
+  }
+  const target = Number(value || 0);
+  const formatter = options.formatter || (current => String(Math.round(current)));
+  const duration = options.duration || 720;
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const previousFrame = numberAnimations.get(element);
+  if (previousFrame) {
+    window.cancelAnimationFrame(previousFrame);
+  }
+  if (reduceMotion || duration <= 0) {
+    element.textContent = formatter(target);
+    return;
+  }
+  const startedAt = performance.now();
+  const tick = now => {
+    const progress = Math.min(1, (now - startedAt) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    element.textContent = formatter(target * eased);
+    if (progress < 1) {
+      numberAnimations.set(element, window.requestAnimationFrame(tick));
+      return;
+    }
+    element.textContent = formatter(target);
+    numberAnimations.delete(element);
+  };
+  element.textContent = formatter(0);
+  numberAnimations.set(element, window.requestAnimationFrame(tick));
+}
+
+function renderStatChart(container, map, labelFormatter = value => value) {
+  if (!container) {
+    return;
+  }
+  const entries = Object.entries(map)
+    .map(([key, value]) => [key, Number(value || 0)])
+    .filter(([, value]) => value > 0)
+    .sort((left, right) => right[1] - left[1]);
+  if (entries.length === 0) {
+    container.innerHTML = `<div class="chart-empty">暂无数据</div>`;
+    return;
+  }
+  const max = Math.max(...entries.map(([, value]) => value), 1);
+  container.innerHTML = entries
+    .map(([key, value]) => `
+      <div class="mini-bar-row">
+        <div class="mini-bar-meta">
+          <strong>${escapeHtml(labelFormatter(key))}</strong>
+          <span>${value}</span>
+        </div>
+        <div class="bar-track" aria-hidden="true">
+          <span style="--target-width: ${Math.max(8, (value / max) * 100)}%"></span>
+        </div>
+      </div>
+    `)
+    .join("");
+}
+
+function renderStatTable(tbody, map, labelFormatter = value => value) {
+  if (!tbody) {
+    return;
+  }
+  const entries = Object.entries(map)
+    .map(([key, value]) => [key, Number(value || 0)])
+    .filter(([, value]) => value > 0)
+    .sort((left, right) => right[1] - left[1]);
+  if (entries.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3">暂无数据</td></tr>`;
+    return;
+  }
+  const total = entries.reduce((sum, [, value]) => sum + value, 0);
+  tbody.innerHTML = entries
+    .map(([key, value]) => `
+      <tr>
+        <td>${escapeHtml(labelFormatter(key))}</td>
+        <td>${value}</td>
+        <td>${formatPercent(total ? value / total : 0)}</td>
+      </tr>
+    `)
+    .join("");
 }
 
 function seatTypeText(value) {

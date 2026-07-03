@@ -1,4 +1,8 @@
-const API_BASE = "http://localhost:8080/api";
+const API_BASE =
+  window.RAILWAY_API_BASE ||
+  (["localhost", "127.0.0.1"].includes(window.location.hostname)
+    ? "http://localhost:8080/api"
+    : "/api");
 const PASSENGER_AUTH_KEY = "railway-passenger-auth";
 const PASSENGER_ONBOARDING_KEY_PREFIX = "railway-passenger-onboarding-dismissed:";
 
@@ -25,6 +29,7 @@ const passengerState = {
   navObserver: null,
   scrollTicking: false,
   lastScrollY: 0,
+  selectedNotificationId: null,
   trains: { items: [], page: 0, size: 7 },
   orders: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
   tickets: { page: 0, size: 6, totalPages: 0, totalElements: 0, first: true, last: true },
@@ -72,6 +77,12 @@ const elements = {
   profileDefaultTraveler: document.querySelector("#passenger-profile-default-traveler"),
   profileOrderCount: document.querySelector("#passenger-profile-order-count"),
   profileTicketCount: document.querySelector("#passenger-profile-ticket-count"),
+  profileDetailDisplay: document.querySelector("#passenger-profile-detail-display"),
+  profileDetailUsername: document.querySelector("#passenger-profile-detail-username"),
+  profileDetailRole: document.querySelector("#passenger-profile-detail-role"),
+  profileDetailTraveler: document.querySelector("#passenger-profile-detail-traveler"),
+  profileDetailOrders: document.querySelector("#passenger-profile-detail-orders"),
+  profileDetailTickets: document.querySelector("#passenger-profile-detail-tickets"),
   profileForm: document.querySelector("#passenger-profile-form"),
   profileDisplayName: document.querySelector("#passenger-profile-display-name"),
   profileError: document.querySelector("#passenger-profile-error"),
@@ -906,12 +917,36 @@ async function loadPassengerProfile() {
 }
 
 function renderPassengerProfile(profile) {
-  elements.profileRole.textContent = roleText(profile.role || "USER");
-  elements.profileDisplay.textContent = profile.displayName || profile.username || "-";
-  elements.profileUsername.textContent = profile.username ? `@${profile.username}` : "-";
-  elements.profileDefaultTraveler.textContent = profile.defaultTravelerName || "未设置";
-  elements.profileOrderCount.textContent = profile.orderCount || 0;
-  elements.profileTicketCount.textContent = profile.activeTicketCount || 0;
+  const displayName = profile.displayName || profile.username || "-";
+  const username = profile.username ? `@${profile.username}` : "-";
+  const role = roleText(profile.role || "USER");
+  const defaultTraveler = profile.defaultTravelerName || "未设置";
+  const orderCount = profile.orderCount || 0;
+  const activeTicketCount = profile.activeTicketCount || 0;
+  elements.profileRole.textContent = role;
+  elements.profileDisplay.textContent = displayName;
+  elements.profileUsername.textContent = username;
+  elements.profileDefaultTraveler.textContent = defaultTraveler;
+  elements.profileOrderCount.textContent = orderCount;
+  elements.profileTicketCount.textContent = activeTicketCount;
+  if (elements.profileDetailDisplay) {
+    elements.profileDetailDisplay.textContent = displayName;
+  }
+  if (elements.profileDetailUsername) {
+    elements.profileDetailUsername.textContent = username;
+  }
+  if (elements.profileDetailRole) {
+    elements.profileDetailRole.textContent = role;
+  }
+  if (elements.profileDetailTraveler) {
+    elements.profileDetailTraveler.textContent = defaultTraveler;
+  }
+  if (elements.profileDetailOrders) {
+    elements.profileDetailOrders.textContent = orderCount;
+  }
+  if (elements.profileDetailTickets) {
+    elements.profileDetailTickets.textContent = activeTicketCount;
+  }
   elements.profileDisplayName.value = profile.displayName || "";
   if (profile.avatarAvailable) {
     loadPassengerAvatar();
@@ -2372,10 +2407,6 @@ function renderTicketDetail(ticket) {
         <div><span>手机号</span><strong>${escapeHtml(ticket.passengerPhoneMasked || "-")}</strong></div>
         <div><span>出票时间</span><strong>${formatDateTime(ticket.issuedAt) || "-"}</strong></div>
       </div>
-      <div class="ticket-detail-secondary">
-        <span>电子票号：${escapeHtml(ticket.ticketNo || "-")}</span>
-        <span class="status ${ticketStatusClass(ticket.status)}">${ticketStatusText(ticket.status)}</span>
-      </div>
       <p class="ticket-state-inline ${ticketStatusClass(ticket.status)}">${escapeHtml(ticketStateMessage(ticket))}</p>
       ${ticket.invalidatedAt ? `<div class="ticket-detail-note">票面失效时间：${formatDateTime(ticket.invalidatedAt)}</div>` : ""}
     </div>
@@ -3335,35 +3366,38 @@ function renderPassengerNotificationGuide(summary) {
 
 function renderPassengerNotifications(notifications) {
   if (!notifications.length) {
+    passengerState.selectedNotificationId = null;
     elements.notificationResults.innerHTML = recordEmpty("暂无消息提醒");
     return;
   }
-  elements.notificationResults.innerHTML = notifications.map(notification => `
-    <article class="money-record-card notification-record-card ${notification.status === "UNREAD" ? "unread" : ""} ${String(notification.priority || "").toLowerCase()}">
-      ${notificationTypeIcon(notification)}
-      <div class="record-title-row">
-        <div>
-          <span>${notificationTypeText(notification.type)}</span>
-          <strong>${escapeHtml(notificationTitleText(notification))}</strong>
+  const selectedIndex = notifications.findIndex((notification, index) =>
+    notificationIdentity(notification, index) === passengerState.selectedNotificationId
+  );
+  const activeIndex = selectedIndex >= 0 ? selectedIndex : 0;
+  const selectedNotification = notifications[activeIndex];
+  passengerState.selectedNotificationId = notificationIdentity(selectedNotification, activeIndex);
+  elements.notificationResults.innerHTML = `
+    <div class="passenger-notification-browser">
+      <aside class="notification-outline-panel" aria-label="通知大纲">
+        <div class="notification-outline-toolbar">
+          <strong>按时间排序</strong>
+          <span>本页 ${notifications.length} 条</span>
         </div>
-        <span class="status ${notificationStatusClass(notification.status)}">${notificationStatusText(notification.status)}</span>
-      </div>
-      <p class="notification-content">${escapeHtml(notificationContentText(notification))}</p>
-      <div class="record-detail-grid">
-        <div><span>订单号</span><strong>${escapeHtml(notification.orderNo || "-")}</strong></div>
-        <div><span>关联业务</span><strong>${businessTypeText(notification.businessType)} / ${businessIdText(notification.businessId)}</strong></div>
-        <div><span>电子票</span><strong>${escapeHtml(notification.ticketNo || "-")}</strong></div>
-        <div><span>创建时间</span><strong>${formatDateTime(notification.createdAt) || "-"}</strong></div>
-      </div>
-      ${notification.actionHint ? `<div class="notification-next-step"><span>下一步</span><strong>${escapeHtml(userFacingHint(notification.actionHint))}</strong></div>` : ""}
-      <div class="record-actions">
-        ${notificationActionButton(notification)}
-        ${notification.status === "UNREAD"
-          ? `<button class="secondary-button compact-button" type="button" data-notification-read="${notification.id}">标为已读</button>`
-          : `<span class="muted-text">已读 ${formatDateTime(notification.readAt) || ""}</span>`}
-      </div>
-    </article>
-  `).join("");
+        <div class="notification-outline-list">
+          ${notifications.map((notification, index) => renderNotificationOutlineItem(notification, index)).join("")}
+        </div>
+      </aside>
+      <article class="notification-detail-panel" aria-live="polite">
+        ${renderNotificationDetail(selectedNotification)}
+      </article>
+    </div>
+  `;
+  elements.notificationResults.querySelectorAll("[data-notification-select]").forEach(button => {
+    button.addEventListener("click", () => {
+      passengerState.selectedNotificationId = button.dataset.notificationSelect;
+      renderPassengerNotifications(notifications);
+    });
+  });
   elements.notificationResults.querySelectorAll("[data-notification-read]").forEach(button => {
     button.addEventListener("click", () => markPassengerNotificationRead(button.dataset.notificationRead));
   });
@@ -3372,22 +3406,76 @@ function renderPassengerNotifications(notifications) {
   });
 }
 
-function notificationTypeIcon(notification) {
-  const type = notification && notification.type;
-  const title = String(notification && notification.title ? notification.title : "").toLowerCase();
-  const isRefundSuccess = type === "REFUND_SUCCEEDED" || title.includes("refund succeeded") || title.includes("退款成功");
-  if (!isRefundSuccess) {
-    return "";
-  }
+function notificationIdentity(notification, index) {
+  return String(notification && (notification.id || notification.notificationNo || notification.createdAt) || index);
+}
+
+function renderNotificationOutlineItem(notification, index) {
+  const key = notificationIdentity(notification, index);
+  const active = key === passengerState.selectedNotificationId;
+  const unread = notification.status === "UNREAD";
   return `
-    <span class="notification-type-icon refund-success-icon" aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;flex:0 0 42px;border-radius:14px;background:#eff6ff;color:#2563EB;">
-      <svg viewBox="0 0 24 24" focusable="false" style="width:22px;height:22px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;">
-        <path d="M8 7H5v3"></path>
-        <path d="M5.6 10A6.8 6.8 0 0 1 17 5.7a6.3 6.3 0 0 1 1.6 3.1"></path>
-        <path d="m13.2 15.3 2 2 4.2-4.7"></path>
-      </svg>
-    </span>
+    <button class="notification-outline-item ${active ? "active" : ""} ${unread ? "unread" : ""}" type="button"
+      data-notification-select="${escapeHtml(key)}"
+      aria-current="${active ? "true" : "false"}">
+      <span class="notification-outline-main">
+        <span class="notification-outline-kicker">${notificationTypeText(notification.type)}</span>
+        <strong class="notification-outline-title">${escapeHtml(notificationTitleText(notification))}</strong>
+        <span class="notification-outline-summary">${escapeHtml(compactNotificationText(notificationContentText(notification), 46))}</span>
+      </span>
+      <span class="notification-outline-meta">
+        <span>${formatNotificationOutlineTime(notification.createdAt)}</span>
+        ${unread ? `<span class="notification-outline-unread" aria-label="未读"></span>` : ""}
+      </span>
+    </button>
   `;
+}
+
+function renderNotificationDetail(notification) {
+  return `
+    <div class="notification-detail-head">
+      <div>
+        <h3>${escapeHtml(notificationTitleText(notification))}</h3>
+        <div class="notification-detail-meta">
+          <span>${notificationTypeText(notification.type)}</span>
+          <span>${formatDateTime(notification.createdAt) || "-"}</span>
+        </div>
+      </div>
+      <span class="status ${notificationStatusClass(notification.status)}">${notificationStatusText(notification.status)}</span>
+    </div>
+    <div class="notification-detail-body">
+      <p class="notification-content">${escapeHtml(notificationContentText(notification))}</p>
+      <div class="notification-detail-grid">
+        <div><span>订单号</span><strong>${escapeHtml(notification.orderNo || "-")}</strong></div>
+        <div><span>关联业务</span><strong>${businessTypeText(notification.businessType)} / ${businessIdText(notification.businessId)}</strong></div>
+        <div><span>电子票</span><strong>${escapeHtml(notification.ticketNo || "-")}</strong></div>
+        <div><span>创建时间</span><strong>${formatDateTime(notification.createdAt) || "-"}</strong></div>
+      </div>
+      ${notification.actionHint ? `<div class="notification-next-step"><span>下一步</span><strong>${escapeHtml(userFacingHint(notification.actionHint))}</strong></div>` : ""}
+    </div>
+    <div class="notification-detail-actions">
+      ${notificationActionButton(notification)}
+      ${notification.status === "UNREAD"
+        ? `<button class="secondary-button compact-button" type="button" data-notification-read="${notification.id}">标为已读</button>`
+        : `<span class="muted-text">已读 ${formatDateTime(notification.readAt) || ""}</span>`}
+    </div>
+  `;
+}
+
+function compactNotificationText(value, maxLength) {
+  const text = String(value || "暂无消息内容").replace(/\s+/g, " ").trim();
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return `${text.slice(0, maxLength)}...`;
+}
+
+function formatNotificationOutlineTime(value) {
+  const text = formatDateTime(value);
+  if (!text || text === "-") {
+    return "-";
+  }
+  return text.replace(/^\d{4}-/, "");
 }
 
 function notificationActionButton(notification) {
@@ -3581,6 +3669,24 @@ function renderLoggedOutPlaceholders() {
   elements.profileDefaultTraveler.textContent = "未设置";
   elements.profileOrderCount.textContent = "0";
   elements.profileTicketCount.textContent = "0";
+  if (elements.profileDetailDisplay) {
+    elements.profileDetailDisplay.textContent = "-";
+  }
+  if (elements.profileDetailUsername) {
+    elements.profileDetailUsername.textContent = "-";
+  }
+  if (elements.profileDetailRole) {
+    elements.profileDetailRole.textContent = "普通乘客";
+  }
+  if (elements.profileDetailTraveler) {
+    elements.profileDetailTraveler.textContent = "未设置";
+  }
+  if (elements.profileDetailOrders) {
+    elements.profileDetailOrders.textContent = "0";
+  }
+  if (elements.profileDetailTickets) {
+    elements.profileDetailTickets.textContent = "0";
+  }
   elements.profileDisplayName.value = "";
   elements.profileError.textContent = "";
   if (elements.avatarFile) {
@@ -4342,14 +4448,20 @@ function journeyOrderDisplayInfo(order) {
   const routeText = trip.departureStation !== "-" && trip.arrivalStation !== "-"
     ? `${trip.departureStation} → ${trip.arrivalStation}`
     : passengerOrderRouteText(order);
+  const hasTravelTimes = trip.departureTime !== "-" && trip.arrivalTime !== "-";
+  const dateLabel = formatJourneyDateLabel(order.travelDate);
   return {
     trainNo: trip.trainNo,
     routeText,
     date: formatDate(order.travelDate),
-    dateLabel: formatJourneyDateLabel(order.travelDate),
+    dateLabel,
     seat: seatTypeText(order.seatType) || "-",
     passenger: order.passengerName || order.travelerName || "-",
     amount: formatAmount(order.amount),
+    duration: hasTravelTimes ? journeyDurationText(trip.departureTime, trip.arrivalTime) : "时间待定",
+    timeRange: hasTravelTimes ? `${trip.departureTime} - ${trip.arrivalTime}` : (dateLabel !== "-" ? dateLabel : "时间待定"),
+    departureStation: trip.departureStation,
+    arrivalStation: trip.arrivalStation,
   };
 }
 
@@ -4502,23 +4614,35 @@ function renderPassengerOrders(orders) {
   elements.orderCards.innerHTML = orders.map(order => {
     const info = journeyOrderDisplayInfo(order);
     return `
-      <article class="passenger-order-card passenger-order-card-compact">
-        <div class="passenger-order-display-grid">
+      <button class="passenger-order-card passenger-order-card-compact" type="button" data-passenger-order-card="${escapeHtml(String(order.id || ""))}" aria-label="查看订单详情：${escapeHtml(info.trainNo)}，${escapeHtml(info.departureStation)}到${escapeHtml(info.arrivalStation)}">
+        <span class="passenger-order-display-grid">
           <span class="passenger-order-train">${escapeHtml(info.trainNo)}</span>
-          <span class="passenger-order-station">
-            <small>出发点</small>
-            <strong>${escapeHtml(info.departureStation)}</strong>
+          <span class="passenger-order-route">
+            <span class="passenger-order-station passenger-order-station-departure">
+              <strong>${escapeHtml(info.departureStation)}</strong>
+            </span>
+            <span class="passenger-order-arrow" aria-hidden="true"></span>
+            <span class="passenger-order-station passenger-order-station-arrival">
+              <strong>${escapeHtml(info.arrivalStation)}</strong>
+            </span>
           </span>
-          <span class="passenger-order-station">
-            <small>到达点</small>
-            <strong>${escapeHtml(info.arrivalStation)}</strong>
+          <span class="passenger-order-time">
+            <strong>${escapeHtml(info.timeRange)}</strong>
+            <em>${escapeHtml(info.travelDateLabel)}</em>
           </span>
           <span class="status ${orderStatusClass(order.status)}">${statusText(order.status)}</span>
           <span class="passenger-order-amount">¥${escapeHtml(info.amount)}</span>
-        </div>
-      </article>
+        </span>
+      </button>
     `;
   }).join("");
+  elements.orderCards.querySelectorAll("[data-passenger-order-card]").forEach(card => {
+    card.addEventListener("click", () => {
+      if (card.dataset.passengerOrderCard) {
+        openPassengerOrderDetail(card.dataset.passengerOrderCard);
+      }
+    });
+  });
 }
 
 function renderMiniOrders(container, orders, emptyText) {
@@ -4585,6 +4709,9 @@ function journeyOrderDisplayInfo(order) {
   const trip = passengerOrderTripInfo(order);
   const departureStation = firstJourneyValue(trip.departureStation);
   const arrivalStation = firstJourneyValue(trip.arrivalStation);
+  const hasTravelTimes = trip.departureTime !== "-" && trip.arrivalTime !== "-";
+  const dateLabel = formatJourneyDateLabel(order.travelDate);
+  const travelDateLabel = formatJourneyFullDateLabel(order.travelDate);
   return {
     trainNo: firstJourneyValue(trip.trainNo, order.trainNo),
     departureStation,
@@ -4593,10 +4720,13 @@ function journeyOrderDisplayInfo(order) {
       ? `${departureStation} → ${arrivalStation}`
       : passengerOrderRouteText(order),
     date: formatDate(order.travelDate),
-    dateLabel: formatJourneyDateLabel(order.travelDate),
+    dateLabel,
     seat: seatTypeText(order.seatType) || "-",
     passenger: order.passengerName || order.travelerName || "-",
     amount: formatAmount(order.amount),
+    duration: hasTravelTimes ? journeyDurationText(trip.departureTime, trip.arrivalTime) : "时间待定",
+    timeRange: hasTravelTimes ? `${trip.departureTime} - ${trip.arrivalTime}` : (dateLabel !== "-" ? dateLabel : "时间待定"),
+    travelDateLabel,
   };
 }
 
@@ -4688,6 +4818,15 @@ function passengerOrderTripInfo(order) {
       order.departTime,
       order.startTime,
       order.scheduledDepartureTime,
+      nestedTicket.departureTime,
+      nestedTicket.departTime,
+      nestedTicket.startTime,
+      nestedTrain.departureTime,
+      nestedTrain.departTime,
+      nestedTrain.startTime,
+      nestedInventoryTrain.departureTime,
+      nestedInventoryTrain.departTime,
+      nestedInventoryTrain.startTime,
       train.departureTime,
     )),
     arrivalTime: formatTime(firstJourneyValue(
@@ -4695,6 +4834,15 @@ function passengerOrderTripInfo(order) {
       order.arriveTime,
       order.endTime,
       order.scheduledArrivalTime,
+      nestedTicket.arrivalTime,
+      nestedTicket.arriveTime,
+      nestedTicket.endTime,
+      nestedTrain.arrivalTime,
+      nestedTrain.arriveTime,
+      nestedTrain.endTime,
+      nestedInventoryTrain.arrivalTime,
+      nestedInventoryTrain.arriveTime,
+      nestedInventoryTrain.endTime,
       train.arrivalTime,
     )),
   };
@@ -4743,4 +4891,16 @@ function formatJourneyDateLabel(value) {
   const day = String(date.getDate()).padStart(2, "0");
   const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
   return `${month}月${day}日 ${weekdays[date.getDay()]}`;
+}
+
+function formatJourneyFullDateLabel(value) {
+  const dateText = formatDate(value);
+  if (!dateText || dateText === "-") {
+    return "日期待定";
+  }
+  const date = new Date(`${dateText}T00:00:00`);
+  if (Number.isNaN(date.getTime())) {
+    return dateText;
+  }
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
 }

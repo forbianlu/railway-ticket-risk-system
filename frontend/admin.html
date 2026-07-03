@@ -7,11 +7,12 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>铁路客运票务与风控运营管理端</title>
-  <link rel="stylesheet" href="./styles.css?v=20260702-login-blue-template-v8">
+  <link rel="stylesheet" href="./styles.css?v=20260702-liquid-white-text-v3">
 </head>
 <body>
+  <div class="system-notice" role="note">本系统为演示系统，不提供真实铁路票务服务，请勿输入真实身份证、银行卡等敏感信息。</div>
   <section class="login-screen" aria-label="系统登录">
-    <a class="back-link login-back-link" href="./index.html">返回入口</a>
+    <a class="back-link login-back-link" href="/">返回入口</a>
     <div class="login-visual">
       <div class="brand-card">
         <div class="login-brand-row">
@@ -60,17 +61,17 @@
         </div>
       </div>
       <nav class="nav" aria-label="主导航">
-        <a href="#dashboard"><span class="nav-icon rail-icon"></span>运营看板</a>
-        <a href="#global-search"><span class="nav-icon query-icon"></span>综合查询</a>
-        <a href="#search"><span class="nav-icon query-icon"></span>车次查询</a>
-        <a href="#orders"><span class="nav-icon order-icon"></span>订单管理</a>
-        <a href="#payments"><span class="nav-icon pay-icon"></span>支付流水</a>
-        <a href="#refunds"><span class="nav-icon refund-icon"></span>退款流水</a>
-        <a href="#ticket-changes"><span class="nav-icon event-icon"></span>改签追踪</a>
-        <a href="#risks"><span class="nav-icon risk-icon"></span>风险事件</a>
-        <a href="#outbox"><span class="nav-icon event-icon"></span>事件中心</a>
-        <a href="#notifications"><span class="nav-icon event-icon"></span>通知中心</a>
-        <a href="#logs"><span class="nav-icon log-icon"></span>审计日志</a>
+        <a href="#dashboard"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Z"></path><path d="M13 21h8V11h-8v10Z"></path><path d="M13 3h8v6h-8V3Z"></path><path d="M3 21h8v-6H3v6Z"></path></svg></span>运营看板</a>
+        <a href="#global-search"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m21 21-4.4-4.4"></path><circle cx="11" cy="11" r="7"></circle><path d="M8 11h6"></path><path d="M11 8v6"></path></svg></span>综合查询</a>
+        <a href="#search"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 15.5V7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v8.5a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3Z"></path><path d="M8 19l-2 3"></path><path d="M18 22l-2-3"></path><path d="M8 8h8"></path><path d="M8 13h8"></path></svg></span>车次查询</a>
+        <a href="#orders"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 3h8l2 3v15H6V6l2-3Z"></path><path d="M9 10h6"></path><path d="M9 14h6"></path><path d="M9 18h4"></path></svg></span>订单管理</a>
+        <a href="#payments"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 10h18"></path><path d="M7 15h4"></path></svg></span>支付流水</a>
+        <a href="#refunds"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 14 5 10l4-4"></path><path d="M5 10h10a5 5 0 0 1 0 10h-4"></path><path d="M17 4v4"></path><path d="M15 6h4"></path></svg></span>退款流水</a>
+        <a href="#ticket-changes"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 7h10l3 3-3 3H7l-3-3 3-3Z"></path><path d="M17 17H7l-3-3"></path><path d="m17 17 3-3"></path></svg></span>改签追踪</a>
+        <a href="#risks"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.4 7.8 8 9 4.6-1.2 8-4 8-9V6l-8-3Z"></path><path d="M12 8v5"></path><path d="M12 17h.01"></path></svg></span>风险事件</a>
+        <a href="#outbox"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4h16v12H7l-3 3V4Z"></path><path d="m9 10 2 2 4-4"></path></svg></span>事件中心</a>
+        <a href="#notifications"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"></path><path d="M10 21h4"></path></svg></span>通知中心</a>
+        <a href="#logs"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6V3Z"></path><path d="M9 7h6"></path><path d="M9 11h6"></path><path d="M9 15h4"></path></svg></span>审计日志</a>
       </nav>
       <div class="sidebar-footer">
         <span>后端服务</span>
@@ -203,9 +204,9 @@
             查询关键词
             <input id="global-search-keyword" type="text" placeholder="输入订单号 / 票号 / 支付流水 / 退款流水 / 乘车人 / 通知编号">
           </label>
-          <label>
+          <div class="field global-search-type-field">
             查询类型
-            <select id="global-search-types" multiple size="4">
+            <select id="global-search-types" class="native-multi-select" multiple tabindex="-1" aria-hidden="true">
               <option value="ORDER">订单</option>
               <option value="TICKET">电子票</option>
               <option value="PAYMENT">支付</option>
@@ -217,7 +218,14 @@
               <option value="NOTIFICATION">通知</option>
               <option value="OPERATION_LOG">日志</option>
             </select>
-          </label>
+            <div class="multi-select" data-multi-select="global-search-types">
+              <button id="global-search-type-trigger" class="multi-select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+                <span data-multi-select-label>全部类型</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+              </button>
+              <div class="multi-select-menu" role="listbox" aria-multiselectable="true" hidden></div>
+            </div>
+          </div>
           <label>
             每类上限
             <input id="global-search-limit" type="number" min="1" max="20" value="5">
@@ -670,14 +678,50 @@
           <div class="metric compact-metric"><span>已读</span><strong id="notification-summary-read">0</strong></div>
           <div class="metric compact-metric"><span>最新时间</span><strong id="notification-summary-latest">-</strong></div>
         </div>
-        <div class="outbox-breakdown">
+        <div class="outbox-breakdown notification-analytics-grid">
           <div class="panel slim-panel">
-            <h3>按类型统计</h3>
-            <div id="notification-type-summary" class="summary-list"></div>
+            <div class="panel-head compact-panel-head">
+              <div>
+                <h3>按类型统计</h3>
+                <p>消息类型分布与数量排行。</p>
+              </div>
+            </div>
+            <div id="notification-type-summary" class="summary-list notification-summary-list"></div>
+            <div id="notification-type-chart" class="mini-bar-chart" aria-label="通知类型条形图"></div>
+            <div class="mini-table-wrap">
+              <table class="mini-stat-table" aria-label="通知类型统计表">
+                <thead>
+                  <tr>
+                    <th>类型</th>
+                    <th>数量</th>
+                    <th>占比</th>
+                  </tr>
+                </thead>
+                <tbody id="notification-type-table"></tbody>
+              </table>
+            </div>
           </div>
           <div class="panel slim-panel">
-            <h3>按状态统计</h3>
-            <div id="notification-status-summary" class="summary-list"></div>
+            <div class="panel-head compact-panel-head">
+              <div>
+                <h3>按状态统计</h3>
+                <p>未读与已读的处理压力。</p>
+              </div>
+            </div>
+            <div id="notification-status-summary" class="summary-list notification-summary-list"></div>
+            <div id="notification-status-chart" class="mini-bar-chart" aria-label="通知状态条形图"></div>
+            <div class="mini-table-wrap">
+              <table class="mini-stat-table" aria-label="通知状态统计表">
+                <thead>
+                  <tr>
+                    <th>状态</th>
+                    <th>数量</th>
+                    <th>占比</th>
+                  </tr>
+                </thead>
+                <tbody id="notification-status-table"></tbody>
+              </table>
+            </div>
           </div>
         </div>
         <div class="toolbar notification-toolbar">
@@ -778,7 +822,7 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./login-transition.js?v=20260702-liquid-canvas-v5"></script>
+  <script src="./login-transition.js?v=20260702-liquid-canvas-v11"></script>
   <script src="./app.js?v=20260701-login-transition-v6"></script>
 </body>
 </html>

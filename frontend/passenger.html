@@ -7,13 +7,14 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>乘客购票服务 - 铁路客运票务与风控运营平台</title>
-  <link rel="stylesheet" href="./styles.css?v=20260702-login-blue-template-v3">
+  <link rel="stylesheet" href="./styles.css?v=20260703-account-single-card-v5">
 </head>
 <body class="passenger-page passenger-consumer-page">
+  <div class="system-notice" role="note">本系统为演示系统，不提供真实铁路票务服务，请勿输入真实身份证、银行卡等敏感信息。</div>
   <section class="login-screen passenger-login passenger-gateway" aria-label="乘客登录">
-    <a class="back-link login-back-link" href="./index.html">返回入口</a>
+    <a class="back-link login-back-link" href="/">返回入口</a>
     <div class="passenger-gateway-copy">
-      <a class="portal-brand" href="./index.html" aria-label="返回铁路客运票务与风控运营平台">
+      <a class="portal-brand" href="/" aria-label="返回铁路客运票务与风控运营平台">
         <span class="brand-mark large">RT</span>
         <span>
           <strong>乘客购票服务</strong>
@@ -252,79 +253,84 @@
           </div>
         </div>
         <div class="passenger-account-layout">
-          <article class="profile-card account-overview-card">
-            <div class="profile-header">
-              <div id="passenger-profile-avatar" class="profile-avatar" aria-label="乘客头像">RT</div>
-              <div class="profile-identity">
-                <span id="passenger-profile-role" class="soft-pill">乘客</span>
-                <h3 id="passenger-profile-display">-</h3>
-                <p id="passenger-profile-username">-</p>
-                <div class="avatar-upload-actions">
-                  <input id="passenger-avatar-file" class="avatar-file-input" type="file" accept="image/*" tabindex="-1">
-                  <button id="passenger-avatar-upload-button" class="secondary-button compact-button" type="button">上传头像</button>
-                  <button id="passenger-avatar-remove-button" class="ghost-button compact-button" type="button" hidden>移除头像</button>
+          <article class="passenger-account-card">
+            <div class="passenger-account-left">
+              <div class="account-profile-summary">
+                <div class="profile-header">
+                  <div id="passenger-profile-avatar" class="profile-avatar" aria-label="乘客头像">RT</div>
+                  <div class="profile-identity">
+                    <span id="passenger-profile-role" class="soft-pill">乘客</span>
+                    <h3 id="passenger-profile-display">-</h3>
+                    <p id="passenger-profile-username">-</p>
+                    <p id="passenger-avatar-status" class="avatar-status" aria-live="polite"></p>
+                  </div>
+                  <div class="avatar-upload-actions">
+                    <input id="passenger-avatar-file" class="avatar-file-input" type="file" accept="image/*" tabindex="-1">
+                    <button id="passenger-avatar-upload-button" class="secondary-button compact-button" type="button">上传头像</button>
+                    <button id="passenger-avatar-remove-button" class="ghost-button compact-button" type="button" hidden>移除头像</button>
+                  </div>
                 </div>
-                <p id="passenger-avatar-status" class="avatar-status" aria-live="polite"></p>
-                <div class="account-overview-tags" aria-label="账号资料用途">
-                  <span>实名购票优先使用</span>
-                  <span>头像同步顶部入口</span>
-                  <span>默认乘车人自动带入</span>
+                <div class="profile-facts">
+                  <div><span>默认乘车人</span><strong id="passenger-profile-default-traveler">未设置</strong></div>
+                  <div><span>订单数</span><strong id="passenger-profile-order-count">0</strong></div>
+                  <div><span>有效电子票</span><strong id="passenger-profile-ticket-count">0</strong></div>
+                </div>
+                <div class="account-profile-data" aria-label="账号资料摘要">
+                  <div><span>账号昵称</span><strong id="passenger-profile-detail-display">-</strong></div>
+                  <div><span>登录账号</span><strong id="passenger-profile-detail-username">-</strong></div>
+                  <div><span>账号类型</span><strong id="passenger-profile-detail-role">普通乘客</strong></div>
+                  <div><span>购票身份</span><strong id="passenger-profile-detail-traveler">未设置</strong></div>
+                  <div><span>订单数量</span><strong id="passenger-profile-detail-orders">0</strong></div>
+                  <div><span>有效电子票</span><strong id="passenger-profile-detail-tickets">0</strong></div>
                 </div>
               </div>
             </div>
-            <div class="profile-facts">
-              <div><span>默认乘车人</span><strong id="passenger-profile-default-traveler">未设置</strong></div>
-              <div><span>订单数</span><strong id="passenger-profile-order-count">0</strong></div>
-              <div><span>有效电子票</span><strong id="passenger-profile-ticket-count">0</strong></div>
-            </div>
-            <div class="account-overview-hint">
-              <strong>购票资料同步</strong>
-              <span>昵称、头像和默认乘车人会在查票、下单、订单和电子票信息中保持一致。</span>
+            <div class="passenger-account-right">
+              <form id="passenger-profile-form" class="account-settings-form account-profile-form">
+                <div>
+                  <h3>修改昵称</h3>
+                  <p>修改昵称后会立即刷新当前登录信息。</p>
+                  <ul class="account-card-points">
+                    <li>用于顶部账号展示</li>
+                    <li>不会改变证件实名信息</li>
+                  </ul>
+                </div>
+                <label>
+                  昵称
+                  <input id="passenger-profile-display-name" type="text" maxlength="64" autocomplete="name">
+                </label>
+                <div id="passenger-profile-error" class="form-error" aria-live="polite"></div>
+                <button class="secondary-button" type="submit">保存资料</button>
+              </form>
+              <form id="passenger-password-form" class="account-settings-form account-security-form">
+                <div>
+                  <h3>安全设置</h3>
+                  <p>修改密码后，新密码立即生效，旧密码无法继续登录。</p>
+                  <ul class="account-card-points">
+                    <li>提交后立即更新登录密码</li>
+                    <li>建议使用 6 位以上组合密码</li>
+                    <li>当前登录状态会保留</li>
+                  </ul>
+                </div>
+                <label>
+                  旧密码
+                  <input id="passenger-old-password" type="password" autocomplete="current-password">
+                </label>
+                <div class="form-grid">
+                  <label>
+                    新密码
+                    <input id="passenger-new-password" type="password" minlength="6" maxlength="64" autocomplete="new-password">
+                  </label>
+                  <label>
+                    确认新密码
+                    <input id="passenger-confirm-password" type="password" minlength="6" maxlength="64" autocomplete="new-password">
+                  </label>
+                </div>
+                <div id="passenger-password-error" class="form-error" aria-live="polite"></div>
+                <button class="secondary-button" type="submit">更新密码</button>
+              </form>
             </div>
           </article>
-          <form id="passenger-profile-form" class="account-form-card account-profile-card">
-            <div>
-              <h3>个人资料</h3>
-              <p>修改昵称后会立即刷新当前登录信息。</p>
-              <ul class="account-card-points">
-                <li>用于顶部账号展示</li>
-                <li>不会改变证件实名信息</li>
-              </ul>
-            </div>
-            <label>
-              昵称
-              <input id="passenger-profile-display-name" type="text" maxlength="64" autocomplete="name">
-            </label>
-            <div id="passenger-profile-error" class="form-error" aria-live="polite"></div>
-            <button class="secondary-button" type="submit">保存资料</button>
-          </form>
-          <form id="passenger-password-form" class="account-form-card account-security-card">
-            <div>
-              <h3>安全设置</h3>
-              <p>修改密码后，新密码立即生效，旧密码无法继续登录。</p>
-              <ul class="account-card-points">
-                <li>提交后立即更新登录密码</li>
-                <li>建议使用 6 位以上组合密码</li>
-                <li>当前登录状态会保留</li>
-              </ul>
-            </div>
-            <label>
-              旧密码
-              <input id="passenger-old-password" type="password" autocomplete="current-password">
-            </label>
-            <div class="form-grid">
-              <label>
-                新密码
-                <input id="passenger-new-password" type="password" minlength="6" maxlength="64" autocomplete="new-password">
-              </label>
-              <label>
-                确认新密码
-                <input id="passenger-confirm-password" type="password" minlength="6" maxlength="64" autocomplete="new-password">
-              </label>
-            </div>
-            <div id="passenger-password-error" class="form-error" aria-live="polite"></div>
-            <button class="secondary-button" type="submit">更新密码</button>
-          </form>
         </div>
       </section>
 
@@ -735,7 +741,7 @@
   </div>
 
   <div id="passenger-toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="./login-transition.js?v=20260702-forgot-password-v2"></script>
+  <script src="./login-transition.js?v=20260702-liquid-canvas-v11"></script>
   <script src="./passenger.js?v=20260701-login-transition-v6"></script>
 </body>
 </html>

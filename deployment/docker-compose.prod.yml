@@ -1,0 +1,66 @@
+services:
+  railway-backend:
+    image: eclipse-temurin:8-jre
+    container_name: railway-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - /opt/railway/secrets/railway.env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/railway_ticket_risk?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Hong_Kong
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      AVATAR_STORAGE_DIR: /opt/railway/data/avatars
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - /opt/railway/app/app.jar:/app/app.jar:ro
+      - /opt/railway/logs/backend:/opt/railway/logs/backend
+      - /opt/railway/data/avatars:/opt/railway/data/avatars
+    command: ["java", "-jar", "/app/app.jar"]
+
+  mysql:
+    image: mysql:8.0
+    container_name: railway-mysql
+    restart: unless-stopped
+    env_file:
+      - /opt/railway/secrets/railway.env
+    environment:
+      MYSQL_DATABASE: railway_ticket_risk
+      MYSQL_USER: railway
+      TZ: Asia/Hong_Kong
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - /opt/railway/data/mysql:/var/lib/mysql
+      - /opt/railway/logs/mysql:/var/log/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  redis:
+    image: redis:7
+    container_name: railway-redis
+    restart: unless-stopped
+    env_file:
+      - /opt/railway/secrets/railway.env
+    command: ["sh", "-c", "redis-server --appendonly yes --requirepass \"$${REDIS_PASSWORD}\""]
+    volumes:
+      - /opt/railway/data/redis:/data
+      - /opt/railway/logs/redis:/var/log/redis
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s

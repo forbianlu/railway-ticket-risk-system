@@ -7,25 +7,34 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>铁路客运票务与风控运营管理系统</title>
-  <link rel="stylesheet" href="./styles.css?v=20260702-brand-scroll-spread">
-  <script src="./main-portal.js?v=20260702-brand-scroll-spread" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=20260703-case-images-button-hover">
+  <script src="./main-portal.js?v=20260703-case-images-button-hover" defer></script>
 </head>
 <body class="main-portal-page">
+  <div class="system-notice" role="note">本系统为演示系统，不提供真实铁路票务服务，请勿输入真实身份证、银行卡等敏感信息。</div>
   <section class="main-portal-scroll-stage" data-portal-stage>
     <div class="main-portal-stage-sticky">
       <section class="main-portal-cover" data-portal-cover aria-label="铁路客运票务首页">
         <header class="main-portal-nav" aria-label="系统导航">
-          <a class="main-portal-brand" href="./index.html" aria-label="返回首页">
+          <a class="main-portal-brand" href="/" aria-label="返回首页">
             <span class="main-portal-mark">RT</span>
             <strong>铁路票务</strong>
           </a>
-          <nav class="main-portal-links" aria-label="系统入口">
-            <a href="./passenger.html">乘客端</a>
-            <a href="./admin.html">管理端</a>
-            <a href="#portal-overview">查票</a>
-            <a href="#portal-capabilities">风控</a>
+          <nav class="main-portal-links" aria-label="功能入口">
+            <a class="is-active" href="#portal-capabilities" data-nav-card="ticket" aria-current="true">查票</a>
+            <a href="#portal-capabilities" data-nav-card="order">购票</a>
+            <a href="#portal-capabilities" data-nav-card="eticket">出票</a>
+            <a href="#portal-capabilities" data-nav-card="risk">风控</a>
           </nav>
-          <a class="main-portal-nav-button" href="./admin.html">管理端</a>
+          <a class="main-portal-nav-button" href="/admin">
+            <svg class="main-portal-nav-key" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="7.5" cy="15.5" r="4.5"></circle>
+              <path d="M10.7 12.3 21 2"></path>
+              <path d="m15.5 7.5 2.8 2.8"></path>
+              <path d="m17.8 5.2 2.8 2.8"></path>
+            </svg>
+            <span>管理端</span>
+          </a>
         </header>
 
         <main class="main-portal-hero" aria-labelledby="main-portal-title">
@@ -53,7 +62,7 @@
           <p class="main-portal-copy">
             围绕客运票务全流程，打通乘客服务、订单支付、电子票据、退票退款和风险处置等核心能力，形成从前台购票到后台运营的一体化协同入口，让每一次交易、每一张票据和每一个风险节点都清晰可管
           </p>
-          <a class="main-portal-primary" href="./passenger.html">立即进入</a>
+          <a class="main-portal-primary" href="/passenger">立即进入</a>
         </main>
       </section>
 
@@ -97,6 +106,7 @@
       </div>
       <div class="main-portal-image-slot main-portal-card-stack" data-active-card="ticket" aria-label="功能卡片预览">
         <article class="main-portal-feature-card is-active" data-card="ticket">
+          <img class="main-portal-feature-shot" src="./assets/main-portal/capability-ticket-query.png?v=20260702-cropped-solid" alt="Ticket query preview" loading="lazy" decoding="async">
           <span>车票查询</span>
           <h3>北京南 → 上海虹桥</h3>
           <p>出发站、到达站、日期一次确认。</p>
@@ -107,6 +117,7 @@
           </div>
         </article>
         <article class="main-portal-feature-card" data-card="order">
+          <img class="main-portal-feature-shot" src="./assets/main-portal/capability-order-payment.png?v=20260702-cropped-solid" alt="Order payment preview" loading="lazy" decoding="async">
           <span>订单支付</span>
           <h3>待支付订单</h3>
           <p>支付状态、金额和截止时间同步展示。</p>
@@ -117,6 +128,7 @@
           </div>
         </article>
         <article class="main-portal-feature-card" data-card="eticket">
+          <img class="main-portal-feature-shot" src="./assets/main-portal/capability-eticket.png?v=20260702-cropped-solid" alt="E-ticket preview" loading="lazy" decoding="async">
           <span>电子票</span>
           <h3>有效票据</h3>
           <p>车次、乘车人、证件信息集中核对。</p>
@@ -127,6 +139,7 @@
           </div>
         </article>
         <article class="main-portal-feature-card" data-card="risk">
+          <img class="main-portal-feature-shot" src="./assets/main-portal/capability-risk-operations.png?v=20260702-cropped-solid" alt="Risk operations preview" loading="lazy" decoding="async">
           <span>风控运营</span>
           <h3>退款风险处置</h3>
           <p>异常退款、未读提醒和操作轨迹可追踪。</p>
@@ -153,38 +166,49 @@
     </div>
   </section>
 
-  <section class="main-portal-case-section" aria-label="乘客场景">
+  <section class="main-portal-case-section" aria-label="乘客端" data-case-reveal data-case-kind="passenger">
     <div class="main-portal-case-copy">
-      <h2>乘客场景</h2>
+      <h2>乘客端</h2>
       <h3>从查票到出行管理</h3>
       <p>
         面向车票查询、在线购票、订单支付、电子票和行程提醒，系统把乘客购票到出行的关键操作整合为连续入口，帮助乘客更快完成下一段行程。
       </p>
-      <a href="./passenger.html">进入乘客端</a>
+      <a href="/passenger">进入乘客端</a>
     </div>
-    <div class="main-portal-case-slot" aria-hidden="true"></div>
+    <div class="main-portal-case-slot" data-case-card aria-hidden="true"></div>
   </section>
 
-  <section class="main-portal-case-section" aria-label="运营场景">
+  <section class="main-portal-case-section" aria-label="管理端" data-case-reveal data-case-kind="admin">
     <div class="main-portal-case-copy">
-      <h2>运营场景</h2>
+      <h2>管理端</h2>
       <h3>从订单到风险处置</h3>
       <p>
         面对支付失败、退票申请、异常订单和未读提醒，系统把分散操作收敛为连续流程，帮助运营人员更快找到下一步动作。
       </p>
-      <a href="./admin.html">进入管理端</a>
+      <a href="/admin">进入管理端</a>
     </div>
-    <div class="main-portal-case-slot" aria-hidden="true"></div>
+    <div class="main-portal-case-slot" data-case-card aria-hidden="true"></div>
   </section>
   <script>
     (() => {
       const capabilityItems = Array.from(document.querySelectorAll('[data-capability-card]'));
+      const capabilityNavLinks = Array.from(document.querySelectorAll('[data-nav-card]'));
+      const capabilitySection = document.querySelector('#portal-capabilities');
       const cardStack = document.querySelector('.main-portal-card-stack');
       const cards = Array.from(document.querySelectorAll('.main-portal-feature-card'));
 
       if (!capabilityItems.length || !cardStack || !cards.length) return;
 
-      const activateCapability = (key) => {
+      const scrollToCapabilitySection = () => {
+        if (!capabilitySection) return;
+
+        capabilitySection.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'center',
+        });
+      };
+
+      const activateCapability = (key, shouldScroll = false) => {
         cardStack.dataset.activeCard = key;
 
         capabilityItems.forEach((item) => {
@@ -196,6 +220,20 @@
         cards.forEach((card) => {
           card.classList.toggle('is-active', card.dataset.card === key);
         });
+
+        capabilityNavLinks.forEach((link) => {
+          const isActive = link.dataset.navCard === key;
+          link.classList.toggle('is-active', isActive);
+          if (isActive) {
+            link.setAttribute('aria-current', 'true');
+          } else {
+            link.removeAttribute('aria-current');
+          }
+        });
+
+        if (shouldScroll) {
+          scrollToCapabilitySection();
+        }
       };
 
       capabilityItems.forEach((item) => {
@@ -205,6 +243,13 @@
             event.preventDefault();
             activateCapability(item.dataset.capabilityCard);
           }
+        });
+      });
+
+      capabilityNavLinks.forEach((link) => {
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          activateCapability(link.dataset.navCard, true);
         });
       });
     })();

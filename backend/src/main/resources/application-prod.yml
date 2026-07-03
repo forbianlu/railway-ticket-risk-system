@@ -1,0 +1,63 @@
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+  h2:
+    console:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.MySQL8Dialect
+  redis:
+    host: ${SPRING_REDIS_HOST:redis}
+    port: ${SPRING_REDIS_PORT:6379}
+    password: ${SPRING_REDIS_PASSWORD:}
+    timeout: ${SPRING_REDIS_TIMEOUT:2s}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    root: info
+    org.hibernate.SQL: warn
+    org.springframework.web: warn
+
+railway:
+  avatar:
+    storage-dir: ${AVATAR_STORAGE_DIR:/opt/railway/data/avatars}
+  demo-data:
+    enabled: ${RAILWAY_DEMO_DATA_ENABLED:true}
+  cache:
+    train-search:
+      mode: redis
+      ttl-seconds: ${TRAIN_SEARCH_CACHE_TTL_SECONDS:30}
+  rate-limit:
+    mode: redis
+    local-fallback-enabled: true
+  payment:
+    callback-secret: ${PAYMENT_CALLBACK_SECRET}
+    signature-enabled: true
+    timestamp-tolerance-seconds: 300
+  refund:
+    callback-secret: ${REFUND_CALLBACK_SECRET}
+    signature-enabled: true
+    timestamp-tolerance-seconds: 300
